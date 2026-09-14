@@ -1,13 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Activity, Bell, Blocks, Building2, CreditCard, Headphones, KeyRound, LayoutDashboard, LogOut, ReceiptIndianRupee, Settings, ShieldCheck, Users } from 'lucide-react';
+import { Activity, Bell, Building2, CreditCard, Headphones, KeyRound, LayoutDashboard, LogOut, ReceiptIndianRupee, Settings, ShieldCheck, Users } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
 const sections = [
   { label: 'Control plane', items: [
     { label: 'Dashboard', Icon: LayoutDashboard, to: '/dashboard' },
     { label: 'Organizations', Icon: Building2, to: '/companies' },
-    { label: 'Plans & modules', Icon: Blocks, to: '/plans' },
-    { label: 'Subscriptions', Icon: CreditCard, to: '/subscriptions' },
+    { label: 'Plan & subscriptions', Icon: CreditCard, to: '/subscriptions' },
     { label: 'Billing', Icon: ReceiptIndianRupee, to: '/payments' },
   ] },
   { label: 'Operations', items: [

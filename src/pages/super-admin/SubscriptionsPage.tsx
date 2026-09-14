@@ -551,8 +551,8 @@ export default function SubscriptionsPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Subscriptions</h1>
-          <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage your platform and monitor client companies</p>
+          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Plan & subscriptions</h1>
+          <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage company billing, plan versions, and access from one workspace</p>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={() => setShowCreatePlan(true)} style={{ padding: '9px 18px', border: '1.5px solid #0d7470', borderRadius: '8px', backgroundColor: 'white', color: '#0d7470', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
@@ -591,7 +591,7 @@ export default function SubscriptionsPage() {
               borderBottom: tab === t ? '2px solid #0d7470' : '2px solid transparent',
               transition: 'all 0.15s',
             }}>
-              {t === 'overview' ? 'Company Overview' : 'My Plans'}
+              {t === 'overview' ? 'Company overview' : 'Plans & access'}
             </button>
           ))}
         </div>

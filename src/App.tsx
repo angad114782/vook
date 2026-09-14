@@ -37,7 +37,6 @@ const ModulesPage         = lazy(() => import('./pages/super-admin/ModulesPage')
 const SupportPage         = lazy(() => import('./pages/super-admin/SupportPage'));
 const SettingsPage        = lazy(() => import('./pages/super-admin/SettingsPage'));
 const PaymentsPage        = lazy(() => import('./pages/super-admin/PaymentsPage'));
-const PlansPage           = lazy(() => import('./pages/super-admin/PlansPage'));
 const IntegrationsPage    = lazy(() => import('./pages/super-admin/IntegrationsPage'));
 const AuditPage           = lazy(() => import('./pages/super-admin/AuditPage'));
 const SecurityEnrollmentPage = lazy(() => import('./pages/super-admin/SecurityEnrollmentPage'));
@@ -161,7 +160,8 @@ export default function App() {
             <Route path="dashboard"     element={<DashboardPage />} />
             <Route path="companies"     element={<CompaniesPage />} />
             <Route path="subscriptions" element={<SubscriptionsPage />} />
-            <Route path="plans"         element={<PlansPage />} />
+            {/* Legacy URL kept for bookmarks; subscriptions now owns plans and access. */}
+            <Route path="plans"         element={<Navigate to="/subscriptions" replace />} />
             <Route path="payments"      element={<PaymentsPage />} />
             <Route path="activity"      element={<ActivityPage />} />
             <Route path="modules"       element={<ModulesPage />} />
