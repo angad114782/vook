@@ -1,0 +1,39 @@
+# Node modules
+node_modules/
+*/node_modules/
+
+# Build outputs
+dist/
+build/
+*/dist/
+*/build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*/.env
+*/.env.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+.claude/
+
+# Misc
+attaendence partnership.pdf
+partnership-agreement.html
+partnership-agreement-v2-original-style.html
+partnership-agreement-v2-original-style copy.html
+
+# Test artifacts
+coverage/
+playwright-report/
+test-results/
+
+
+
+

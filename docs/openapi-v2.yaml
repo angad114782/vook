@@ -1,0 +1,575 @@
+openapi: 3.1.0
+info:
+  title: Vook Frontend API
+  version: 2.0.0
+  description: Resource-oriented contract consumed by the standalone Vook frontend.
+servers: [{ url: /api/v2 }]
+security: [{ sessionCookie: [] }]
+paths:
+  /demo/accounts:
+    get:
+      operationId: listDemoAccounts
+      security: []
+      x-mock-only: true
+      description: Development-only role cards. API mode never calls this operation.
+      responses: { '200': { $ref: '#/components/responses/Object' } }
+  /demo/reset:
+    post:
+      operationId: resetDemoData
+      security: []
+      x-mock-only: true
+      description: Development-only reset of the browser's persistent mock graph. API mode never calls this operation.
+      responses: { '200': { $ref: '#/components/responses/Object' } }
+  /auth/login:
+    post:
+      operationId: login
+      security: []
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/LoginRequest' } } } }
+      responses: { '200': { $ref: '#/components/responses/Session' }, '401': { $ref: '#/components/responses/Error' } }
+  /auth/session:
+    get: { operationId: getSession, responses: { '200': { $ref: '#/components/responses/Session' }, '401': { $ref: '#/components/responses/Error' } } }
+    patch: { operationId: updateProfile, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /auth/refresh:
+    post: { operationId: refreshSession, responses: { '200': { $ref: '#/components/responses/Object' }, '401': { $ref: '#/components/responses/Error' } } }
+  /auth/logout:
+    post: { operationId: logout, responses: { '200': { $ref: '#/components/responses/Empty' } } }
+  /auth/forgot-password:
+    post: { operationId: requestPasswordReset, security: [], requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /auth/reset-password:
+    post: { operationId: resetPassword, security: [], requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /auth/accept-invitation:
+    post: { operationId: acceptInvitation, security: [], requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /auth/change-password:
+    post: { operationId: changePassword, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /auth/security/sessions:
+    get: { operationId: listSessions, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /auth/security/sessions/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    delete: { operationId: revokeSession, responses: { '200': { $ref: '#/components/responses/Empty' } } }
+  /auth/security/revoke-all:
+    post: { operationId: revokeAllSessions, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /auth/2fa/status:
+    get: { operationId: getTwoFactorStatus, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /auth/2fa/setup:
+    post: { operationId: setupTwoFactor, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /auth/2fa/verify:
+    post: { operationId: verifyTwoFactor, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /access:
+    get: { operationId: getAccess, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /dashboard:
+    get: { operationId: getDashboard, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /company:
+    get: { operationId: getCurrentCompany, responses: { '200': { $ref: '#/components/responses/Company' } } }
+    patch: { operationId: updateCurrentCompany, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Company' } } }
+  /companies:
+    get: { operationId: listCompanies, parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }, { $ref: '#/components/parameters/Search' }], responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createCompany, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Company' } } }
+  /companies/options:
+    get: { operationId: listCompanyOptions, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /companies/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { operationId: getCompany, responses: { '200': { $ref: '#/components/responses/Company' } } }
+    patch: { operationId: updateCompany, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Company' } } }
+    put: { operationId: replaceCompany, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Company' } } }
+    delete: { operationId: deleteCompany, responses: { '200': { $ref: '#/components/responses/Empty' } } }
+  /users:
+    get: { operationId: listUsers, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: inviteUser, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /users/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    patch: { operationId: updateUser, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    delete: { operationId: deleteUser, responses: { '200': { $ref: '#/components/responses/Empty' } } }
+  /users/{id}/revoke-sessions:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: revokeUserSessions, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /employees:
+    get: { operationId: listEmployees, parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }, { $ref: '#/components/parameters/Search' }], responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createEmployee, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Employee' } } }
+  /employees/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { operationId: getEmployee, responses: { '200': { $ref: '#/components/responses/Employee' } } }
+    patch: { operationId: updateEmployee, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Employee' } } }
+  /employees/{id}/actions:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: performEmployeeAction, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Employee' } } }
+  /employees/{id}/account:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: provisionEmployeeAccount, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Employee' } } }
+  /employees/import:
+    post: { operationId: importEmployees, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /departments:
+    get: { operationId: listDepartments, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createDepartment, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /departments/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    patch: { operationId: updateDepartment, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /departments/summary:
+    get: { operationId: getDepartmentSummary, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /branches:
+    get: { operationId: listBranches, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createBranch, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /branches/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    patch: { operationId: updateBranch, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /teams:
+    get: { operationId: listTeams, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createTeam, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /teams/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    patch: { operationId: updateTeam, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /reporting-lines:
+    get: { operationId: listReportingLines, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createReportingLine, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /designations:
+    get: { operationId: listDesignations, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createDesignation, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /designations/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    patch: { operationId: updateDesignation, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /offices:
+    get: { operationId: listOffices, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /attendance:
+    get: { operationId: listAttendance, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createAttendance, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /attendance/summary:
+    get: { operationId: getAttendanceSummary, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /attendance/mine:
+    get: { operationId: getMyAttendance, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /attendance/mine/today:
+    get: { operationId: getTodayAttendance, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /attendance/mine/check-in:
+    post: { operationId: checkIn, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /attendance/mine/check-out:
+    post: { operationId: checkOut, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /attendance-policy:
+    get: { operationId: getAttendancePolicy, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    put: { operationId: updateAttendancePolicy, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /attendance-regularizations:
+    get: { operationId: listAttendanceRegularizations, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /attendance-regularizations/mine:
+    get: { operationId: listMyAttendanceRegularizations, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createAttendanceRegularization, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /attendance-regularizations/{id}/actions:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: decideAttendanceRegularization, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /shifts:
+    get: { operationId: listShifts, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createShift, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /shifts/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    patch: { operationId: updateShift, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /leave-requests:
+    get: { operationId: listLeaveRequests, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /leave-requests/mine:
+    get: { operationId: listMyLeaveRequests, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createLeaveRequest, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /leave-requests/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    patch: { operationId: updateLeaveRequest, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /leave-requests/{id}/actions:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: decideLeaveRequest, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /approvals:
+    get: { operationId: listApprovals, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /approvals/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    patch: { operationId: updateApproval, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /salaries:
+    get: { operationId: listSalaries, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: saveSalary, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /payslips:
+    get: { operationId: listPayslips, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /payslips/mine:
+    get: { operationId: listMyPayslips, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /payslips/mine/{id}/download:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { operationId: downloadMyPayslip, responses: { '200': { $ref: '#/components/responses/Binary' } } }
+  /payslips/{id}/download:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { operationId: downloadPayslip, responses: { '200': { $ref: '#/components/responses/Binary' } } }
+  /payslips/{id}/pay:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: markPayslipPaid, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /payslips/{id}/recalculate:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: recalculatePayslip, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /payroll-runs:
+    get: { operationId: listPayrollRuns, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: runPayroll, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /payroll-runs/{id}/review:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: reviewPayroll, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /payroll-runs/{id}/approve:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: approvePayroll, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /payroll-runs/{id}/finalize:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: finalizePayroll, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /payroll-runs/{id}/publish:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: publishPayroll, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /expenses:
+    get: { operationId: listExpenses, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /expenses/mine:
+    get: { operationId: listMyExpenses, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createExpense, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /expenses/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    patch: { operationId: updateExpense, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /files/receipts:
+    post: { operationId: uploadReceipt, requestBody: { $ref: '#/components/requestBodies/Multipart' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /files/documents:
+    post: { operationId: uploadDocument, requestBody: { $ref: '#/components/requestBodies/Multipart' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /files/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { operationId: downloadFile, responses: { '200': { $ref: '#/components/responses/Binary' } } }
+  /documents:
+    get: { operationId: listDocuments, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createDocument, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /documents/mine:
+    get: { operationId: listMyDocuments, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /documents/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    delete: { operationId: deleteDocument, responses: { '200': { $ref: '#/components/responses/Empty' } } }
+  /plans:
+    get: { operationId: listPlans, security: [], responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createPlan, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /plans/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { operationId: getPlan, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    put: { operationId: updatePlan, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    delete: { operationId: deletePlan, responses: { '200': { $ref: '#/components/responses/Empty' } } }
+  /plans/{id}/publish:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: publishPlan, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /plans/{id}/discard-draft:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: discardPlanDraft, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /plan-versions/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { operationId: getPlanVersion, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /module-catalog:
+    get: { operationId: listModuleCatalog, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /subscriptions:
+    get: { operationId: listSubscriptions, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: assignSubscription, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /subscriptions/{id}/{action}:
+    parameters: [{ $ref: '#/components/parameters/Id' }, { name: action, in: path, required: true, schema: { type: string, enum: [extend-trial, migrate, suspend, reactivate, cancel, renew, retry-payment] } }]
+    post: { operationId: mutateSubscription, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /entitlement-overrides:
+    get: { operationId: listEntitlementOverrides, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createEntitlementOverride, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /entitlement-overrides/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    delete: { operationId: revokeEntitlementOverride, responses: { '200': { $ref: '#/components/responses/Empty' } } }
+  /subscription:
+    get: { operationId: getCurrentSubscription, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /subscription/checkout:
+    post: { operationId: createSubscriptionCheckout, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /entitlements:
+    get: { operationId: getEntitlements, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /modules:
+    get: { operationId: listModules, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /modules/companies:
+    get: { operationId: listModuleCompanyOptions, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /modules/toggle:
+    put: { operationId: toggleCompanyModule, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /modules/permissions:
+    get: { operationId: listModulePermissions, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    put: { operationId: updateModulePermission, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /role-permissions:
+    get: { operationId: listRolePermissions, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    put: { operationId: updateRolePermissions, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /role-definitions:
+    get: { operationId: listRoleDefinitions, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createRoleDefinition, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /role-definitions/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    put: { operationId: updateRoleDefinition, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    delete: { operationId: deleteRoleDefinition, responses: { '200': { $ref: '#/components/responses/Empty' } } }
+  /role-assignments:
+    get: { operationId: listRoleAssignments, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createRoleAssignment, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /role-assignments/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    delete: { operationId: deleteRoleAssignment, responses: { '200': { $ref: '#/components/responses/Empty' } } }
+  /workflows:
+    get: { operationId: listWorkflows, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /workflows/{type}:
+    parameters: [{ name: type, in: path, required: true, schema: { type: string } }]
+    put: { operationId: updateWorkflow, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /notifications:
+    get: { operationId: listNotifications, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /notifications/{id}/read:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    patch: { operationId: markNotificationRead, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /notifications/read:
+    patch: { operationId: markNotificationsRead, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /notifications/read-all:
+    patch: { operationId: markAllNotificationsRead, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /notifications/preferences:
+    get: { operationId: getNotificationPreferences, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    put: { operationId: updateNotificationPreferences, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /broadcasts:
+    get: { operationId: listBroadcasts, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createBroadcast, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /support-tickets:
+    get: { operationId: listSupportTickets, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createSupportTicket, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /support-tickets/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { operationId: getSupportTicket, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    patch: { operationId: updateSupportTicket, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /support-tickets/{id}/comments:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { operationId: listSupportComments, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createSupportComment, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /activity-events:
+    get: { operationId: listActivityEvents, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /audit-events:
+    get: { operationId: listAuditEvents, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /reports/{kind}:
+    parameters: [{ name: kind, in: path, required: true, schema: { type: string, enum: [workforce, leave, payroll, attendance, revenue-trend, overview, expenses, compliance] } }]
+    get: { operationId: getReport, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /reports/{kind}/export:
+    parameters: [{ name: kind, in: path, required: true, schema: { type: string } }]
+    post: { operationId: exportReport, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Binary' } } }
+  /payments:
+    get: { operationId: listPayments, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /payments/mine:
+    get: { operationId: listMyPayments, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /payments/offline:
+    post: { operationId: createOfflinePayment, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /payments/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    patch: { operationId: updatePayment, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /invoices:
+    get: { operationId: listInvoices, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /invoices/{id}/download:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { operationId: downloadInvoice, responses: { '200': { $ref: '#/components/responses/Binary' } } }
+  /integrations:
+    get: { operationId: listIntegrations, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /integrations/{providerKey}:
+    parameters: [{ name: providerKey, in: path, required: true, schema: { type: string } }]
+    put: { operationId: saveIntegration, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /integrations/{providerKey}/{action}:
+    parameters: [{ name: providerKey, in: path, required: true, schema: { type: string } }, { name: action, in: path, required: true, schema: { type: string, enum: [test, activate, disable] } }]
+    post: { operationId: mutateIntegration, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /attendance-integrations:
+    get: { operationId: listAttendanceIntegrations, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createAttendanceIntegration, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /attendance-integrations/{id}/{action}:
+    parameters: [{ $ref: '#/components/parameters/Id' }, { name: action, in: path, required: true, schema: { type: string, enum: [test, activate] } }]
+    post: { operationId: mutateAttendanceIntegration, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /attendance-verification-policy:
+    put: { operationId: updateAttendanceVerificationPolicy, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /profile:
+    get: { operationId: getProfile, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    patch: { operationId: updateEmployeeProfile, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /settings/platform:
+    get: { operationId: getPlatformSettings, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    put: { operationId: updatePlatformSettings, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /onboarding:
+    get: { operationId: getOnboarding, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /onboarding/{stepKey}:
+    parameters: [{ name: stepKey, in: path, required: true, schema: { type: string } }]
+    patch: { operationId: updateOnboardingStep, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /onboarding/plans:
+    get: { operationId: listOnboardingPlans, security: [], responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /onboarding/trial:
+    post: { operationId: createTrialRegistration, security: [], requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /onboarding/checkout:
+    post: { operationId: createRegistrationCheckout, security: [], requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /onboarding/checkout/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { operationId: getRegistrationCheckout, security: [], responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /onboarding/checkout/{id}/resend-verification:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: resendRegistrationVerification, security: [], responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /onboarding/verify-email:
+    post: { operationId: verifyRegistrationEmail, security: [], requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /search:
+    get: { operationId: search, parameters: [{ name: q, in: query, required: true, schema: { type: string, minLength: 2 }}], responses: { '200': { $ref: '#/components/responses/Object' } } }
+components:
+  securitySchemes:
+    sessionCookie: { type: apiKey, in: cookie, name: vook_session }
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string } }
+    Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+    PageSize: { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+    Search: { name: search, in: query, schema: { type: string, maxLength: 100 } }
+  requestBodies:
+    Object: { required: true, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+    Multipart: { required: true, content: { multipart/form-data: { schema: { type: object, properties: { file: { type: string, format: binary } }, required: [file] } } } }
+  responses:
+    Empty: { description: Success, content: { application/json: { schema: { $ref: '#/components/schemas/EmptyEnvelope' } } } }
+    Object: { description: Success, content: { application/json: { schema: { $ref: '#/components/schemas/ObjectEnvelope' } } } }
+    Company: { description: Company, content: { application/json: { schema: { type: object, required: [data], properties: { data: { $ref: '#/components/schemas/Company' } } } } } }
+    Employee: { description: Employee, content: { application/json: { schema: { type: object, required: [data], properties: { data: { $ref: '#/components/schemas/Employee' } } } } } }
+    Session: { description: Session, content: { application/json: { schema: { type: object, required: [data], properties: { data: { $ref: '#/components/schemas/Session' } } } } } }
+    Error: { description: Error, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } } }
+    Binary: { description: Download, headers: { Content-Disposition: { schema: { type: string } } }, content: { application/octet-stream: { schema: { type: string, format: binary } } } }
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties: { email: { type: string, format: email }, password: { type: string, minLength: 8 }, otp: { type: string, pattern: '^[0-9]{6}$' } }
+    CompanySummary:
+      type: object
+      required: [id, name, companyCode]
+      properties: { id: { type: string }, name: { type: string }, companyCode: { type: string } }
+    User:
+      type: object
+      required: [id, name, email, role]
+      properties: { id: { type: string }, name: { type: string }, email: { type: string, format: email }, role: { type: string, enum: [SUPER_ADMIN, COMPANY_ADMIN, HR, FINANCE, MANAGER, SUPERVISOR, EMPLOYEE] }, company: { oneOf: [{ $ref: '#/components/schemas/CompanySummary' }, { type: 'null' }] } }
+    Company:
+      type: object
+      required: [id, companyCode, name, plan, status]
+      properties: { id: { type: string }, companyCode: { type: string }, name: { type: string }, industry: { type: string }, plan: { type: string }, status: { type: string }, maxUsers: { type: integer }, userCount: { type: integer }, createdAt: { type: string, format: date-time } }
+    Employee:
+      type: object
+      required: [id, employeeId, status, user]
+      properties: { id: { type: string }, employeeId: { type: string }, department: { type: [string, 'null'] }, designation: { type: [string, 'null'] }, status: { type: string }, user: { $ref: '#/components/schemas/User' } }
+    Session:
+      type: object
+      required: [user, csrfToken]
+      properties: { user: { $ref: '#/components/schemas/User' }, csrfToken: { type: string } }
+    ListMeta:
+      type: object
+      required: [page, pageSize, total, totalPages]
+      properties: { page: { type: integer, minimum: 1 }, pageSize: { type: integer, minimum: 1 }, total: { type: integer, minimum: 0 }, totalPages: { type: integer, minimum: 0 } }
+    Money:
+      type: object
+      required: [amountMinor, currency]
+      properties: { amountMinor: { type: integer }, currency: { type: string, pattern: '^[A-Z]{3}$' } }
+    PlanDraft:
+      type: object
+      required: [name, code, pricing, trial, moduleIds, limits, features]
+      properties:
+        name: { type: string }
+        code: { type: string }
+        pricing: { type: object, required: [currency, monthlyMinor, annualMinor], properties: { currency: { type: string }, monthlyMinor: { type: integer }, annualMinor: { type: integer } } }
+        trial: { type: object, required: [enabled, days], properties: { enabled: { type: boolean }, days: { type: integer, minimum: 0 } } }
+        moduleIds: { type: array, items: { type: string } }
+        limits: { $ref: '#/components/schemas/EntitlementLimits' }
+        features: { type: array, items: { type: string } }
+    Plan:
+      allOf:
+        - { $ref: '#/components/schemas/PlanDraft' }
+        - { type: object, required: [id, status, versionCount], properties: { id: { type: string }, status: { type: string, enum: [DRAFT, PUBLISHED, ARCHIVED] }, currentVersionId: { type: [string, 'null'] }, versionCount: { type: integer } } }
+    PlanVersion:
+      allOf:
+        - { $ref: '#/components/schemas/PlanDraft' }
+        - { type: object, required: [id, planId, version, publishedAt], properties: { id: { type: string }, planId: { type: string }, version: { type: integer }, publishedAt: { type: string, format: date-time }, publishedBy: { type: string } } }
+    EntitlementLimits:
+      type: object
+      required: [employees, branches, storageGB, apiRequests]
+      properties: { employees: { type: integer, minimum: 0 }, branches: { type: integer, minimum: 0 }, storageGB: { type: integer, minimum: 0 }, apiRequests: { type: integer, minimum: 0 } }
+    EntitlementOverride:
+      type: object
+      required: [id, companyId, effect, reason, createdAt]
+      properties:
+        id: { type: string }
+        companyId: { type: string }
+        moduleId: { type: string }
+        limitKey: { type: string, enum: [employees, branches, storageGB, apiRequests] }
+        effect: { type: string, enum: [GRANT, DENY, SET_LIMIT] }
+        oldValue: {}
+        newValue: {}
+        limitValue: { type: integer }
+        reason: { type: string }
+        expiresAt: { type: [string, 'null'], format: date-time }
+        createdAt: { type: string, format: date-time }
+    EntitlementSnapshot:
+      type: object
+      required: [plan, modules, limits, overrides]
+      properties:
+        plan: { type: object, additionalProperties: true }
+        modules: { type: array, items: { type: object, required: [id, key, name, isEnabled, source], properties: { id: { type: string }, key: { type: string }, name: { type: string }, isEnabled: { type: boolean }, source: { type: string, enum: [PLAN, OVERRIDE_GRANT, OVERRIDE_DENY, NOT_INCLUDED] } } } }
+        limits: { $ref: '#/components/schemas/EntitlementLimits' }
+        overrides: { type: array, items: { $ref: '#/components/schemas/EntitlementOverride' } }
+    Subscription:
+      type: object
+      required: [id, companyId, planId, planVersionId, status, billingCycle, startDate]
+      properties:
+        id: { type: string }
+        companyId: { type: string }
+        planId: { type: string }
+        planVersionId: { type: string }
+        status: { type: string, enum: [TRIAL, ACTIVE, PAST_DUE, SUSPENDED, CANCELLED] }
+        billingCycle: { type: string, enum: [MONTHLY, ANNUAL] }
+        startDate: { type: string, format: date-time }
+        trialEndsAt: { type: [string, 'null'], format: date-time }
+        currentPeriodEnd: { type: [string, 'null'], format: date-time }
+        graceEndsAt: { type: [string, 'null'], format: date-time }
+    Branch:
+      type: object
+      required: [id, companyId, name, code]
+      properties: { id: { type: string }, companyId: { type: string }, name: { type: string }, code: { type: string }, latitude: { type: number }, longitude: { type: number }, geofenceRadiusMeters: { type: integer }, isActive: { type: boolean } }
+    Department:
+      type: object
+      required: [id, companyId, name, code]
+      properties: { id: { type: string }, companyId: { type: string }, name: { type: string }, code: { type: string }, branchIds: { type: array, items: { type: string } }, isActive: { type: boolean } }
+    Team:
+      type: object
+      required: [id, companyId, name]
+      properties: { id: { type: string }, companyId: { type: string }, name: { type: string }, departmentId: { type: string }, managerEmployeeId: { type: string }, supervisorEmployeeId: { type: string }, employeeIds: { type: array, items: { type: string } } }
+    ReportingLine:
+      type: object
+      required: [id, companyId, employeeId]
+      properties: { id: { type: string }, companyId: { type: string }, employeeId: { type: string }, managerEmployeeId: { type: [string, 'null'] }, supervisorEmployeeId: { type: [string, 'null'] }, effectiveFrom: { type: string, format: date } }
+    PermissionGrant:
+      type: object
+      required: [module, action]
+      properties: { module: { type: string }, action: { type: string, enum: [VIEW, CREATE, EDIT, DELETE, APPROVE, REJECT, EXPORT, OVERRIDE, PROCESS, FINALIZE, PUBLISH, CONFIGURE] } }
+    RoleDefinition:
+      type: object
+      required: [id, companyId, key, name, kind, locked, permissions, revision]
+      properties: { id: { type: string }, companyId: { type: string }, key: { type: string }, name: { type: string }, kind: { type: string, enum: [SYSTEM, TEMPLATE, CUSTOM] }, locked: { type: boolean }, permissions: { type: array, items: { type: string } }, revision: { type: integer } }
+    RoleAssignment:
+      type: object
+      required: [id, companyId, userId, roleDefinitionId, scopeType]
+      properties: { id: { type: string }, companyId: { type: string }, userId: { type: string }, roleDefinitionId: { type: string }, scopeType: { type: string, enum: [COMPANY, BRANCH, DEPARTMENT, TEAM, SELF] }, scopeId: { type: [string, 'null'] }, isPrimary: { type: boolean } }
+    AccessSnapshot:
+      type: object
+      required: [role, permissions, modules, roles, subscription]
+      properties: { role: { type: string }, permissions: { type: array, items: { type: string } }, modules: { type: array, items: { type: object, additionalProperties: true } }, roles: { type: array, items: { type: object, additionalProperties: true } }, subscription: { oneOf: [{ $ref: '#/components/schemas/Subscription' }, { type: 'null' }] } }
+    AttendanceEvent:
+      type: object
+      required: [id, employeeId, source, eventType, occurredAt]
+      properties: { id: { type: string }, employeeId: { type: string }, source: { type: string, enum: [WEB, MOBILE, MANUAL, CSV, API, BIOMETRIC] }, eventType: { type: string, enum: [CHECK_IN, CHECK_OUT] }, occurredAt: { type: string, format: date-time }, latitude: { type: number }, longitude: { type: number }, suspicious: { type: boolean } }
+    ApprovalDecision:
+      type: object
+      required: [actorId, action, createdAt]
+      properties: { actorId: { type: string }, action: { type: string, enum: [RECOMMEND, APPROVE, REJECT, COMPLETE] }, comment: { type: string }, createdAt: { type: string, format: date-time } }
+    SalaryVersion:
+      type: object
+      required: [id, employeeId, effectiveFrom, annualCtcMinor, currency]
+      properties: { id: { type: string }, employeeId: { type: string }, effectiveFrom: { type: string, format: date }, effectiveTo: { type: [string, 'null'], format: date }, annualCtcMinor: { type: integer }, currency: { type: string } }
+    PayrollRun:
+      type: object
+      required: [id, companyId, month, year, status, totalNetMinor, currency]
+      properties: { id: { type: string }, companyId: { type: string }, month: { type: integer }, year: { type: integer }, status: { type: string, enum: [DRAFT, CALCULATED, UNDER_REVIEW, APPROVED, FINALIZED, PUBLISHED] }, totalNetMinor: { type: integer }, currency: { type: string }, finalizedAt: { type: [string, 'null'], format: date-time }, publishedAt: { type: [string, 'null'], format: date-time } }
+    Payment:
+      type: object
+      required: [id, companyId, provider, status, amount]
+      properties: { id: { type: string }, companyId: { type: string }, provider: { type: string, enum: [RAZORPAY, PAYU, OFFLINE] }, status: { type: string, enum: [PENDING, SUCCESS, FAILED, REFUNDED] }, amount: { $ref: '#/components/schemas/Money' }, idempotencyKey: { type: string }, createdAt: { type: string, format: date-time } }
+    Invoice:
+      type: object
+      required: [id, companyId, invoiceNumber, status, total]
+      properties: { id: { type: string }, companyId: { type: string }, invoiceNumber: { type: string }, status: { type: string, enum: [DRAFT, ISSUED, PAID, VOID] }, total: { $ref: '#/components/schemas/Money' }, issuedAt: { type: string, format: date-time } }
+    AuditEvent:
+      type: object
+      required: [id, action, entityType, entityId, createdAt]
+      properties: { id: { type: string }, companyId: { type: [string, 'null'] }, actorId: { type: [string, 'null'] }, action: { type: string }, entityType: { type: string }, entityId: { type: string }, oldValue: {}, newValue: {}, requestId: { type: string }, createdAt: { type: string, format: date-time } }
+    ObjectEnvelope: { type: object, required: [data], properties: { data: {}, meta: { $ref: '#/components/schemas/ListMeta' } } }
+    EmptyEnvelope: { type: object, required: [data], properties: { data: { type: 'null' } } }
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties: { code: { type: string }, message: { type: string }, details: {}, requestId: { type: string } }

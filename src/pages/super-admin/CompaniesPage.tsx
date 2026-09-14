@@ -1,0 +1,581 @@
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { companiesApi, type Company, type CreateCompanyData } from '../../api/companies';
+import { type PlanData } from '../../api/subscriptions';
+import { extractError } from '../../utils/errorUtils';
+import { getPlanBadge } from '../../utils/planColors';
+import { useSaCompanies, useSaPlans } from '../../hooks/queries/useSaQueries';
+import { useDeleteCompany } from '../../hooks/mutations/useSaMutations';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
+import {
+  Building2, TrendingUp, Clock, AlertTriangle, Search,
+  Pencil, Trash2, X, Loader2, ChevronLeft, ChevronRight, Plus,
+  BarChart3,
+  FileText,
+  Shield,
+  Download,
+} from 'lucide-react';
+
+// ─── helpers ────────────────────────────────────────────────────────────────
+
+const quickActions = [
+  { icon: Download, label: 'Download Payroll' },
+  { icon: Shield, label: 'Manage Roles' },
+  { icon: FileText, label: 'Download Summary' },
+  { icon: BarChart3, label: 'View Reports' },
+];  
+const statusMeta: Record<string, { label: string; bg: string; color: string }> = {
+  ACTIVE:    { label: 'Active',    bg: '#dcfce7', color: '#15803d' },
+  TRIAL:     { label: 'Trial',     bg: '#fef9c3', color: '#a16207' },
+  GRACE_PERIOD: { label: 'Grace Period', bg: '#ffedd5', color: '#c2410c' },
+  EXPIRED:   { label: 'Expired',   bg: '#fee2e2', color: '#b91c1c' },
+  SUSPENDED: { label: 'Suspended', bg: '#f1f5f9', color: '#475569' },
+};
+
+const avatarColors = [
+  { bg: '#eef2ff', color: '#6366f1' }, { bg: '#f5f3ff', color: '#8b5cf6' },
+  { bg: '#f0f9ff', color: '#0ea5e9' }, { bg: '#f0fdf4', color: '#10b981' },
+  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fdf4ff', color: '#ec4899' },
+];
+
+const getAvatarColor = (name?: string) => avatarColors[(name ?? 'C').charCodeAt(0) % avatarColors.length];
+const initials = (name?: string) => (name ?? 'Company').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+
+const isExpiringSoon = (dateStr?: string) => {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  return d > new Date() && d < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+};
+
+const fmtDate = (dateStr?: string) => {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
+// ─── Add / Edit Modal ────────────────────────────────────────────────────────
+
+interface ModalProps {
+  company?: Company | null;
+  onClose: () => void;
+  onSave: () => void;
+}
+
+function CompanyModal({ company, plans, onClose, onSave }: ModalProps & { plans: PlanData[] }) {
+  const isEdit = !!company;
+  const initialPlan = company?.plan ?? (plans[0]?.type ?? '');
+  const initialTrialDays = plans.find((plan) => plan.type === initialPlan)?.defaultTrialDays;
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [form, setForm] = useState<CreateCompanyData>({
+    name: company?.name ?? '',
+    industry: company?.industry ?? '',
+    email: company?.email ?? '',
+    phone: company?.phone ?? '',
+    address: company?.address ?? '',
+    plan: initialPlan,
+    status: company?.status ?? 'TRIAL',
+    planExpiry: company?.planExpiry ? company.planExpiry.slice(0, 10) : '',
+    ...(!isEdit ? { adminName: '', adminEmail: '', acquisitionChannel: 'MANUAL_TRIAL' as const, billingCycle: 'Monthly' as const, trialDays: initialTrialDays, paymentStatus: 'PAID' as const, paymentReference: '', paymentNotes: '', reason: '' } : {}),
+  });
+
+  const set = (k: keyof CreateCompanyData, v: string | number) =>
+    setForm((f) => ({ ...f, [k]: v }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim()) { setError('Company name is required'); return; }
+    if (!isEdit) {
+      if (!form.adminName?.trim()) { setError('Admin name is required'); return; }
+      if (!form.adminEmail?.trim()) { setError('Admin email is required'); return; }
+    }
+    setSaving(true); setError('');
+    try {
+      if (isEdit && company) {
+        await companiesApi.update(company.id, form);
+        onSave();
+      } else {
+        const selectedPlan = plans.find((plan) => plan.type === form.plan);
+        await companiesApi.create({ ...form, planVersionId: selectedPlan?.currentVersionId?.id });
+        onSave();
+      }
+    } catch (err) {
+      setError(extractError(err, 'Failed to save company'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '9px 12px', border: '1.5px solid #e2e8f0',
+    borderRadius: '8px', fontSize: '13px', color: '#0f172a', outline: 'none',
+    fontFamily: 'Inter, sans-serif', backgroundColor: 'white',
+  };
+  const labelStyle: React.CSSProperties = { display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '5px' };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px',
+    }}>
+      <div style={{
+        backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '560px',
+        maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+      }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #f1f5f9' }}>
+          <div>
+            <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
+              {isEdit ? 'Edit Company' : 'Add New Company'}
+            </h2>
+            <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+              {isEdit ? 'Update company information' : 'Create a new client company'}
+            </p>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {error && (
+            <div style={{ padding: '10px 14px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontSize: '13px' }}>
+              {error}
+            </div>
+          )}
+
+          {/* Name + Industry */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div>
+              <label style={labelStyle}>Company Name *</label>
+              <input style={inputStyle} value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. SmartFactory Co." />
+            </div>
+            <div>
+              <label style={labelStyle}>Industry</label>
+              <input style={inputStyle} value={form.industry} onChange={(e) => set('industry', e.target.value)} placeholder="e.g. Manufacturing" />
+            </div>
+          </div>
+
+          {/* Email + Phone */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div>
+              <label style={labelStyle}>Email</label>
+              <input type="email" style={inputStyle} value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="contact@company.com" />
+            </div>
+            <div>
+              <label style={labelStyle}>Phone</label>
+              <input style={inputStyle} value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="+91 98765 43210" />
+            </div>
+          </div>
+
+          {/* Address */}
+          <div>
+            <label style={labelStyle}>Address</label>
+            <input style={inputStyle} value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="Full address" />
+          </div>
+
+          {/* Admin Credentials — create only */}
+          {!isEdit && (
+            <>
+              <div style={{ padding: '10px 14px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px' }}>
+                <p style={{ fontSize: '12px', fontWeight: 700, color: '#15803d', marginBottom: '2px' }}>Initial Admin Account</p>
+                <p style={{ fontSize: '11px', color: '#166534' }}>This person will be the Company Admin for this company.</p>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div>
+                  <label style={labelStyle}>Admin Name *</label>
+                  <input style={inputStyle} value={form.adminName ?? ''} onChange={(e) => set('adminName', e.target.value)} placeholder="e.g. John Smith" />
+                </div>
+                <div>
+                  <label style={labelStyle}>Admin Email *</label>
+                  <input type="email" style={inputStyle} value={form.adminEmail ?? ''} onChange={(e) => set('adminEmail', e.target.value)} placeholder="admin@company.com" />
+                </div>
+              </div>
+              <div style={{ padding: '10px 14px', backgroundColor: '#eff8ff', border: '1px solid #cce7f8', borderRadius: '8px', color: '#145d84', fontSize: '11px' }}>A 48-hour invitation will be sent after atomic provisioning. The admin verifies their email and creates their own password.</div>
+            </>
+          )}
+
+          {/* Plan + Status */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div>
+              <label style={labelStyle}>Plan</label>
+              <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.plan} onChange={(e) => {
+                const nextPlan = plans.find((plan) => plan.type === e.target.value);
+                setForm((current) => ({ ...current, plan: e.target.value, ...(!isEdit && current.acquisitionChannel === 'MANUAL_TRIAL' ? { trialDays: nextPlan?.defaultTrialDays } : {}) }));
+              }}>
+                {plans.map((p) => (
+                  <option key={p.type} value={p.type}>{p.name} — ₹{p.price.toLocaleString('en-IN')}/mo</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Acquisition</label>
+              <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.acquisitionChannel} onChange={(e) => set('acquisitionChannel', e.target.value)}>
+                <option value="MANUAL_TRIAL">Cardless trial</option>
+                <option value="MANUAL_OFFLINE">Offline paid</option>
+                <option value="RAZORPAY">Invite admin to pay online</option>
+                <option value="PAYU">Invite admin to pay with PayU</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Plan expiry */}
+          <div>
+            <label style={labelStyle}>{form.acquisitionChannel === 'MANUAL_TRIAL' ? 'Trial days' : 'Billing cycle'}</label>
+            {form.acquisitionChannel === 'MANUAL_TRIAL' ? <input type="number" min="1" max="365" style={inputStyle} value={form.trialDays ?? ''} placeholder="Use plan default" onChange={(e) => set('trialDays', Number(e.target.value))} /> : <select style={inputStyle} value={form.billingCycle} onChange={(e) => set('billingCycle', e.target.value)}><option>Monthly</option><option>Annual</option></select>}
+          </div>
+
+          {!isEdit && form.acquisitionChannel === 'MANUAL_OFFLINE' && (
+            <div style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', display: 'grid', gap: '10px' }}>
+              <div><p style={{ fontSize: '12px', fontWeight: 700, color: '#374151' }}>Offline payment record</p><p style={{ fontSize: '11px', color: '#64748b' }}>Optional physical/cash/bank-transfer payment status. It does not control access.</p></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}><select style={inputStyle} value={form.paymentStatus ?? 'PAID'} onChange={(e) => set('paymentStatus', e.target.value)}><option value="PAID">Paid offline</option></select><input style={inputStyle} placeholder="Receipt / reference" value={form.paymentReference ?? ''} onChange={(e) => set('paymentReference', e.target.value)} /></div>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', paddingTop: '4px' }}>
+            <button type="button" onClick={onClose} style={{
+              padding: '9px 20px', border: '1.5px solid #e2e8f0', borderRadius: '8px',
+              backgroundColor: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+              color: '#374151', fontFamily: 'Inter, sans-serif',
+            }}>
+              Cancel
+            </button>
+            <button type="submit" disabled={saving} style={{
+              padding: '9px 24px', backgroundColor: saving ? '#7ab8b6' : '#0d7470',
+              border: 'none', borderRadius: '8px', color: 'white',
+              fontSize: '13px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'Inter, sans-serif',
+            }}>
+              {saving && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />}
+              {isEdit ? 'Save Changes' : 'Add Company'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── View Modal ──────────────────────────────────────────────────────────────
+
+function ViewModal({ company, plans, onClose, onEdit }: { company: Company; plans: PlanData[]; onClose: () => void; onEdit: () => void }) {
+  const av = getAvatarColor(company.name);
+  const pm = getPlanBadge(company.plan, plans);
+  const sm = statusMeta[company.status];
+  const row = (label: string, value: string) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f8fafc' }}>
+      <span style={{ fontSize: '13px', color: '#64748b' }}>{label}</span>
+      <span style={{ fontSize: '13px', color: '#0f172a', fontWeight: 500 }}>{value}</span>
+    </div>
+  );
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
+      <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
+        <div style={{ padding: '24px', background: 'linear-gradient(135deg, #0d4a47, #0d7470)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: av.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: av.color, fontWeight: 800, fontSize: '16px' }}>
+              {initials(company.name)}
+            </div>
+            <div>
+          <h2 style={{ color: 'white', fontSize: '16px', fontWeight: 700 }}>{company.name}</h2>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', marginTop: '2px' }}>{company.companyCode}</p>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>{company.industry ?? '—'}</p>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.7)' }}><X size={20} /></button>
+        </div>
+
+        <div style={{ padding: '20px 24px' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+            <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, backgroundColor: pm?.bg, color: pm?.color, border: `1px solid ${pm?.border}` }}>{pm?.label}</span>
+            <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, backgroundColor: sm?.bg, color: sm?.color }}>{sm?.label}</span>
+          </div>
+          {row('Email', company.email ?? '—')}
+          {row('Phone', company.phone ?? '—')}
+          {row('Address', company.address ?? '—')}
+          {row('Max Users', String(company.maxUsers))}
+          {row('Active Users', String(company.userCount))}
+          {row('Plan Expiry', fmtDate(company.planExpiry))}
+          {row('Created On', fmtDate(company.createdAt))}
+        </div>
+
+        <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          <button onClick={onClose} style={{ padding: '8px 18px', border: '1.5px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: '#374151', fontFamily: 'Inter, sans-serif' }}>Close</button>
+          <button onClick={onEdit} style={{ padding: '8px 18px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Edit Company</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ───────────────────────────────────────────────────────────────
+
+export default function CompaniesPage() {
+  const qc = useQueryClient();
+  const [search,      setSearch]      = useState('');
+  const [planFilter,  setPlanFilter]  = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [modal,       setModal]       = useState<'add' | 'edit' | 'view' | null>(null);
+  const [selected,    setSelected]    = useState<Company | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Company | null>(null);
+  const [page,        setPage]        = useState(1);
+  const debouncedSearch = useDebouncedValue(search, 500);
+
+  const params: Record<string, string> = { page: String(page), limit: '8' };
+  if (debouncedSearch.trim().length >= 2) params.search = debouncedSearch.trim();
+  if (planFilter !== 'ALL') params.plan = planFilter;
+  if (statusFilter !== 'ALL') params.status = statusFilter;
+
+  const { data: compData, isLoading: loading } = useSaCompanies(params);
+  const { data: plans = [] } = useSaPlans();
+  const deleteCompany = useDeleteCompany();
+
+  const companies  = (compData?.companies  ?? []) as Company[];
+  const stats      = compData?.stats       ?? { total: 0, active: 0, trial: 0, expiringSoon: 0 };
+  const pagination = compData?.pagination  ?? { total: 0, page: 1, totalPages: 1 };
+
+  const handleDelete = () => {
+    if (!deleteConfirm) return;
+    deleteCompany.mutate(deleteConfirm.id, {
+      onSuccess: () => setDeleteConfirm(null),
+      onError: () => setDeleteConfirm(null),
+    });
+  };
+
+  const statsRow = [
+    { label: 'Total Companies', value: stats.total, icon: Building2,     iconBg: '#eff6ff', iconColor: '#3b82f6' },
+    { label: 'Active',          value: stats.active, icon: TrendingUp,    iconBg: '#f0fdf4', iconColor: '#16a34a' },
+    { label: 'On Trial',        value: stats.trial,  icon: Clock,         iconBg: '#fffbeb', iconColor: '#d97706' },
+    { label: 'Expiring Soon',   value: stats.expiringSoon, icon: AlertTriangle, iconBg: '#fef2f2', iconColor: '#dc2626' },
+  ];
+
+  const selectStyle: React.CSSProperties = {
+    padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px',
+    fontSize: '13px', color: '#374151', backgroundColor: 'white',
+    cursor: 'pointer', outline: 'none', fontFamily: 'Inter, sans-serif',
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div>
+          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Companies</h1>
+          <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage your platform and monitor client companies</p>
+        </div>
+        <button
+          onClick={() => { setSelected(null); setModal('add'); }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            padding: '9px 18px', backgroundColor: '#0d7470', color: 'white',
+            border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
+            cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          <Plus size={15} /> Add Company
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+        {statsRow.map((s) => (
+          <div key={s.label} style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '6px' }}>{s.label}</p>
+              <p style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a' }}>{s.value}</p>
+            </div>
+            <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: s.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <s.icon size={19} color={s.iconColor} />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Table Card */}
+      <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+
+        {/* Filters */}
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: '1', minWidth: '220px' }}>
+            <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            <input
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              placeholder="Search by company name, email or industry..."
+              style={{ width: '100%', paddingLeft: '36px', paddingRight: '12px', paddingTop: '8px', paddingBottom: '8px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#374151', backgroundColor: '#f8fafc' }}
+            />
+          </div>
+          <select value={planFilter} onChange={(e) => { setPlanFilter(e.target.value); setPage(1); }} style={selectStyle}>
+            <option value="ALL">All Plans</option>
+            {plans.map((p) => (
+              <option key={p.type} value={p.type}>{p.name}</option>
+            ))}
+          </select>
+          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} style={selectStyle}>
+            <option value="ALL">All Status</option>
+            <option value="ACTIVE">Active</option>
+            <option value="TRIAL">Trial</option>
+            <option value="GRACE_PERIOD">Grace Period</option>
+            <option value="EXPIRED">Expired</option>
+            <option value="SUSPENDED">Suspended</option>
+          </select>
+        </div>
+
+        {/* Table */}
+        {loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}>
+            <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
+            <span style={{ fontSize: '14px' }}>Loading companies...</span>
+          </div>
+        ) : companies.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px 24px' }}>
+            <Building2 size={40} color="#e2e8f0" style={{ margin: '0 auto 12px' }} />
+            <p style={{ fontSize: '14px', fontWeight: 600, color: '#94a3b8' }}>No companies found</p>
+            <p style={{ fontSize: '13px', color: '#cbd5e1', marginTop: '4px' }}>Try changing filters or add a new company</p>
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f8fafc' }}>
+                  {['Company', 'Plan', 'Users', 'Status', 'Expiry', 'Created On', 'Actions'].map((h) => (
+                    <th key={h} style={{ textAlign: 'left', padding: '10px 20px', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {companies.map((c, i) => {
+                  const av = getAvatarColor(c.name);
+                  const pm = getPlanBadge(c.plan, plans);
+                  const sm = statusMeta[c.status];
+                  const expWarn = isExpiringSoon(c.planExpiry);
+                  return (
+                    <tr key={c.id} onClick={() => { setSelected(c); setModal('view'); }} style={{ borderBottom: i < companies.length - 1 ? '1px solid #f8fafc' : 'none', cursor: 'pointer' }}>
+                      <td style={{ padding: '13px 20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
+                          <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: av.bg, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: av.color, fontWeight: 700, fontSize: '12px' }}>
+                            {initials(c.name)}
+                          </div>
+                          <div>
+                            <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap' }}>{c.name}</p>
+                            <p style={{ fontSize: '11px', color: '#64748b' }}>{c.companyCode} · {c.industry ?? '—'}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '13px 20px' }}>
+                        <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, backgroundColor: pm?.bg, color: pm?.color, border: `1px solid ${pm?.border}`, whiteSpace: 'nowrap' }}>{pm?.label}</span>
+                      </td>
+                      <td style={{ padding: '13px 20px', fontSize: '13px', color: '#374151', fontWeight: 500 }}>
+                        {c.userCount} / {c.maxUsers}
+                      </td>
+                      <td style={{ padding: '13px 20px' }}>
+                        <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, backgroundColor: sm?.bg, color: sm?.color }}>{sm?.label}</span>
+                      </td>
+                      <td style={{ padding: '13px 20px' }}>
+                        <p style={{ fontSize: '13px', color: expWarn ? '#dc2626' : '#374151', fontWeight: expWarn ? 600 : 400, whiteSpace: 'nowrap' }}>{fmtDate(c.planExpiry)}</p>
+                        {expWarn && <p style={{ fontSize: '11px', color: '#dc2626' }}>Expiring soon</p>}
+                      </td>
+                      <td style={{ padding: '13px 20px', fontSize: '13px', color: '#64748b', whiteSpace: 'nowrap' }}>{fmtDate(c.createdAt)}</td>
+                      <td style={{ padding: '13px 20px' }}>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button onClick={(e) => { e.stopPropagation(); setSelected(c); setModal('edit'); }} title="Edit" style={{ width: '30px', height: '30px', border: '1px solid #e2e8f0', borderRadius: '7px', backgroundColor: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}><Pencil size={14} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm(c); }} title="Delete" style={{ width: '30px', height: '30px', border: '1px solid #fee2e2', borderRadius: '7px', backgroundColor: '#fef2f2', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#dc2626' }}><Trash2 size={14} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {pagination.totalPages > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderTop: '1px solid #f1f5f9' }}>
+            <span style={{ fontSize: '13px', color: '#64748b' }}>
+              Showing {(pagination.page - 1) * 8 + 1}–{Math.min(pagination.page * 8, pagination.total)} of {pagination.total} companies
+            </span>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button disabled={page === 1} onClick={() => setPage((p) => p - 1)} style={{ width: '32px', height: '32px', border: '1px solid #e2e8f0', borderRadius: '7px', backgroundColor: page === 1 ? '#f8fafc' : 'white', cursor: page === 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: page === 1 ? '#cbd5e1' : '#374151' }}><ChevronLeft size={15} /></button>
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((p) => (
+                <button key={p} onClick={() => setPage(p)} style={{ width: '32px', height: '32px', border: '1px solid #e2e8f0', borderRadius: '7px', backgroundColor: p === page ? '#0d7470' : 'white', color: p === page ? 'white' : '#374151', cursor: 'pointer', fontSize: '13px', fontWeight: p === page ? 700 : 400 }}>{p}</button>
+              ))}
+              <button disabled={page === pagination.totalPages} onClick={() => setPage((p) => p + 1)} style={{ width: '32px', height: '32px', border: '1px solid #e2e8f0', borderRadius: '7px', backgroundColor: page === pagination.totalPages ? '#f8fafc' : 'white', cursor: page === pagination.totalPages ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: page === pagination.totalPages ? '#cbd5e1' : '#374151' }}><ChevronRight size={15} /></button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
+      {(modal === 'add' || modal === 'edit') && (
+        <CompanyModal
+          company={modal === 'edit' ? selected : null}
+          plans={plans}
+          onClose={() => setModal(null)}
+          onSave={() => {
+            setModal(null);
+            void qc.invalidateQueries({ queryKey: ['sa', 'companies'] });
+          }}
+        />
+      )}
+
+      {modal === 'view' && selected && (
+        <ViewModal
+          company={selected}
+          plans={plans}
+          onClose={() => setModal(null)}
+          onEdit={() => setModal('edit')}
+        />
+      )}
+
+      {/* Delete Confirm */}
+      {deleteConfirm && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '14px', padding: '28px', maxWidth: '380px', width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+            <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+              <Trash2 size={20} color="#dc2626" />
+            </div>
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>Archive Company?</h3>
+            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '20px' }}>
+              Are you sure you want to archive <strong>{deleteConfirm.name}</strong>? The company will be hidden from all lists and its subscription deactivated. Data is preserved and not permanently deleted.
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button onClick={() => setDeleteConfirm(null)} style={{ padding: '8px 18px', border: '1.5px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: '#374151', fontFamily: 'Inter, sans-serif' }}>Cancel</button>
+              <button onClick={handleDelete} style={{ padding: '8px 18px', backgroundColor: '#dc2626', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Archive</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* Quick Actions */}
+      <div style={{
+        backgroundColor: 'white', borderRadius: '12px',
+        border: '1px solid #e2e8f0', padding: '18px 22px',
+      }}>
+        <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '14px' }}>
+          QUICK ACTIONS
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+          {quickActions.map((q) => (
+            <button key={q.label} style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
+              padding: '18px 12px', borderRadius: '10px',
+              border: '1px solid #e2e8f0', backgroundColor: 'white',
+              cursor: 'pointer', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s',
+            }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#f8fafc'; (e.currentTarget as HTMLElement).style.borderColor = '#0d7470'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'white'; (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0'; }}
+            >
+              <q.icon size={22} color="#0d7470" />
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>{q.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
