@@ -1,46 +1,37 @@
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Activity, BarChart2, Bell, Blocks, Building2, CalendarCheck, CheckSquare, CreditCard, GitBranch, KeyRound, LayoutDashboard, LifeBuoy, LogOut, Settings, Shield, ShieldCheck, UserCog, Users } from 'lucide-react';
-import { useAuthStore } from '../../store/authStore';
-import { useAccess } from '../../hooks/queries/useAccess';
-import { routeVisible } from '../../config/routeAccess';
+import { Activity, BarChart2, Blocks, Building2, CalendarCheck, CheckSquare, CreditCard, GitBranch, KeyRound, LayoutDashboard, LifeBuoy, Settings, Shield, ShieldCheck, UserCog, Users } from 'lucide-react';
+import RoleSidebar, { type RoleNavGroup } from './RoleSidebar';
 
-type Item = { to: string; label: string; Icon: any; permission?: string; module?: string; recovery?: boolean };
-const groups: Array<{ label: string; items: Item[] }> = [
-  { label: 'Overview', items: [
-    { to: '/company-admin/dashboard', label: 'Dashboard', Icon: LayoutDashboard, permission: 'DASHBOARD.VIEW', module: 'Dashboard' },
-    { to: '/company-admin/notifications', label: 'Notifications', Icon: Bell },
-    { to: '/company-admin/onboarding', label: 'Setup checklist', Icon: CheckSquare },
+const groups: RoleNavGroup[] = [
+  { label: 'Work', entries: [
+    { key: 'people', label: 'People', Icon: Users, children: [
+      { to: '/company-admin/workforce', label: 'Employees', Icon: Users },
+      { to: '/company-admin/departments', label: 'Organization', Icon: Building2 },
+    ] },
+    { key: 'time-attendance', label: 'Time & attendance', Icon: CalendarCheck, children: [
+      { to: '/company-admin/attendance', label: 'Attendance', Icon: CalendarCheck },
+      { to: '/company-admin/attendance-integrations', label: 'Attendance policy', Icon: ShieldCheck },
+    ] },
+    { to: '/company-admin/approvals', label: 'Approvals', Icon: CheckSquare },
+    { to: '/company-admin/payroll/overview', label: 'Payroll', Icon: CreditCard },
+    { to: '/company-admin/reports', label: 'Reports', Icon: BarChart2 },
   ] },
-  { label: 'Workforce', items: [
-    { to: '/company-admin/workforce', label: 'Employees', Icon: Users, permission: 'EMPLOYEE_MANAGEMENT.VIEW', module: 'Employee Management' },
-    { to: '/company-admin/attendance', label: 'Attendance', Icon: CalendarCheck, permission: 'ATTENDANCE.VIEW', module: 'Attendance' },
-    { to: '/company-admin/departments', label: 'Organization', Icon: Building2, permission: 'ORGANIZATION.VIEW', module: 'Organization' },
-    { to: '/company-admin/approvals', label: 'Approvals', Icon: CheckSquare, permission: 'APPROVALS.VIEW', module: 'Approvals' },
-    { to: '/company-admin/payroll/overview', label: 'Payroll', Icon: CreditCard, permission: 'PAYROLL.VIEW', module: 'Payroll' },
-    { to: '/company-admin/reports', label: 'Reports', Icon: BarChart2, permission: 'REPORTS_ANALYTICS.VIEW', module: 'Reports & Analytics' },
-    { to: '/company-admin/attendance-integrations', label: 'Attendance policy', Icon: ShieldCheck, permission: 'ATTENDANCE.VIEW', module: 'Attendance' },
+  { label: 'Administration', entries: [
+    { key: 'access-control', label: 'Access control', Icon: Shield, children: [
+      { to: '/company-admin/users', label: 'Users & access', Icon: UserCog },
+      { to: '/company-admin/settings/roles', label: 'Roles & scopes', Icon: Shield },
+    ] },
+    { to: '/company-admin/settings/workflows', label: 'Workflows', Icon: GitBranch },
+    { to: '/company-admin/activity', label: 'Activity log', Icon: Activity },
+    { to: '/company-admin/settings/company', label: 'Company settings', Icon: Settings },
   ] },
-  { label: 'Administration', items: [
-    { to: '/company-admin/users', label: 'Users & access', Icon: UserCog, permission: 'EMPLOYEE_MANAGEMENT.VIEW', module: 'Employee Management' },
-    { to: '/company-admin/settings/roles', label: 'Roles & scopes', Icon: Shield, permission: 'ROLES_PERMISSIONS.VIEW', module: 'Roles & Permissions' },
-    { to: '/company-admin/settings/workflows', label: 'Workflows', Icon: GitBranch, permission: 'APPROVALS.CONFIGURE', module: 'Approvals' },
-    { to: '/company-admin/activity', label: 'Activity', Icon: Activity },
-    { to: '/company-admin/settings/company', label: 'Settings', Icon: Settings },
-  ] },
-  { label: 'Plan & help', items: [
+  { label: 'Plan', entries: [
     { to: '/company-admin/modules', label: 'Plan and modules', Icon: Blocks },
-    { to: '/company-admin/plan', label: 'Subscription & billing', Icon: CreditCard, recovery: true },
-    { to: '/company-admin/account-security', label: 'Account & security', Icon: KeyRound, recovery: true },
-    { to: '/company-admin/support', label: 'Support', Icon: LifeBuoy, recovery: true },
+    { to: '/company-admin/plan', label: 'Subscription & billing', Icon: CreditCard },
   ] },
 ];
 
-export default function CompanyAdminSidebar() {
-  const navigate = useNavigate(); const location = useLocation(); const { logout } = useAuthStore(); const access = useAccess();
-  const toWithContext = (path: string) => location.search.includes('companyId=') ? { pathname: path, search: location.search } : path;
-  const visible = (item: Item) => routeVisible(access, item.to);
-  return <aside className="ca-sidebar"><div className="sidebar-brand"><div>V</div><span><strong>VOOK</strong><small>Company workspace</small></span></div><nav>{groups.map((group) => {
-    const items = group.items.filter(visible); if (!items.length) return null;
-    return <section key={group.label}><p>{group.label}</p>{items.map(({ to, label, Icon }) => <NavLink key={to} to={toWithContext(to)} className={({ isActive }) => isActive ? 'is-active' : ''}><Icon size={16} /><span>{label}</span></NavLink>)}</section>;
-  })}</nav><div className="sidebar-user"><button onClick={async () => { await logout(); navigate('/login'); }}><LogOut size={16} /> Sign out</button></div></aside>;
+interface CompanyAdminSidebarProps { mobileOpen?: boolean; onMobileClose?: () => void }
+
+export default function CompanyAdminSidebar(props: CompanyAdminSidebarProps) {
+  return <RoleSidebar {...props} portalKey="company-admin" roleLabel="Company Admin" workspaceLabel="Company workspace" preserveSearch dashboard={{ to: '/company-admin/dashboard', label: 'Dashboard', Icon: LayoutDashboard }} groups={groups} feature={{ to: '/company-admin/onboarding', eyebrow: 'Company checklist', label: 'Finish setup', Icon: CheckSquare }} footerLinks={[{ to: '/company-admin/support', label: 'Support', Icon: LifeBuoy }]} accountLink={{ to: '/company-admin/account-security', label: 'Account & security', Icon: KeyRound }} />;
 }

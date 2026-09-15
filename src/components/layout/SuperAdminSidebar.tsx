@@ -1,32 +1,30 @@
-import { NavLink, useNavigate } from 'react-router-dom';
-import { Activity, Bell, Building2, CreditCard, Headphones, KeyRound, LayoutDashboard, LogOut, ReceiptIndianRupee, Settings, ShieldCheck, Users } from 'lucide-react';
-import { useAuthStore } from '../../store/authStore';
+import { Activity, Bell, Building2, CreditCard, Headphones, KeyRound, LayoutDashboard, ReceiptIndianRupee, Settings, ShieldCheck, Users } from 'lucide-react';
+import RoleSidebar, { type RoleNavGroup } from './RoleSidebar';
 
-const sections = [
-  { label: 'Control plane', items: [
-    { label: 'Dashboard', Icon: LayoutDashboard, to: '/dashboard' },
-    { label: 'Organizations', Icon: Building2, to: '/companies' },
-    { label: 'Plan & subscriptions', Icon: CreditCard, to: '/subscriptions' },
-    { label: 'Billing', Icon: ReceiptIndianRupee, to: '/payments' },
+const groups: RoleNavGroup[] = [
+  { label: 'Customers', entries: [
+    { to: '/companies', label: 'Organizations', Icon: Building2 },
+    { key: 'commercial', label: 'Commercial', Icon: CreditCard, children: [
+      { to: '/subscriptions', label: 'Plans & subscriptions', Icon: CreditCard },
+      { to: '/payments', label: 'Billing & payments', Icon: ReceiptIndianRupee },
+    ] },
   ] },
-  { label: 'Operations', items: [
-    { label: 'Employees', Icon: Users, to: '/platform-employees' },
-    { label: 'Support', Icon: Headphones, to: '/support' },
-    { label: 'Announcements', Icon: Bell, to: '/notifications-admin' },
-    { label: 'Activity', Icon: Activity, to: '/activity' },
+  { label: 'Operations', entries: [
+    { to: '/platform-employees', label: 'Employees', Icon: Users },
+    { to: '/notifications-admin', label: 'Announcements', Icon: Bell },
+    { to: '/activity', label: 'Activity log', Icon: Activity },
   ] },
-  { label: 'Platform', items: [
-    { label: 'Audit & security', Icon: ShieldCheck, to: '/audit' },
-    { label: 'Integrations', Icon: KeyRound, to: '/integrations' },
-    { label: 'System settings', Icon: Settings, to: '/settings' },
+  { label: 'Platform', entries: [
+    { key: 'platform-controls', label: 'Platform controls', Icon: ShieldCheck, children: [
+      { to: '/audit', label: 'Audit & security', Icon: ShieldCheck },
+      { to: '/integrations', label: 'Integrations', Icon: KeyRound },
+      { to: '/settings', label: 'System settings', Icon: Settings },
+    ] },
   ] },
 ];
 
-export default function SuperAdminSidebar() {
-  const navigate = useNavigate(); const { user, logout } = useAuthStore();
-  return <aside className="sa-sidebar">
-    <div className="sidebar-brand"><div>V</div><span><strong>VOOK</strong><small>Control plane</small></span></div>
-    <nav>{sections.map((section) => <section key={section.label}><p>{section.label}</p>{section.items.map(({ label, Icon, to }) => <NavLink key={to} to={to} className={({ isActive }) => isActive ? 'is-active' : ''}><Icon size={16} /><span>{label}</span></NavLink>)}</section>)}</nav>
-    <div className="sidebar-user"><div><span>{user?.name?.charAt(0) ?? 'A'}</span><p><strong>{user?.name}</strong><small>Super Admin</small></p></div><button onClick={async () => { await logout(); navigate('/login'); }}><LogOut size={16} /> Sign out</button></div>
-  </aside>;
+interface SuperAdminSidebarProps { mobileOpen?: boolean; onMobileClose?: () => void }
+
+export default function SuperAdminSidebar(props: SuperAdminSidebarProps) {
+  return <RoleSidebar {...props} portalKey="super-admin" roleLabel="Super Admin" workspaceLabel="Control plane" dashboard={{ to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard }} groups={groups} footerLinks={[{ to: '/support', label: 'Support', Icon: Headphones }]} accountLink={{ to: '/security', label: 'Account security', Icon: KeyRound }} />;
 }

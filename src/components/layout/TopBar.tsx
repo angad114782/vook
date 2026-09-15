@@ -3,22 +3,23 @@ import { useAuthStore } from '../../store/authStore';
 import GlobalSearch from '../search/GlobalSearch';
 import { useNotificationCenter } from '../../hooks/useNotificationCenter';
 import NotificationBell from '../notifications/NotificationBell';
+import { SidebarMobileTrigger } from './RoleSidebar';
 
-export default function TopBar() {
+export default function TopBar({ onOpenNavigation }: { onOpenNavigation?: () => void }) {
   const { user } = useAuthStore();
   const { refresh } = useNotificationCenter();
 
   return (
-    <header style={header}>
-      <GlobalSearch />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <button onClick={() => void refresh()} style={icon} aria-label="Refresh notifications">
+    <header className="app-topbar" style={header}>
+      <div className="app-topbar__leading">{onOpenNavigation && <SidebarMobileTrigger onClick={onOpenNavigation} />}<GlobalSearch /></div>
+      <div className="app-topbar__actions">
+        <button className="app-topbar__action" onClick={() => void refresh()} style={icon} aria-label="Refresh notifications">
           <RefreshCw size={15} />
         </button>
         <NotificationBell supportPath="/support" inboxPath="/notifications" />
-        <div style={profile}>
+        <div className="app-topbar__profile" style={profile}>
           <div style={avatar}>{user?.name?.charAt(0) ?? 'A'}</div>
-          <div>
+          <div className="app-topbar__profile-copy">
             <p style={profileName}>{user?.name}</p>
             <p style={profileRole}>Super Admin</p>
           </div>

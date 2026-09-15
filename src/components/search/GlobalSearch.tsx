@@ -61,11 +61,11 @@ export default function GlobalSearch() {
   };
 
   const count = flat.length;
-  return <div style={{ position: 'relative', width: '280px' }}>
+  return <div className="global-search" style={{ position: 'relative' }}>
     <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
     <input ref={inputRef} value={value} onChange={(e) => setValue(e.target.value)} placeholder="Search people, companies, IDs..." aria-label="Global search" style={{ width: '100%', padding: '8px 32px 8px 36px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', color: '#0f172a', outline: 'none', backgroundColor: '#f8fafc', fontFamily: 'Inter, sans-serif' }} />
     {value && <button onClick={() => { setValue(''); setData(null); }} aria-label="Clear search" style={{ position: 'absolute', right: 8, top: 7, border: 0, background: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={14} /></button>}
-    {data && <div role="listbox" style={{ position: 'absolute', top: 44, left: 0, width: 360, maxHeight: 420, overflowY: 'auto', background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, boxShadow: '0 12px 30px rgba(15,23,42,.14)', zIndex: 100 }}>
+    {data && <div className="global-search__results" role="listbox" style={{ position: 'absolute', top: 44, left: 0, width: 360, maxHeight: 420, overflowY: 'auto', background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, boxShadow: '0 12px 30px rgba(15,23,42,.14)', zIndex: 100 }}>
       {count === 0 ? <p style={{ padding: 16, fontSize: 12, color: '#64748b' }}>No matching records.</p> : groups.map((g) => data[g.key].length > 0 && <div key={g.key}><p style={{ padding: '10px 12px 5px', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>{g.label}</p>{data[g.key].map((item) => { const index = flat.indexOf(item); const Icon = g.icon; return <button key={`${item.type}-${item.id}`} role="option" aria-selected={index === active} onMouseEnter={() => setActive(index)} onClick={() => select(item)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 12px', border: 0, background: index === active ? '#f0fdfa' : 'white', textAlign: 'left', cursor: 'pointer' }}><Icon size={15} color="#0d7470" /><span style={{ minWidth: 0, flex: 1 }}><span style={{ display: 'block', fontSize: 12, color: '#0f172a', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span><span style={{ display: 'block', fontSize: 10, color: '#64748b' }}>{item.companyCode ?? item.employeeId ?? item.subtitle}</span></span></button>; })}</div>)}
     </div>}
   </div>;
