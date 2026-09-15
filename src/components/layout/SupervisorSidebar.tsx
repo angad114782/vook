@@ -1,11 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Clock, CalendarDays, CheckSquare, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Clock, CalendarDays, CheckSquare, Settings, LogOut, Bell } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useAccess } from '../../hooks/queries/useAccess';
 import { routeVisible } from '../../config/routeAccess';
 
 const NAV = [
   { to: '/supervisor/dashboard',       label: 'Dashboard',        Icon: LayoutDashboard },
+  { to: '/supervisor/notifications',   label: 'Notifications',    Icon: Bell },
   { to: '/supervisor/workforce',       label: 'Workforce',        Icon: Users },
   { to: '/supervisor/attendance',      label: 'Attendance',       Icon: Clock },
   { to: '/supervisor/shifts',          label: 'Shift Management', Icon: CalendarDays },

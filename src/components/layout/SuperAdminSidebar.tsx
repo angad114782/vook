@@ -11,9 +11,8 @@ const sections = [
   ] },
   { label: 'Operations', items: [
     { label: 'Employees', Icon: Users, to: '/platform-employees' },
-    { label: 'Users & access', Icon: Users, to: '/users-access' },
     { label: 'Support', Icon: Headphones, to: '/support' },
-    { label: 'Notifications', Icon: Bell, to: '/notifications-admin' },
+    { label: 'Announcements', Icon: Bell, to: '/notifications-admin' },
     { label: 'Activity', Icon: Activity, to: '/activity' },
   ] },
   { label: 'Platform', items: [

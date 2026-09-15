@@ -4,6 +4,4 @@ export interface Payment { id: string; companyId?: string; company?: { name: str
 export const paymentsApi = {
   getAll: (params?: Record<string, string>) => api.get<{ payments: Payment[]; pagination: { total: number; page: number; totalPages: number } }>('/payments', { params }),
   mine: () => api.get<Payment[]>('/payments/mine'),
-  createOffline: (data: { companyId: string; amount?: number; status?: 'PENDING' | 'PAID'; reference?: string; notes?: string }) => api.post<Payment>('/payments/offline', data),
-  update: (id: string, data: Partial<Pick<Payment, 'status' | 'reference' | 'notes'>>) => api.patch<Payment>(`/payments/${id}`, data),
 };

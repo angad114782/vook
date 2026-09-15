@@ -24,40 +24,18 @@ export interface CompaniesResponse {
   stats: { total: number; active: number; trial: number; expiringSoon: number };
 }
 
-export interface CreateCompanyData {
+export interface UpdateCompanyData {
   name: string;
   industry?: string;
   email?: string;
   phone?: string;
   address?: string;
-  plan?: string;
-  planVersionId?: string;
-  status?: string;
-  maxUsers?: number;
-  planExpiry?: string;
-  adminName?: string;
-  adminEmail?: string;
-  acquisitionChannel?: 'MANUAL_TRIAL' | 'MANUAL_OFFLINE' | 'RAZORPAY' | 'PAYU';
-  billingCycle?: 'Monthly' | 'Annual' | 'Quarterly';
-  trialDays?: number;
-  reason?: string;
-  paymentStatus?: 'PENDING' | 'PAID';
-  paymentReference?: string;
-  paymentNotes?: string;
-  paymentDate?: string;
-}
-
-export interface CreateCompanyResponse extends Company {
-  adminEmail: string;
-  invitationSent: boolean;
-  invitationToken?: string;
 }
 
 export const companiesApi = {
   getAll: (params?: Record<string, string>) =>
     api.get<CompaniesResponse>('/companies', { params }),
   getOne: (id: string) => api.get<Company>(`/companies/${id}`),
-  create: (data: CreateCompanyData) => api.post<CreateCompanyResponse>('/companies', data),
-  update: (id: string, data: Partial<CreateCompanyData>) => api.put<Company>(`/companies/${id}`, data),
+  update: (id: string, data: Partial<UpdateCompanyData>) => api.put<Company>(`/companies/${id}`, data),
   delete: (id: string) => api.delete(`/companies/${id}`),
 };

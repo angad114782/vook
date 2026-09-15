@@ -101,7 +101,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         items: current.items.filter((item) => !ids.includes(item.id)),
         unreadCount: Math.max(0, current.unreadCount - ids.length),
       } : current);
-      void markIdsRead(ids).catch(() => refresh());
+      void markIdsRead(ids)
+        .then(() => queryClient.invalidateQueries({ queryKey: ['notifications', 'inbox'] }))
+        .catch(() => refresh());
     };
     const onClosed = (event: Event) => {
       const ticketId = (event as CustomEvent<{ ticketId?: string }>).detail?.ticketId;
@@ -121,7 +123,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     if (!socket) return;
     const onCreated = (notification: AppNotification) => {
       if (notification.entityType && notification.entityId && activeEntityRef.current?.type === notification.entityType && activeEntityRef.current.id === notification.entityId) {
-        void notificationsApi.markManyRead([notification.id]);
+        void notificationsApi.markManyRead([notification.id]).then(
+          () => queryClient.invalidateQueries({ queryKey: ['notifications', 'inbox'] }),
+          () => refresh(),
+        );
         return;
       }
       queryClient.setQueryData<NotificationListResponse>(notificationQueryKey, (current) => {
@@ -129,13 +134,33 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         if (base.items.some((item) => item.id === notification.id)) return base;
         return { ...base, items: [notification, ...base.items], unreadCount: base.unreadCount + 1 };
       });
+      void queryClient.invalidateQueries({ queryKey: ['notifications', 'inbox'] });
     };
     socket.on('notification:created', onCreated);
     return () => { socket.off('notification:created', onCreated); };
-  }, [socket, queryClient]);
+  }, [socket, queryClient, refresh]);
 
   const data = normalize(query.data ?? { items: [], nextCursor: null, unreadCount: 0 });
   const groups = useMemo(() => groupNotifications(data.items), [data.items]);
+
+  const markNotificationRead = async (notification: AppNotification) => {
+    queryClient.setQueryData<NotificationListResponse>(notificationQueryKey, (current) => {
+      if (!current || !current.items.some((item) => item.id === notification.id)) return current;
+      return {
+        ...current,
+        items: current.items.filter((item) => item.id !== notification.id),
+        unreadCount: Math.max(0, current.unreadCount - 1),
+      };
+    });
+    try {
+      await notificationsApi.markRead(notification.id);
+      publishSupportReadReceipts([notification]);
+      publishSupportStatusUpdate(notification);
+      await queryClient.invalidateQueries({ queryKey: ['notifications', 'inbox'] });
+    } catch {
+      await refresh();
+    }
+  };
 
   const markGroupRead = async (group: NotificationGroup) => {
     queryClient.setQueryData<NotificationListResponse>(notificationQueryKey, (current) => current ? {
@@ -147,6 +172,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       await markIdsRead(group.ids);
       publishSupportReadReceipts([group.latest]);
       publishSupportStatusUpdate(group.latest);
+      await queryClient.invalidateQueries({ queryKey: ['notifications', 'inbox'] });
     } catch {
       await refresh();
     }
@@ -159,13 +185,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       await notificationsApi.markAllRead();
       publishSupportReadReceipts(notifications);
       notifications.forEach(publishSupportStatusUpdate);
+      await queryClient.invalidateQueries({ queryKey: ['notifications', 'inbox'] });
     } catch {
       await refresh();
     }
   };
 
   return (
-    <NotificationCenterContext.Provider value={{ items: data.items, groups, unread: data.unreadCount, loading: query.isLoading, refresh, markGroupRead, markAllRead }}>
+      <NotificationCenterContext.Provider value={{ items: data.items, groups, unread: data.unreadCount, loading: query.isLoading, refresh, markNotificationRead, markGroupRead, markAllRead }}>
       {children}
     </NotificationCenterContext.Provider>
   );

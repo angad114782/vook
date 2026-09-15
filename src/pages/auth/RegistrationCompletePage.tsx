@@ -1,16 +1,78 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, MailCheck } from 'lucide-react';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 import { onboardingApi } from '../../api/onboarding';
+import { isMockMode } from '../../config/runtime';
+
 export default function RegistrationCompletePage() {
-  const [params] = useSearchParams(); const trial = params.get('mode') === 'trial'; const registrationId = params.get('registration');
-  const [status, setStatus] = useState(trial ? 'Check your inbox to verify your email and start the trial.' : 'Confirming your payment…');
-  const [resending, setResending] = useState(false); const [resent, setResent] = useState(false);
+  const [params] = useSearchParams();
+  const registrationId = params.get('registration');
+  const [status, setStatus] = useState('Confirming your payment…');
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
+
+  const checkStatus = useCallback(async () => {
+    if (!registrationId) {
+      setStatus('Payment reference missing. Please contact support.');
+      return false;
+    }
+    try {
+      const response = await onboardingApi.status(registrationId);
+      if (response.data.status === 'PAID') {
+        setStatus('Payment confirmed. Check your inbox to verify your email, then sign in.');
+        return true;
+      }
+      if (response.data.status === 'FAILED') {
+        setStatus('Payment failed. Please try registering again.');
+        return true;
+      }
+    } catch {
+      // Keep polling while the checkout result is being confirmed.
+    }
+    return false;
+  }, [registrationId]);
+
   useEffect(() => {
-    if (trial) return; const id = registrationId; if (!id) { setStatus('Payment reference missing.'); return; }
-    const timer = window.setInterval(() => onboardingApi.status(id).then((response) => { if (response.data.status === 'PAID') { setStatus('Payment confirmed. Check your inbox to verify your email, then sign in.'); clearInterval(timer); } else if (response.data.status === 'FAILED') { setStatus('Payment failed. Please try registering again.'); clearInterval(timer); } }).catch(() => undefined), 2500);
-    return () => clearInterval(timer);
-  }, [registrationId, trial]);
-  const resend = async () => { const id = params.get('registration'); if (!id) return; setResending(true); try { await onboardingApi.resendVerification(id); setResent(true); } catch { setStatus('Could not send the email. Contact support or try again.'); } finally { setResending(false); } };
-  return <main className="registration-result"><div>{trial ? <MailCheck size={30} /> : <CheckCircle2 size={30} />}<h1>{trial ? 'Verify to start your trial' : 'Almost there'}</h1><p>{status}</p>{registrationId && <Link className="admin-button" to={`/verify-email?token=${encodeURIComponent(registrationId)}`}>Verify demo email</Link>}{!trial && status.startsWith('Payment confirmed') && <button className="admin-button" onClick={resend} disabled={resending || resent}>{resent ? 'Verification email sent' : resending ? 'Sending…' : 'Resend verification email'}</button>}<Link to="/login">Back to sign in</Link></div></main>;
+    if (!registrationId) {
+      setStatus('Payment reference missing. Please contact support.');
+      return;
+    }
+    let active = true;
+    let timer: number | undefined;
+    const poll = async () => {
+      const done = await checkStatus();
+      if (active && !done) timer = window.setTimeout(poll, 2500);
+    };
+    void poll();
+    return () => {
+      active = false;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [checkStatus, registrationId]);
+
+  const resend = async () => {
+    if (!registrationId) return;
+    setResending(true);
+    try {
+      await onboardingApi.resendVerification(registrationId);
+      setResent(true);
+    } catch {
+      setStatus('Could not send the email. Contact support or try again.');
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const paid = status.startsWith('Payment confirmed');
+  const failed = status.startsWith('Payment failed');
+
+  return <main className="registration-result"><div>
+    {paid ? <CheckCircle2 size={30} /> : failed ? <CheckCircle2 size={30} /> : <Loader2 size={30} className="spin" />}
+    <h1>{paid ? 'Verify your email' : failed ? 'Payment could not be confirmed' : 'Confirming your payment'}</h1>
+    <p>{status}</p>
+    {isMockMode && paid && registrationId && <Link className="admin-button" to={`/verify-email?token=${encodeURIComponent(registrationId)}`}>Verify demo email</Link>}
+    {paid && <button className="admin-button" onClick={resend} disabled={resending || resent}>{resent ? 'Verification email sent' : resending ? 'Sending…' : 'Resend verification email'}</button>}
+    {failed && <Link className="admin-button" to="/register">Try registration again</Link>}
+    <Link to="/login">Back to sign in</Link>
+  </div></main>;
 }

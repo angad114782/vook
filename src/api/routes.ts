@@ -41,7 +41,6 @@ export function toV2ResourcePath(input: string): string {
     '/subscriptions/revenue-trend': '/reports/revenue-trend',
     '/subscriptions/plans': '/plans',
     '/subscriptions/plans/modules/catalog': '/module-catalog',
-    '/subscriptions/assign': '/subscriptions',
     '/support': '/support-tickets',
     '/support/companies': '/companies/options',
     '/activity': '/activity-events',

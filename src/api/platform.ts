@@ -1,6 +1,7 @@
 import api from './axios';
 
 export const platformApi = {
+  getSettings: <T>() => api.get<T>('/settings/platform'),
   getBroadcasts: <T>() => api.get<T[]>('/broadcasts'),
   createBroadcast: <T>(data: Record<string, unknown>) => api.post<T>('/broadcasts', data),
   getUsers: async <T>(params: Record<string, unknown>) => {

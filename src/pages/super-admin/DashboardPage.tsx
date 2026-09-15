@@ -4,7 +4,6 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import {
   Building2, IndianRupee, Users, AlertTriangle,
   ArrowUpRight, Activity, AlertCircle, Loader2,
-  Download, Shield, FileText, BarChart3,
 } from 'lucide-react';
 import { type Company } from '../../api/companies';
 import { type ActivityLog } from '../../api/activity';
@@ -259,25 +258,6 @@ export default function DashboardPage() {
         </table>
       </div>
 
-      {/* Quick Actions */}
-      <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 22px' }}>
-        <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '14px' }}>QUICK ACTIONS</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-          {[
-            { icon: Download, label: 'Download Payroll',  path: '/super-admin/companies' },
-            { icon: Shield,   label: 'Manage Roles',      path: '/super-admin/companies' },
-            { icon: FileText, label: 'Download Summary',  path: '/super-admin/subscriptions' },
-            { icon: BarChart3,label: 'View Reports',      path: '/super-admin/activity' },
-          ].map(({ icon: Icon, label, path }) => (
-            <button key={label} onClick={() => navigate(path)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '18px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: 'white', cursor: 'pointer', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s' }}
-              onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.backgroundColor = '#f8fafc'; el.style.borderColor = '#0d7470'; }}
-              onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.backgroundColor = 'white'; el.style.borderColor = '#e2e8f0'; }}>
-              <Icon size={22} color="#0d7470" />
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>{label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

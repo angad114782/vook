@@ -1,11 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CreditCard, Landmark, FileText, Receipt, BarChart2, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, CreditCard, Landmark, FileText, Receipt, BarChart2, Settings, LogOut, Bell } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useAccess } from '../../hooks/queries/useAccess';
 import { routeVisible } from '../../config/routeAccess';
 
 const NAV = [
   { to: '/finance/dashboard',         label: 'Dashboard',       Icon: LayoutDashboard },
+  { to: '/finance/notifications',     label: 'Notifications',   Icon: Bell },
   { to: '/finance/payroll',           label: 'Payroll',         Icon: CreditCard },
   { to: '/finance/salary-structure',  label: 'Salary Structure',Icon: Landmark },
   { to: '/finance/payslips',          label: 'Payslips',        Icon: FileText },

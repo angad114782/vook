@@ -12,9 +12,7 @@ export interface RoleAssignment {
 
 export const organizationApi = {
   getAttendanceIntegrations: <T>() => api.get<T>('/company-admin/attendance-integrations'),
-  saveAttendanceIntegration: (data: Record<string, unknown>) => api.post('/company-admin/attendance-integrations', data),
   saveAttendancePolicy: (data: Record<string, unknown>) => api.put('/company-admin/attendance-verification-policy', data),
-  attendanceIntegrationAction: (id: string, action: 'test' | 'activate') => api.post(`/company-admin/attendance-integrations/${id}/${action}`, action === 'activate' ? { reason: 'Approved by Company Admin after connection test' } : {}),
   getOffices: <T>() => api.get<T[]>('/hr/offices'),
   getTeams: <T>() => api.get<T[]>('/teams'),
   getDesignations: <T>() => api.get<T[]>('/company-admin/designations'),

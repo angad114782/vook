@@ -22,7 +22,6 @@ import {
   Users,
   Shield,
   BarChart3,
-  Download,
   ChevronDown,
   HelpCircle,
   Layers,
@@ -105,13 +104,6 @@ const KNOWLEDGE_BASE = [
     icon: Layers,
     color: "#0ea5e9",
   },
-];
-
-const quickActions = [
-  { icon: Download, label: "Download Reports" },
-  { icon: Users, label: "Manage Roles" },
-  { icon: BarChart3, label: "Download Summary" },
-  { icon: FileText, label: "View Reports" },
 ];
 
 const avatarColors = [
@@ -1209,70 +1201,6 @@ export default function SupportPage() {
       {/* Tickets + Knowledge Base */}
       <TicketsTab />
 
-      {/* Quick Actions */}
-      <div
-        style={{
-          backgroundColor: "white",
-          borderRadius: "12px",
-          border: "1px solid #e2e8f0",
-          padding: "18px 22px",
-        }}
-      >
-        <p
-          style={{
-            fontSize: "11px",
-            fontWeight: 700,
-            color: "#94a3b8",
-            textTransform: "uppercase",
-            letterSpacing: "0.5px",
-            marginBottom: "14px",
-          }}
-        >
-          QUICK ACTIONS
-        </p>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "12px",
-          }}
-        >
-          {quickActions.map((q) => (
-            <button
-              key={q.label}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "10px",
-                padding: "18px 12px",
-                borderRadius: "10px",
-                border: "1px solid #e2e8f0",
-                backgroundColor: "white",
-                cursor: "pointer",
-                fontFamily: "Inter, sans-serif",
-              }}
-              onMouseEnter={(e) => {
-                const el = e.currentTarget as HTMLElement;
-                el.style.backgroundColor = "#f8fafc";
-                el.style.borderColor = "#0d7470";
-              }}
-              onMouseLeave={(e) => {
-                const el = e.currentTarget as HTMLElement;
-                el.style.backgroundColor = "white";
-                el.style.borderColor = "#e2e8f0";
-              }}
-            >
-              <q.icon size={22} color="#0d7470" />
-              <span
-                style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}
-              >
-                {q.label}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

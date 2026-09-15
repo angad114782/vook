@@ -8,6 +8,7 @@ import { SocketProvider } from './context/SocketContext';
 import { NotificationProvider } from './components/notifications/NotificationProvider';
 
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const NotificationInboxPage = lazy(() => import('./pages/NotificationInboxPage'));
 
 // Auth
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
@@ -40,9 +41,8 @@ const PaymentsPage        = lazy(() => import('./pages/super-admin/PaymentsPage'
 const IntegrationsPage    = lazy(() => import('./pages/super-admin/IntegrationsPage'));
 const AuditPage           = lazy(() => import('./pages/super-admin/AuditPage'));
 const SecurityEnrollmentPage = lazy(() => import('./pages/super-admin/SecurityEnrollmentPage'));
-const UsersAccessPage      = lazy(() => import('./pages/super-admin/UsersAccessPage'));
 const NotificationsAdminPage = lazy(() => import('./pages/super-admin/NotificationsAdminPage'));
-const PlatformEmployeesPage = lazy(() => import('./pages/super-admin/PlatformEmployeesPage'));
+const PlatformEmployeesPage = lazy(() => import('./pages/super-admin/PlatformEmployeeDirectoryPage'));
 
 // HR pages
 const HRDashboardPage       = lazy(() => import('./pages/hr/HRDashboardPage'));
@@ -170,14 +170,15 @@ export default function App() {
             <Route path="integrations"  element={<IntegrationsPage />} />
             <Route path="audit"         element={<AuditPage />} />
             <Route path="security"      element={<SecurityEnrollmentPage />} />
-            <Route path="users-access"  element={<UsersAccessPage />} />
             <Route path="platform-employees" element={<PlatformEmployeesPage />} />
             <Route path="notifications-admin" element={<NotificationsAdminPage />} />
+            <Route path="notifications" element={<NotificationInboxPage />} />
           </Route>
 
           {/* HR routes */}
           <Route path="/hr" element={<HRLayout />}>
             <Route index element={<Navigate to="/hr/dashboard" replace />} />
+            <Route path="notifications" element={<NotificationInboxPage />} />
             <Route path="dashboard"  element={<HRDashboardPage />} />
             <Route path="employees"  element={<EmployeesPage />} />
             <Route path="attendance" element={guarded(<AttendancePage />, 'ATTENDANCE.VIEW', 'Attendance')} />
@@ -191,11 +192,12 @@ export default function App() {
           {/* Company Admin routes */}
           <Route path="/company-admin" element={<CompanyAdminLayout />}>
             <Route index element={<CALandingPage />} />
+            <Route path="notifications" element={<NotificationInboxPage />} />
             <Route path="dashboard"  element={guarded(<CADashboardPage />, 'DASHBOARD.VIEW', 'Dashboard')} />
             <Route path="onboarding" element={<CAOnboardingPage />} />
             <Route path="plan"       element={<CAPlanPage />} />
             <Route path="attendance" element={guarded(<CAAttendancePage />, 'ATTENDANCE.VIEW', 'Attendance')} />
-            <Route path="attendance-integrations" element={guarded(<CAAttendanceIntegrationsPage />, 'ATTENDANCE_INTEGRATIONS.VIEW', 'Attendance Integrations')} />
+            <Route path="attendance-integrations" element={guarded(<CAAttendanceIntegrationsPage />, 'ATTENDANCE.VIEW', 'Attendance')} />
             <Route path="workforce"  element={guarded(<CAWorkforcePage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
             <Route path="payroll" element={<Navigate to="/company-admin/payroll/overview" replace />} />
             <Route path="payroll/overview"         element={guarded(<CAPayrollOverviewPage />, 'PAYROLL.VIEW', 'Payroll')} />
@@ -220,6 +222,7 @@ export default function App() {
           {/* Employee routes */}
           <Route path="/employee" element={<EmployeeLayout />}>
             <Route index element={<Navigate to="/employee/dashboard" replace />} />
+            <Route path="notifications" element={<NotificationInboxPage />} />
             <Route path="dashboard"  element={<EmployeeDashboardPage />} />
             <Route path="attendance" element={guarded(<MyAttendancePage />, undefined, 'Attendance')} />
             <Route path="leaves"     element={guarded(<MyLeavePage />, undefined, 'Leave Management')} />
@@ -232,6 +235,7 @@ export default function App() {
           {/* Finance routes */}
           <Route path="/finance" element={<FinanceLayout />}>
             <Route index element={<Navigate to="/finance/dashboard" replace />} />
+            <Route path="notifications"    element={<NotificationInboxPage />} />
             <Route path="dashboard"        element={<FinanceDashboardPage />} />
             <Route path="payroll"          element={guarded(<FinancePayrollPage />, 'PAYROLL.VIEW', 'Payroll')} />
             <Route path="salary-structure" element={guarded(<SalaryStructurePage />, 'PAYROLL.VIEW', 'Payroll')} />
@@ -244,6 +248,7 @@ export default function App() {
           {/* Manager routes */}
           <Route path="/manager" element={<ManagerLayout />}>
             <Route index element={<Navigate to="/manager/dashboard" replace />} />
+            <Route path="notifications" element={<NotificationInboxPage />} />
             <Route path="dashboard"  element={<ManagerDashboardPage />} />
             <Route path="workforce"  element={guarded(<WorkforcePage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
             <Route path="approvals"  element={guarded(<ManagerApprovalsPage />, 'APPROVALS.VIEW', 'Approvals')} />
@@ -255,6 +260,7 @@ export default function App() {
           {/* Supervisor routes */}
           <Route path="/supervisor" element={<SupervisorLayout />}>
             <Route index element={<Navigate to="/supervisor/dashboard" replace />} />
+            <Route path="notifications" element={<NotificationInboxPage />} />
             <Route path="dashboard"  element={<SupervisorDashboardPage />} />
             <Route path="workforce"  element={guarded(<SupervisorWorkforcePage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
             <Route path="attendance" element={guarded(<SupervisorAttendancePage />, 'ATTENDANCE.VIEW', 'Attendance')} />

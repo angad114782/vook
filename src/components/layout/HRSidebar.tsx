@@ -4,11 +4,12 @@ import { useAccess } from '../../hooks/queries/useAccess';
 import { routeVisible } from '../../config/routeAccess';
 import {
   LayoutDashboard, Users, Clock, CalendarDays,
-  CheckSquare, DollarSign, FileText, Settings, LogOut,
+  CheckSquare, DollarSign, FileText, Settings, LogOut, Bell,
 } from 'lucide-react';
 
 const NAV = [
   { to: '/hr/dashboard',  label: 'Dashboard',          icon: LayoutDashboard },
+  { to: '/hr/notifications', label: 'Notifications',   icon: Bell },
   { to: '/hr/employees',  label: 'Employees',           icon: Users           },
   { to: '/hr/attendance', label: 'Attendance',          icon: Clock           },
   { to: '/hr/leaves',     label: 'Leave Management',    icon: CalendarDays    },

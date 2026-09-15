@@ -23,7 +23,41 @@ const database = () => {
 export async function getMockState(): Promise<MockState> {
   const db = await database();
   const stored = await db.get('state', STATE_KEY);
-  if (stored?.schemaVersion === MOCK_SCHEMA_VERSION) return stored;
+  if (stored?.schemaVersion === MOCK_SCHEMA_VERSION) {
+    // Provider definitions are platform catalog data, not user-created records.
+    // Add newly shipped providers without wiping saved demo configuration.
+    const seededIntegrations = createMockSeed().integrations;
+    const storedProviderKeys = new Set(
+      stored.integrations.map((item) => String(item.providerKey ?? item.key).toUpperCase()),
+    );
+    const missingIntegrations = seededIntegrations.filter(
+      (item) => !storedProviderKeys.has(String(item.providerKey ?? item.key).toUpperCase()),
+    );
+    let catalogChanged = false;
+    stored.integrations = stored.integrations.map((storedIntegration) => {
+      const providerKey = String(storedIntegration.providerKey ?? storedIntegration.key).toUpperCase();
+      const manifest = seededIntegrations.find(
+        (item) => String(item.providerKey ?? item.key).toUpperCase() === providerKey,
+      );
+      if (!manifest) return storedIntegration;
+      const catalogFields = ['displayName', 'category', 'available', 'publicFields', 'secretFields'] as const;
+      if (catalogFields.some((field) => JSON.stringify(storedIntegration[field]) !== JSON.stringify(manifest[field]))) {
+        catalogChanged = true;
+      }
+      return {
+        ...storedIntegration,
+        ...Object.fromEntries(catalogFields.map((field) => [field, structuredClone(manifest[field])])),
+      };
+    });
+    if (missingIntegrations.length) {
+      stored.integrations.push(...structuredClone(missingIntegrations));
+      catalogChanged = true;
+    }
+    if (catalogChanged) {
+      await db.put('state', stored, STATE_KEY);
+    }
+    return stored;
+  }
   const seed = createMockSeed();
   await db.put('state', seed, STATE_KEY);
   return seed;

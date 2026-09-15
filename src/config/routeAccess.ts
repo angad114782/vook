@@ -13,7 +13,7 @@ export const routeAccess: Record<string, RouteAccessRule> = {
   '/company-admin/approvals': { module: 'Approvals', permission: 'APPROVALS.VIEW' },
   '/company-admin/payroll/overview': { module: 'Payroll', permission: 'PAYROLL.VIEW' },
   '/company-admin/reports': { module: 'Reports & Analytics', permission: 'REPORTS_ANALYTICS.VIEW' },
-  '/company-admin/attendance-integrations': { module: 'Attendance Integrations', permission: 'ATTENDANCE_INTEGRATIONS.VIEW' },
+  '/company-admin/attendance-integrations': { module: 'Attendance', permission: 'ATTENDANCE.VIEW' },
   '/company-admin/users': { module: 'Employee Management', permission: 'EMPLOYEE_MANAGEMENT.VIEW' },
   '/company-admin/settings/roles': { module: 'Roles & Permissions', permission: 'ROLES_PERMISSIONS.VIEW' },
   '/company-admin/settings/workflows': { module: 'Approvals', permission: 'APPROVALS.CONFIGURE' },

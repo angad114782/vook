@@ -1,13 +1,11 @@
 import { isMockMode } from '../config/runtime';
 
 interface CheckoutOptions {
-  provider?: 'RAZORPAY' | 'PAYU';
   keyId?: string;
   amount?: number;
   currency?: string;
   orderId?: string;
   description: string;
-  redirectUrl?: string;
 }
 
 declare global { interface Window { Razorpay?: new (options: Record<string, unknown>) => { open: () => void } } }
@@ -24,11 +22,6 @@ const loadRazorpay = () => new Promise<boolean>((resolve) => {
 export async function openPaymentCheckout(options: CheckoutOptions): Promise<void> {
   if (isMockMode) {
     await new Promise((resolve) => window.setTimeout(resolve, 350));
-    return;
-  }
-  if (options.provider === 'PAYU') {
-    if (!options.redirectUrl) throw new Error('The PayU redirect URL was not returned by the API.');
-    window.location.assign(options.redirectUrl);
     return;
   }
   if (!options.orderId || !options.keyId || !await loadRazorpay() || !window.Razorpay) {

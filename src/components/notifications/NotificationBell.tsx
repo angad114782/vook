@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell, Check, Info, MessageSquare, ShieldAlert, TriangleAlert } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { ArrowUpRight, Bell, Check, Info, MessageSquare, ShieldAlert, TriangleAlert } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useNotificationCenter } from '../../hooks/useNotificationCenter';
 
 const visibleNotificationLimit = 6;
 
-export default function NotificationBell({ supportPath }: { supportPath?: string }) {
+export default function NotificationBell({ supportPath, inboxPath }: { supportPath?: string; inboxPath?: string }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { groups, unread, markGroupRead, markAllRead } = useNotificationCenter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const visibleGroups = groups.slice(0, visibleNotificationLimit);
+  const workspace = location.pathname.split('/').filter(Boolean)[0];
 
   useEffect(() => {
     const closeOnOutsidePointer = (event: MouseEvent) => {
@@ -31,7 +33,7 @@ export default function NotificationBell({ supportPath }: { supportPath?: string
     setOpen(false);
     await markGroupRead(group);
     if (supportPath && group.latest.entityType === 'SupportTicket' && group.latest.entityId) {
-      navigate(supportPath + '?ticket=' + group.latest.entityId, { state: { notification: group.latest } });
+      navigate(supportPath + '?ticket=' + encodeURIComponent(group.latest.entityId), { state: { notification: group.latest } });
     }
   };
 
@@ -90,6 +92,9 @@ export default function NotificationBell({ supportPath }: { supportPath?: string
               <span>You're all caught up</span>
             </div>
           )}
+          <button onClick={() => { setOpen(false); navigate(inboxPath ?? (workspace ? '/' + workspace + '/notifications' : '/notifications')); }} style={viewAllButton}>
+            View all notifications <ArrowUpRight size={13} />
+          </button>
         </section>
       )}
     </div>
@@ -152,3 +157,7 @@ const count: React.CSSProperties = { display: 'grid', placeItems: 'center', minW
 const overflowHint: React.CSSProperties = { margin: 0, padding: '8px 14px', background: '#fafafa', color: '#94a3b8', fontSize: 10, textAlign: 'center' };
 const empty: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '24px 16px', color: '#64748b', fontSize: 11, fontWeight: 600 };
 const emptyIcon: React.CSSProperties = { display: 'grid', placeItems: 'center', width: 24, height: 24, borderRadius: '50%', color: '#0f766e', background: '#f0fdfa' };
+const viewAllButton: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', minHeight: 40,
+  border: 0, borderTop: '1px solid #eef2f2', background: '#fbfdfd', color: '#0f766e', cursor: 'pointer', fontSize: 10, fontWeight: 800,
+};

@@ -34,7 +34,7 @@ export interface Subscription {
   id: string; companyId: string; planId?: string; planVersionId?: string; plan: string; billingCycle: string; amount: number;
   startDate: string; endDate: string; status: 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'SUSPENDED' | 'CANCELLED';
   trialEndsAt?: string; currentPeriodEnd?: string; graceEndsAt?: string; suspensionReason?: string;
-  isActive: boolean; company: { id: string; name: string; companyCode?: string; industry?: string; plan: string };
+  isActive: boolean; cancelAtPeriodEnd?: boolean; company: { id: string; name: string; companyCode?: string; industry?: string; plan: string };
 }
 export interface SubscriptionsResponse {
   subscriptions: Subscription[];
@@ -56,12 +56,7 @@ export const subscriptionsApi = {
   updatePlan: (id: string, data: Partial<PlanDraft> & { draftRevision: number }) => api.put<PlanData>(`/subscriptions/plans/${id}`, data),
   publishPlan: (id: string, reason: string, draftRevision: number) => api.post<PlanVersion>(`/subscriptions/plans/${id}/publish`, { reason, draftRevision }),
   discardPlanDraft: (id: string, draftRevision: number, reason = 'Discarded from the plan builder') => api.post<PlanData>(`/subscriptions/plans/${id}/discard-draft`, { draftRevision, reason }),
-  assign: (data: { companyId: string; planVersionId: string; billingCycle: 'Monthly' | 'Annual'; months: number; reason: string }) => api.post('/subscriptions/assign', data),
-  extendTrial: (id: string, days: number, reason: string) => api.post(`/subscriptions/${id}/extend-trial`, { days, reason }),
-  changePlan: (id: string, data: { planVersionId: string; timing: 'IMMEDIATE' | 'NEXT_RENEWAL'; billingCycle?: string; paymentConfirmed?: boolean; reason: string }) => api.post(`/subscriptions/${id}/change-plan`, data),
   suspend: (id: string, reason: string) => api.post(`/subscriptions/${id}/suspend`, { reason, suspensionReason: 'MANUAL' }),
-  reactivate: (id: string, reason: string) => api.post(`/subscriptions/${id}/reactivate`, { reason }),
   cancel: (id: string, reason: string) => api.post(`/subscriptions/${id}/cancel`, { reason }),
-  renew: (id: string, data: { billingCycle?: string; paymentConfirmed: boolean; reason: string }) => api.post(`/subscriptions/${id}/renew`, data),
   deletePlan: (id: string, reason: string) => api.delete(`/subscriptions/plans/${id}`, { data: { reason } }),
 };

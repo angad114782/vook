@@ -15,7 +15,7 @@ export default function TopBar() {
         <button onClick={() => void refresh()} style={icon} aria-label="Refresh notifications">
           <RefreshCw size={15} />
         </button>
-        <NotificationBell supportPath="/support" />
+        <NotificationBell supportPath="/support" inboxPath="/notifications" />
         <div style={profile}>
           <div style={avatar}>{user?.name?.charAt(0) ?? 'A'}</div>
           <div>

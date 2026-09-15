@@ -13,10 +13,12 @@ export interface AppNotification {
   entityType?: string;
   entityId?: string;
   commentId?: string;
-  readAt?: string;
+  readAt?: string | null;
+  isRead?: boolean;
   createdAt: string;
+  data?: Record<string, unknown>;
 }
-export interface NotificationListResponse { items: AppNotification[]; notifications?: AppNotification[]; nextCursor: string | null; unreadCount: number; unread?: number; }
+export interface NotificationListResponse { items: AppNotification[]; notifications?: AppNotification[]; nextCursor?: string | null; unreadCount: number; unread?: number; }
 export interface NotificationPreferencesResponse { preferences: Record<string, boolean>; }
 export const notificationsApi = {
   list: (params?: { status?: 'unread' | 'all'; cursor?: string; limit?: number }) =>

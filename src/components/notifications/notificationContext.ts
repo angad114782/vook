@@ -8,6 +8,7 @@ export type NotificationCenterValue = {
   unread: number;
   loading: boolean;
   refresh: () => Promise<void>;
+  markNotificationRead: (notification: AppNotification) => Promise<void>;
   markGroupRead: (group: NotificationGroup) => Promise<void>;
   markAllRead: () => Promise<void>;
 };

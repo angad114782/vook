@@ -5,7 +5,7 @@ import { extractError } from '../../utils/errorUtils';
 import {
   Layers, Shield, Users, Clock, DollarSign,
   BarChart3, FileText, Briefcase, Settings2,
-  ChevronDown, Loader2, Download, UserCog,
+  ChevronDown, Loader2,
   BookOpen,
 } from 'lucide-react';
 
@@ -36,13 +36,6 @@ const ROLE_LABELS: Record<string, string> = {
   COMPANY_ADMIN: 'Company Administrator', HR: 'HR', MANAGER: 'Manager',
   SUPERVISOR: 'Supervisor', FINANCE: 'Finance', EMPLOYEE: 'Employee',
 };
-
-const quickActions = [
-  { icon: Download, label: 'Export Config' },
-  { icon: UserCog,  label: 'Manage Roles' },
-  { icon: Shield,   label: 'Audit Access' },
-  { icon: Layers,   label: 'Module Report' },
-];
 
 // ── Toggle switch ─────────────────────────────────────────────────────────────
 
@@ -426,21 +419,6 @@ export default function ModulesPage() {
         {visitedTabs.has('role') && <div style={{ display: tab === 'role' ? 'block' : 'none' }}><RolePermissionsTab /></div>}
       </div>
 
-      {/* Quick Actions */}
-      <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 22px' }}>
-        <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '14px' }}>QUICK ACTIONS</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-          {quickActions.map((q) => (
-            <button key={q.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '18px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: 'white', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
-              onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.backgroundColor = '#f8fafc'; el.style.borderColor = '#0d7470'; }}
-              onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.backgroundColor = 'white'; el.style.borderColor = '#e2e8f0'; }}
-            >
-              <q.icon size={22} color="#0d7470" />
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>{q.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

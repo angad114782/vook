@@ -1,11 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CalendarCheck, Plane, FileText, Receipt, FolderOpen, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, CalendarCheck, Plane, FileText, Receipt, FolderOpen, Settings, LogOut, Bell } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useAccess } from '../../hooks/queries/useAccess';
 import { routeVisible } from '../../config/routeAccess';
 
 const NAV = [
   { to: '/employee/dashboard',   label: 'Dashboard',   Icon: LayoutDashboard },
+  { to: '/employee/notifications', label: 'Notifications', Icon: Bell },
   { to: '/employee/attendance',  label: 'Attendance',  Icon: CalendarCheck },
   { to: '/employee/leaves',      label: 'My Leaves',   Icon: Plane },
   { to: '/employee/payslips',    label: 'Payslips',    Icon: FileText },

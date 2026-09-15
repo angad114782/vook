@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Activity, BarChart2, Blocks, Building2, CalendarCheck, CheckSquare, CreditCard, Fingerprint, GitBranch, KeyRound, LayoutDashboard, LifeBuoy, LogOut, Settings, Shield, UserCog, Users } from 'lucide-react';
+import { Activity, BarChart2, Bell, Blocks, Building2, CalendarCheck, CheckSquare, CreditCard, GitBranch, KeyRound, LayoutDashboard, LifeBuoy, LogOut, Settings, Shield, ShieldCheck, UserCog, Users } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useAccess } from '../../hooks/queries/useAccess';
 import { routeVisible } from '../../config/routeAccess';
@@ -8,6 +8,7 @@ type Item = { to: string; label: string; Icon: any; permission?: string; module?
 const groups: Array<{ label: string; items: Item[] }> = [
   { label: 'Overview', items: [
     { to: '/company-admin/dashboard', label: 'Dashboard', Icon: LayoutDashboard, permission: 'DASHBOARD.VIEW', module: 'Dashboard' },
+    { to: '/company-admin/notifications', label: 'Notifications', Icon: Bell },
     { to: '/company-admin/onboarding', label: 'Setup checklist', Icon: CheckSquare },
   ] },
   { label: 'Workforce', items: [
@@ -17,7 +18,7 @@ const groups: Array<{ label: string; items: Item[] }> = [
     { to: '/company-admin/approvals', label: 'Approvals', Icon: CheckSquare, permission: 'APPROVALS.VIEW', module: 'Approvals' },
     { to: '/company-admin/payroll/overview', label: 'Payroll', Icon: CreditCard, permission: 'PAYROLL.VIEW', module: 'Payroll' },
     { to: '/company-admin/reports', label: 'Reports', Icon: BarChart2, permission: 'REPORTS_ANALYTICS.VIEW', module: 'Reports & Analytics' },
-    { to: '/company-admin/attendance-integrations', label: 'Attendance devices', Icon: Fingerprint, permission: 'ATTENDANCE_INTEGRATIONS.VIEW', module: 'Attendance Integrations' },
+    { to: '/company-admin/attendance-integrations', label: 'Attendance policy', Icon: ShieldCheck, permission: 'ATTENDANCE.VIEW', module: 'Attendance' },
   ] },
   { label: 'Administration', items: [
     { to: '/company-admin/users', label: 'Users & access', Icon: UserCog, permission: 'EMPLOYEE_MANAGEMENT.VIEW', module: 'Employee Management' },

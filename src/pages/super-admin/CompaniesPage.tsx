@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { companiesApi, type Company, type CreateCompanyData } from '../../api/companies';
+import { companiesApi, type Company } from '../../api/companies';
 import { type PlanData } from '../../api/subscriptions';
 import { extractError } from '../../utils/errorUtils';
 import { getPlanBadge } from '../../utils/planColors';
@@ -9,21 +9,11 @@ import { useDeleteCompany } from '../../hooks/mutations/useSaMutations';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import {
   Building2, TrendingUp, Clock, AlertTriangle, Search,
-  Pencil, Trash2, X, Loader2, ChevronLeft, ChevronRight, Plus,
-  BarChart3,
-  FileText,
-  Shield,
-  Download,
+  Pencil, Trash2, X, Loader2, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 
-// ─── helpers ────────────────────────────────────────────────────────────────
+// Section.
 
-const quickActions = [
-  { icon: Download, label: 'Download Payroll' },
-  { icon: Shield, label: 'Manage Roles' },
-  { icon: FileText, label: 'Download Summary' },
-  { icon: BarChart3, label: 'View Reports' },
-];  
 const statusMeta: Record<string, { label: string; bg: string; color: string }> = {
   ACTIVE:    { label: 'Active',    bg: '#dcfce7', color: '#15803d' },
   TRIAL:     { label: 'Trial',     bg: '#fef9c3', color: '#a16207' },
@@ -52,54 +42,41 @@ const fmtDate = (dateStr?: string) => {
   return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-// ─── Add / Edit Modal ────────────────────────────────────────────────────────
+// Section.
 
 interface ModalProps {
-  company?: Company | null;
+  company: Company;
   onClose: () => void;
   onSave: () => void;
 }
 
-function CompanyModal({ company, plans, onClose, onSave }: ModalProps & { plans: PlanData[] }) {
-  const isEdit = !!company;
-  const initialPlan = company?.plan ?? (plans[0]?.type ?? '');
-  const initialTrialDays = plans.find((plan) => plan.type === initialPlan)?.defaultTrialDays;
+function CompanyModal({ company, onClose, onSave }: ModalProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [form, setForm] = useState<CreateCompanyData>({
-    name: company?.name ?? '',
-    industry: company?.industry ?? '',
-    email: company?.email ?? '',
-    phone: company?.phone ?? '',
-    address: company?.address ?? '',
-    plan: initialPlan,
-    status: company?.status ?? 'TRIAL',
-    planExpiry: company?.planExpiry ? company.planExpiry.slice(0, 10) : '',
-    ...(!isEdit ? { adminName: '', adminEmail: '', acquisitionChannel: 'MANUAL_TRIAL' as const, billingCycle: 'Monthly' as const, trialDays: initialTrialDays, paymentStatus: 'PAID' as const, paymentReference: '', paymentNotes: '', reason: '' } : {}),
+  const [form, setForm] = useState({
+    name: company.name,
+    industry: company.industry ?? '',
+    email: company.email ?? '',
+    phone: company.phone ?? '',
+    address: company.address ?? '',
   });
 
-  const set = (k: keyof CreateCompanyData, v: string | number) =>
-    setForm((f) => ({ ...f, [k]: v }));
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!form.name.trim()) { setError('Company name is required'); return; }
-    if (!isEdit) {
-      if (!form.adminName?.trim()) { setError('Admin name is required'); return; }
-      if (!form.adminEmail?.trim()) { setError('Admin email is required'); return; }
-    }
-    setSaving(true); setError('');
+    setSaving(true);
+    setError('');
     try {
-      if (isEdit && company) {
-        await companiesApi.update(company.id, form);
-        onSave();
-      } else {
-        const selectedPlan = plans.find((plan) => plan.type === form.plan);
-        await companiesApi.create({ ...form, planVersionId: selectedPlan?.currentVersionId?.id });
-        onSave();
-      }
-    } catch (err) {
-      setError(extractError(err, 'Failed to save company'));
+      await companiesApi.update(company.id, {
+        name: form.name.trim(),
+        industry: form.industry.trim() || undefined,
+        email: form.email.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+        address: form.address.trim() || undefined,
+      });
+      onSave();
+    } catch (reason) {
+      setError(extractError(reason, 'Failed to update company'));
     } finally {
       setSaving(false);
     }
@@ -113,141 +90,30 @@ function CompanyModal({ company, plans, onClose, onSave }: ModalProps & { plans:
   const labelStyle: React.CSSProperties = { display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '5px' };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px',
-    }}>
-      <div style={{
-        backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '560px',
-        maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-      }}>
-        {/* Header */}
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
+      <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #f1f5f9' }}>
           <div>
-            <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
-              {isEdit ? 'Edit Company' : 'Add New Company'}
-            </h2>
-            <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
-              {isEdit ? 'Update company information' : 'Create a new client company'}
-            </p>
+            <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>Edit Company</h2>
+            <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>Update company contact information</p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}>
-            <X size={20} />
-          </button>
+          <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}><X size={20} /></button>
         </div>
-
         <form onSubmit={handleSubmit} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {error && (
-            <div style={{ padding: '10px 14px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontSize: '13px' }}>
-              {error}
-            </div>
-          )}
-
-          {/* Name + Industry */}
+          {error && <div role="alert" style={{ padding: '10px 14px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontSize: '13px' }}>{error}</div>}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-            <div>
-              <label style={labelStyle}>Company Name *</label>
-              <input style={inputStyle} value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. SmartFactory Co." />
-            </div>
-            <div>
-              <label style={labelStyle}>Industry</label>
-              <input style={inputStyle} value={form.industry} onChange={(e) => set('industry', e.target.value)} placeholder="e.g. Manufacturing" />
-            </div>
+            <div><label style={labelStyle}>Company Name *</label><input required style={inputStyle} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></div>
+            <div><label style={labelStyle}>Industry</label><input style={inputStyle} value={form.industry} onChange={(event) => setForm({ ...form, industry: event.target.value })} /></div>
           </div>
-
-          {/* Email + Phone */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-            <div>
-              <label style={labelStyle}>Email</label>
-              <input type="email" style={inputStyle} value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="contact@company.com" />
-            </div>
-            <div>
-              <label style={labelStyle}>Phone</label>
-              <input style={inputStyle} value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="+91 98765 43210" />
-            </div>
+            <div><label style={labelStyle}>Email</label><input type="email" style={inputStyle} value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></div>
+            <div><label style={labelStyle}>Phone</label><input style={inputStyle} value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} /></div>
           </div>
-
-          {/* Address */}
-          <div>
-            <label style={labelStyle}>Address</label>
-            <input style={inputStyle} value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="Full address" />
-          </div>
-
-          {/* Admin Credentials — create only */}
-          {!isEdit && (
-            <>
-              <div style={{ padding: '10px 14px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px' }}>
-                <p style={{ fontSize: '12px', fontWeight: 700, color: '#15803d', marginBottom: '2px' }}>Initial Admin Account</p>
-                <p style={{ fontSize: '11px', color: '#166534' }}>This person will be the Company Admin for this company.</p>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                <div>
-                  <label style={labelStyle}>Admin Name *</label>
-                  <input style={inputStyle} value={form.adminName ?? ''} onChange={(e) => set('adminName', e.target.value)} placeholder="e.g. John Smith" />
-                </div>
-                <div>
-                  <label style={labelStyle}>Admin Email *</label>
-                  <input type="email" style={inputStyle} value={form.adminEmail ?? ''} onChange={(e) => set('adminEmail', e.target.value)} placeholder="admin@company.com" />
-                </div>
-              </div>
-              <div style={{ padding: '10px 14px', backgroundColor: '#eff8ff', border: '1px solid #cce7f8', borderRadius: '8px', color: '#145d84', fontSize: '11px' }}>A 48-hour invitation will be sent after atomic provisioning. The admin verifies their email and creates their own password.</div>
-            </>
-          )}
-
-          {/* Plan + Status */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-            <div>
-              <label style={labelStyle}>Plan</label>
-              <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.plan} onChange={(e) => {
-                const nextPlan = plans.find((plan) => plan.type === e.target.value);
-                setForm((current) => ({ ...current, plan: e.target.value, ...(!isEdit && current.acquisitionChannel === 'MANUAL_TRIAL' ? { trialDays: nextPlan?.defaultTrialDays } : {}) }));
-              }}>
-                {plans.map((p) => (
-                  <option key={p.type} value={p.type}>{p.name} — ₹{p.price.toLocaleString('en-IN')}/mo</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle}>Acquisition</label>
-              <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.acquisitionChannel} onChange={(e) => set('acquisitionChannel', e.target.value)}>
-                <option value="MANUAL_TRIAL">Cardless trial</option>
-                <option value="MANUAL_OFFLINE">Offline paid</option>
-                <option value="RAZORPAY">Invite admin to pay online</option>
-                <option value="PAYU">Invite admin to pay with PayU</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Plan expiry */}
-          <div>
-            <label style={labelStyle}>{form.acquisitionChannel === 'MANUAL_TRIAL' ? 'Trial days' : 'Billing cycle'}</label>
-            {form.acquisitionChannel === 'MANUAL_TRIAL' ? <input type="number" min="1" max="365" style={inputStyle} value={form.trialDays ?? ''} placeholder="Use plan default" onChange={(e) => set('trialDays', Number(e.target.value))} /> : <select style={inputStyle} value={form.billingCycle} onChange={(e) => set('billingCycle', e.target.value)}><option>Monthly</option><option>Annual</option></select>}
-          </div>
-
-          {!isEdit && form.acquisitionChannel === 'MANUAL_OFFLINE' && (
-            <div style={{ padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', display: 'grid', gap: '10px' }}>
-              <div><p style={{ fontSize: '12px', fontWeight: 700, color: '#374151' }}>Offline payment record</p><p style={{ fontSize: '11px', color: '#64748b' }}>Optional physical/cash/bank-transfer payment status. It does not control access.</p></div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}><select style={inputStyle} value={form.paymentStatus ?? 'PAID'} onChange={(e) => set('paymentStatus', e.target.value)}><option value="PAID">Paid offline</option></select><input style={inputStyle} placeholder="Receipt / reference" value={form.paymentReference ?? ''} onChange={(e) => set('paymentReference', e.target.value)} /></div>
-            </div>
-          )}
-
-          {/* Footer */}
+          <div><label style={labelStyle}>Address</label><input style={inputStyle} value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} /></div>
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', paddingTop: '4px' }}>
-            <button type="button" onClick={onClose} style={{
-              padding: '9px 20px', border: '1.5px solid #e2e8f0', borderRadius: '8px',
-              backgroundColor: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-              color: '#374151', fontFamily: 'Inter, sans-serif',
-            }}>
-              Cancel
-            </button>
-            <button type="submit" disabled={saving} style={{
-              padding: '9px 24px', backgroundColor: saving ? '#7ab8b6' : '#0d7470',
-              border: 'none', borderRadius: '8px', color: 'white',
-              fontSize: '13px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'Inter, sans-serif',
-            }}>
-              {saving && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />}
-              {isEdit ? 'Save Changes' : 'Add Company'}
+            <button type="button" onClick={onClose} style={{ padding: '9px 20px', border: '1.5px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: '#374151', fontFamily: 'Inter, sans-serif' }}>Cancel</button>
+            <button type="submit" disabled={saving} style={{ padding: '9px 24px', backgroundColor: saving ? '#7ab8b6' : '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'Inter, sans-serif' }}>
+              {saving && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />} Save Changes
             </button>
           </div>
         </form>
@@ -257,7 +123,6 @@ function CompanyModal({ company, plans, onClose, onSave }: ModalProps & { plans:
 }
 
 // ─── View Modal ──────────────────────────────────────────────────────────────
-
 function ViewModal({ company, plans, onClose, onEdit }: { company: Company; plans: PlanData[]; onClose: () => void; onEdit: () => void }) {
   const av = getAvatarColor(company.name);
   const pm = getPlanBadge(company.plan, plans);
@@ -309,14 +174,14 @@ function ViewModal({ company, plans, onClose, onEdit }: { company: Company; plan
   );
 }
 
-// ─── Main Page ───────────────────────────────────────────────────────────────
+// Section.
 
 export default function CompaniesPage() {
   const qc = useQueryClient();
   const [search,      setSearch]      = useState('');
   const [planFilter,  setPlanFilter]  = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [modal,       setModal]       = useState<'add' | 'edit' | 'view' | null>(null);
+  const [modal,       setModal]       = useState<'edit' | 'view' | null>(null);
   const [selected,    setSelected]    = useState<Company | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Company | null>(null);
   const [page,        setPage]        = useState(1);
@@ -365,17 +230,6 @@ export default function CompaniesPage() {
           <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Companies</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage your platform and monitor client companies</p>
         </div>
-        <button
-          onClick={() => { setSelected(null); setModal('add'); }}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            padding: '9px 18px', backgroundColor: '#0d7470', color: 'white',
-            border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
-            cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-          }}
-        >
-          <Plus size={15} /> Add Company
-        </button>
       </div>
 
       {/* Stats */}
@@ -433,7 +287,7 @@ export default function CompaniesPage() {
           <div style={{ textAlign: 'center', padding: '60px 24px' }}>
             <Building2 size={40} color="#e2e8f0" style={{ margin: '0 auto 12px' }} />
             <p style={{ fontSize: '14px', fontWeight: 600, color: '#94a3b8' }}>No companies found</p>
-            <p style={{ fontSize: '13px', color: '#cbd5e1', marginTop: '4px' }}>Try changing filters or add a new company</p>
+            <p style={{ fontSize: '13px', color: '#cbd5e1', marginTop: '4px' }}>Try changing the filters or wait for a company to sign up online.</p>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -510,10 +364,9 @@ export default function CompaniesPage() {
       </div>
 
       {/* Modals */}
-      {(modal === 'add' || modal === 'edit') && (
+      {modal === 'edit' && selected && (
         <CompanyModal
-          company={modal === 'edit' ? selected : null}
-          plans={plans}
+          company={selected}
           onClose={() => setModal(null)}
           onSave={() => {
             setModal(null);
@@ -549,33 +402,6 @@ export default function CompaniesPage() {
           </div>
         </div>
       )}
-
-
-      {/* Quick Actions */}
-      <div style={{
-        backgroundColor: 'white', borderRadius: '12px',
-        border: '1px solid #e2e8f0', padding: '18px 22px',
-      }}>
-        <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '14px' }}>
-          QUICK ACTIONS
-        </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-          {quickActions.map((q) => (
-            <button key={q.label} style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
-              padding: '18px 12px', borderRadius: '10px',
-              border: '1px solid #e2e8f0', backgroundColor: 'white',
-              cursor: 'pointer', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s',
-            }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#f8fafc'; (e.currentTarget as HTMLElement).style.borderColor = '#0d7470'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'white'; (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0'; }}
-            >
-              <q.icon size={22} color="#0d7470" />
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>{q.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

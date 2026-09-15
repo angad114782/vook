@@ -40,6 +40,11 @@ const integrationDefinitions: Record<string, Row> = {
     publicFields: [{ key: 'host', label: 'SMTP host', required: true }, { key: 'port', label: 'Port', required: true }, { key: 'fromAddress', label: 'From address', required: true }],
     secretFields: [{ key: 'username', label: 'Username', required: true }, { key: 'password', label: 'Password', required: true }],
   },
+  WHATSAPP: {
+    displayName: 'WhatsApp Cloud API', category: 'WHATSAPP', available: true,
+    publicFields: [{ key: 'phoneNumberId', label: 'Phone Number ID', required: true }, { key: 'businessAccountId', label: 'WhatsApp Business Account ID', required: false }],
+    secretFields: [{ key: 'accessToken', label: 'Permanent access token', required: true }],
+  },
 };
 
 function integrationView(row: Row): Row {
@@ -71,6 +76,24 @@ function employeeView(state: MockState, row: Row): Row {
   const user = row.user || state.users.find((item) => item.id === row.userId);
   return { ...row, user: user ? { id: user.id, name: user.name, email: user.email, role: user.role, accountStatus: user.isActive === false ? 'SUSPENDED' : 'ACTIVE', lastLoginAt: user.lastLoginAt } : row.user };
 }
+function platformEmployeeView(state: MockState, row: Row): Row {
+  const view = employeeView(state, row);
+  const user = view.user as Row | undefined;
+  const company = (state.companies as Row[]).find((item) => item.id === row.companyId);
+  return {
+    id: row.id,
+    employeeId: row.employeeId,
+    name: user?.name ?? row.name,
+    email: user?.email ?? row.email,
+    mobile: row.mobile ?? row.phone ?? user?.mobile ?? user?.phone,
+    companyId: company ? { id: company.id, _id: company.id, name: company.name, companyCode: company.companyCode } : undefined,
+    department: row.department,
+    designation: row.designation,
+    employmentType: row.employmentType,
+    status: row.status,
+    joiningDate: row.joiningDate,
+  };
+}
 function attendanceView(state: MockState, row: Row): Row {
   const employee = state.employees.find((item) => item.id === row.employeeId) as Row | undefined;
   return { ...row, employeeId: employee ? { id: employee.id, employeeId: employee.employeeId, department: employee.department, designation: employee.designation, userId: { name: (employee.user as Row)?.name } } : row.employeeId };
@@ -89,15 +112,15 @@ function expenseView(state: MockState, row: Row): Row {
 }
 function provisionVerifiedRegistration(draft: MockState, registration: Row) {
   if (registration.companyId) return (draft.companies as Row[]).find((item) => item.id === registration.companyId);
+  if (registration.acquisition !== 'ONLINE_PURCHASE' || registration.status !== 'PAID') throw new Error('A successful online checkout is required before provisioning.');
   const version = (draft.planVersions as Row[]).find((item) => item.id === registration.planVersionId);
   const plan = (draft.plans as Row[]).find((item) => item.id === version?.planId);
   if (!version || !plan) throw new Error('Published registration plan is missing.');
   const createdAt = new Date().toISOString();
   const companyId = id('company');
-  const trial = registration.acquisition === 'ONLINE_TRIAL';
-  const durationDays = trial ? Number(registration.trialDays ?? version.trial?.days ?? 5) : registration.billingCycle === 'Annual' ? 365 : 30;
+  const durationDays = registration.billingCycle === 'Annual' ? 365 : 30;
   const periodEnd = new Date(Date.now() + Math.max(1, durationDays) * 86_400_000).toISOString();
-  const company = { id: companyId, companyCode: `WEB-${String(draft.companies.length + 1).padStart(3, '0')}`, name: registration.companyName, legalName: registration.companyName, displayName: registration.companyName, email: registration.companyEmail ?? registration.adminEmail, industry: null, phone: null, address: null, timezone: 'Asia/Kolkata', currency: 'INR', plan: plan.type, status: trial ? 'TRIAL' : 'ACTIVE', maxUsers: version.limits.employees, userCount: 1, planExpiry: periodEnd, createdAt };
+  const company = { id: companyId, companyCode: `WEB-${String(draft.companies.length + 1).padStart(3, '0')}`, name: registration.companyName, legalName: registration.companyName, displayName: registration.companyName, email: registration.companyEmail ?? registration.adminEmail, industry: null, phone: null, address: null, timezone: 'Asia/Kolkata', currency: 'INR', plan: plan.type, status: 'ACTIVE', maxUsers: version.limits.employees, userCount: 1, planExpiry: periodEnd, createdAt };
   draft.companies.unshift(company);
   const adminId = id('user');
   draft.users.unshift({ id: adminId, name: registration.adminName, email: registration.adminEmail, role: 'COMPANY_ADMIN', companyId, isActive: true, createdAt, lastLoginAt: null } as MockUser);
@@ -107,13 +130,11 @@ function provisionVerifiedRegistration(draft: MockState, registration: Row) {
   const adminRole = clonedRoles.find((item) => item.key === 'COMPANY_ADMIN');
   draft.roleAssignments.push({ id: id('assignment'), companyId, userId: adminId, roleDefinitionId: adminRole.id, scopeType: 'COMPANY', scopeId: companyId, isPrimary: true, createdAt });
   const subscriptionId = id('subscription');
-  draft.subscriptions.push({ id: subscriptionId, companyId, planId: plan.id, planVersionId: version.id, plan: plan.type, billingCycle: registration.billingCycle ?? 'Monthly', amount: registration.billingCycle === 'Annual' ? version.pricing.annual : version.pricing.monthly, startDate: createdAt, endDate: periodEnd, trialEndsAt: trial ? periodEnd : null, currentPeriodEnd: periodEnd, status: trial ? 'TRIAL' : 'ACTIVE', isActive: true });
+  draft.subscriptions.push({ id: subscriptionId, companyId, planId: plan.id, planVersionId: version.id, plan: plan.type, billingCycle: registration.billingCycle ?? 'Monthly', amount: registration.billingCycle === 'Annual' ? version.pricing.annual : version.pricing.monthly, startDate: createdAt, endDate: periodEnd, trialEndsAt: null, currentPeriodEnd: periodEnd, status: 'ACTIVE', isActive: true });
   draft.onboardings.push({ companyId, status: 'NOT_STARTED', steps: ['company-profile', 'first-branch', 'organization', 'roles', 'shifts-holidays', 'attendance-policy', 'leave-policy', 'workflows', 'payroll', 'expenses', 'employees', 'invitations'].map((key) => ({ key, status: 'NOT_STARTED' })) });
-  if (!trial) {
-    const invoice = { id: id('invoice'), companyId, subscriptionId, invoiceNumber: `INV-${new Date().getFullYear()}-${String(draft.invoices.length + 1).padStart(5, '0')}`, status: 'PAID', amount: registration.billingCycle === 'Annual' ? version.pricing.annual : version.pricing.monthly, currency: version.currency, issuedAt: createdAt, paidAt: createdAt };
-    draft.invoices.unshift(invoice);
-    const payment = (draft.payments as Row[]).find((item) => item.registrationId === registration.registrationId); if (payment) payment.companyId = companyId;
-  }
+  const invoice = { id: id('invoice'), companyId, subscriptionId, invoiceNumber: `INV-${new Date().getFullYear()}-${String(draft.invoices.length + 1).padStart(5, '0')}`, status: 'PAID', amount: registration.billingCycle === 'Annual' ? version.pricing.annual : version.pricing.monthly, currency: version.currency, issuedAt: createdAt, paidAt: createdAt };
+  draft.invoices.unshift(invoice);
+  const payment = (draft.payments as Row[]).find((item) => item.registrationId === registration.registrationId); if (payment) payment.companyId = companyId;
   Object.assign(registration, { companyId, adminUserId: adminId, status: 'PROVISIONED', emailVerified: true, verifiedAt: createdAt });
   appendAudit(draft, { actorId: adminId, companyId, action: 'ONLINE_COMPANY_PROVISIONED', entityType: 'COMPANY', entityId: companyId, newValue: { acquisition: registration.acquisition, planVersionId: version.id }, description: `${registration.companyName} provisioned after email verification` });
   return company;
@@ -182,7 +203,7 @@ const resolver: HttpResponseResolver = async ({ request }) => {
     if (role !== 'SUPER_ADMIN' && currentUser.companyId) {
       const moduleRules: Array<[RegExp, string]> = [
         [/^\/employees/, 'EMPLOYEE_MANAGEMENT'], [/^\/departments|^\/designations|^\/offices|^\/teams/, 'ORGANIZATION'],
-        [/^\/attendance-integrations|^\/attendance-verification-policy/, 'ATTENDANCE_INTEGRATIONS'], [/^\/attendance/, 'ATTENDANCE'], [/^\/shifts/, 'SHIFT_MANAGEMENT'], [/^\/leave-requests/, 'LEAVE_MANAGEMENT'],
+        [/^\/attendance-verification-policy/, 'ATTENDANCE'], [/^\/attendance-integrations/, 'ATTENDANCE'], [/^\/attendance/, 'ATTENDANCE'], [/^\/shifts/, 'SHIFT_MANAGEMENT'], [/^\/leave-requests/, 'LEAVE_MANAGEMENT'],
         [/^\/approvals|^\/workflows/, 'APPROVALS'], [/^\/salaries|^\/payroll-runs/, 'PAYROLL'], [/^\/payslips/, 'PAYSLIPS'],
         [/^\/expenses/, 'EXPENSE_MANAGEMENT'], [/^\/documents|^\/files\/documents/, 'DOCUMENTS'], [/^\/reports/, 'REPORTS_ANALYTICS'],
       ];
@@ -211,45 +232,7 @@ const resolver: HttpResponseResolver = async ({ request }) => {
     const stats = { total: state.companies.length, active: rows.filter((item) => item.status === 'ACTIVE').length, trial: rows.filter((item) => item.status === 'TRIAL').length, expiringSoon: rows.filter((item) => item.status === 'TRIAL').length };
     return ok({ companies: result.rows, pagination: result.pagination, stats });
   }
-  if (path === '/companies' && method === 'POST') {
-    const body = await bodyOf(request);
-    if (!body.name || !body.adminEmail) return fail(422, 'VALIDATION_ERROR', 'Company name and primary Company Admin email are required.', { fields: ['name', 'adminEmail'] });
-    if (state.users.some((user) => user.email.toLowerCase() === String(body.adminEmail).toLowerCase())) return fail(409, 'EMAIL_IN_USE', 'A user with this email already exists.');
-    const created = await updateMockState((draft) => {
-      const createdAt = new Date().toISOString();
-      const companyId = id('company');
-      const requestedPlan = (draft.plans as Row[]).find((item) => item.id === body.planId || item.type === body.plan);
-      const selectedVersion = (draft.planVersions as Row[]).find((item) => item.id === body.planVersionId)
-        ?? (draft.planVersions as Row[]).find((item) => item.planId === requestedPlan?.id)
-        ?? (draft.planVersions as Row[]).find((item) => item.planId === 'plan_basic');
-      const selectedPlan = (draft.plans as Row[]).find((item) => item.id === selectedVersion?.planId) as Row;
-      const isTrial = (body.acquisitionChannel ?? 'MANUAL_TRIAL') === 'MANUAL_TRIAL';
-      const onlinePaymentPending = ['RAZORPAY', 'PAYU'].includes(body.acquisitionChannel);
-      const trialDays = isTrial ? Number(body.trialDays ?? selectedVersion?.trial?.days ?? 5) : 0;
-      const periodEnd = new Date(Date.now() + Math.max(1, trialDays || Number(body.months ?? 12) * 30) * 86_400_000).toISOString();
-      const company = { id: companyId, companyCode: `DEM-${String(draft.companies.length + 1).padStart(3, '0')}`, name: body.name, legalName: body.legalName ?? body.name, displayName: body.displayName ?? body.name, industry: body.industry ?? null, email: body.email ?? body.adminEmail, phone: body.phone ?? null, address: body.address ?? null, timezone: body.timezone ?? 'Asia/Kolkata', currency: body.currency ?? 'INR', plan: selectedPlan?.type ?? 'BASIC', status: trialDays ? 'TRIAL' : 'ACTIVE', maxUsers: selectedVersion?.limits?.employees ?? 50, userCount: 1, planExpiry: periodEnd, createdAt };
-      draft.companies.unshift(company);
-      const adminId = id('user');
-      draft.users.unshift({ id: adminId, name: body.adminName ?? 'Primary Company Admin', email: body.adminEmail, role: 'COMPANY_ADMIN', companyId, isActive: true, createdAt, lastLoginAt: null } as MockUser);
-      const templates = (draft.roleDefinitions as Row[]).filter((item) => item.companyId === 'company_northstar' && item.kind !== 'CUSTOM');
-      const clonedRoles = templates.map((template) => ({ ...structuredClone(template), id: `${template.key.toLowerCase()}_${companyId}`, companyId, revision: 1 }));
-      draft.roleDefinitions.push(...clonedRoles);
-      const adminRole = clonedRoles.find((item) => item.key === 'COMPANY_ADMIN');
-      draft.roleAssignments.push({ id: id('assignment'), companyId, userId: adminId, roleDefinitionId: adminRole.id, scopeType: 'COMPANY', scopeId: companyId, isPrimary: true });
-      const subscriptionId = id('subscription');
-      draft.subscriptions.push({ id: subscriptionId, companyId, planId: selectedPlan.id, planVersionId: selectedVersion.id, plan: selectedPlan.type, billingCycle: body.billingCycle ?? 'Monthly', amount: Number(selectedVersion?.pricing?.monthly ?? selectedPlan.price), startDate: createdAt, endDate: periodEnd, trialEndsAt: trialDays ? periodEnd : undefined, currentPeriodEnd: periodEnd, status: trialDays ? 'TRIAL' : onlinePaymentPending ? 'PAST_DUE' : 'ACTIVE', isActive: !onlinePaymentPending });
-      if (!isTrial && body.acquisitionChannel === 'MANUAL_OFFLINE') {
-        const paymentId = id('payment');
-        draft.payments.unshift({ id: paymentId, companyId, amount: Number(selectedVersion?.pricing?.monthly ?? selectedPlan.price), currency: selectedVersion?.currency ?? 'INR', source: 'OFFLINE', status: body.paymentStatus ?? 'PAID', reference: body.paymentReference ?? null, notes: body.paymentNotes ?? null, createdAt });
-        draft.invoices.unshift({ id: id('invoice'), companyId, invoiceNumber: `INV-${new Date().getFullYear()}-${String(draft.invoices.length + 1).padStart(5, '0')}`, amount: Number(selectedVersion?.pricing?.monthly ?? selectedPlan.price), currency: selectedVersion?.currency ?? 'INR', status: 'PAID', paymentId, issuedAt: createdAt, paidAt: createdAt });
-      }
-      if (onlinePaymentPending) draft.payments.unshift({ id: id('payment'), companyId, subscriptionId, amount: Number(selectedVersion?.pricing?.monthly ?? selectedPlan.price), currency: selectedVersion?.currency ?? 'INR', source: body.acquisitionChannel, status: 'PENDING', reference: id('checkout'), createdAt });
-      draft.onboardings.push({ companyId, status: 'NOT_STARTED', steps: ['company-profile', 'first-branch', 'organization', 'roles', 'shifts-holidays', 'attendance-policy', 'leave-policy', 'workflows', 'payroll', 'expenses', 'employees', 'invitations'].map((key) => ({ key, status: 'NOT_STARTED' })) });
-      appendAudit(draft, { actorId: currentUser?.id, companyId, action: 'COMPANY_CREATED', entityType: 'COMPANY', entityId: companyId, newValue: { planVersionId: selectedVersion.id, trialDays }, description: `${company.name} created with a ${trialDays}-day trial` });
-      return { ...company, adminEmail: body.adminEmail, invitationSent: true };
-    });
-    return ok(created, 201);
-  }
+  if (path === '/companies' && method === 'POST') return fail(405, 'ONLINE_SIGNUP_REQUIRED', 'Companies are created through online signup after successful checkout.');
   const companyMatch = path.match(/^\/companies\/([^/]+)$/);
   if (companyMatch) {
     const found = state.companies.find((item) => item.id === companyMatch[1]) as Row | undefined;
@@ -275,7 +258,7 @@ const resolver: HttpResponseResolver = async ({ request }) => {
   if (userMatch && ['PATCH', 'DELETE'].includes(method)) { if (method === 'DELETE') { await updateMockState((draft) => { draft.users = draft.users.filter((item) => item.id !== userMatch[1]); }); return ok(null); } const body = await bodyOf(request); const updated = await updateMockState((draft) => { const row = draft.users.find((item) => item.id === userMatch[1]); if (row) Object.assign(row, body); return row; }); return ok(updated); }
   if (/^\/users\/[^/]+\/revoke-sessions$/.test(path) && method === 'POST') return ok({ revoked: true });
 
-  if (path === '/employees' && method === 'GET') { const company = companyFor(state, currentUser, url); const search = (url.searchParams.get('search') || '').toLowerCase(); const requestedCompany = url.searchParams.get('companyId'); const rows = (state.employees as Row[]).filter((item) => (currentUser?.role === 'SUPER_ADMIN' ? (!requestedCompany || item.companyId === requestedCompany) : item.companyId === company?.id && recordWithinScope(state, currentUser, item, 'EMPLOYEE_MANAGEMENT.VIEW')) && (!search || String((item.user as Row)?.name).toLowerCase().includes(search) || String(item.employeeId).toLowerCase().includes(search))).map((item) => employeeView(state, item)); const result = page(rows, url); return ok({ employees: result.rows, companies: state.companies.map((item) => ({ id: item.id, name: item.name })), privacy: currentUser?.role === 'SUPER_ADMIN' ? 'MASKED' : 'ROLE_SCOPED', pagination: result.pagination, stats: { total: rows.length, active: rows.filter((item) => item.status === 'ACTIVE').length, inactive: rows.filter((item) => item.status !== 'ACTIVE').length, departments: new Set(rows.map((item) => item.department)).size } }); }
+  if (path === '/employees' && method === 'GET') { const company = companyFor(state, currentUser, url); const search = (url.searchParams.get('search') || '').toLowerCase(); const requestedCompany = url.searchParams.get('companyId'); const requestedStatus = url.searchParams.get('status'); const visibleRows = (state.employees as Row[]).filter((item) => { const user = (item.user as Row) ?? {}; const inScope = currentUser?.role === 'SUPER_ADMIN' ? (!requestedCompany || item.companyId === requestedCompany) : item.companyId === company?.id && recordWithinScope(state, currentUser, item, 'EMPLOYEE_MANAGEMENT.VIEW'); const matchesStatus = !requestedStatus || requestedStatus === 'ALL' || String(item.status).toUpperCase() === requestedStatus.toUpperCase(); const matchesSearch = !search || [user.name, user.email, item.employeeId, item.mobile, item.phone, item.department, item.designation].some((value) => String(value ?? '').toLowerCase().includes(search)); return inScope && matchesStatus && matchesSearch; }); const rows = visibleRows.map((item) => currentUser?.role === 'SUPER_ADMIN' ? platformEmployeeView(state, item) : employeeView(state, item)); const result = page(rows, url); return ok({ employees: result.rows, companies: state.companies.map((item) => ({ id: item.id, _id: item.id, name: item.name, companyCode: item.companyCode })), privacy: currentUser?.role === 'SUPER_ADMIN' ? 'Work contact and employment-directory fields only. Salary, banking, documents and identity records are excluded.' : 'ROLE_SCOPED', pagination: result.pagination, stats: { total: rows.length, active: rows.filter((item) => item.status === 'ACTIVE').length, inactive: rows.filter((item) => item.status !== 'ACTIVE').length, departments: new Set(rows.map((item) => item.department)).size } }); }
   if (path === '/employees' && method === 'POST') { const body = await bodyOf(request); if (!body.name && !(body.user as Row)?.name) return fail(422, 'VALIDATION_ERROR', 'Employee name is required.'); const company = companyFor(state, currentUser, url); const limit = Number(effectiveEntitlements(state, company?.id).limits.employees || 0); const count = (state.employees as Row[]).filter((item) => item.companyId === company?.id && item.status !== 'EXITED').length; if (limit && count >= limit) return fail(409, 'EMPLOYEE_LIMIT_REACHED', 'The employee limit for this subscription has been reached.', { limit, current: count }); const created = await updateMockState((draft) => { const name = body.name || (body.user as Row)?.name; const row = { id: id('employee'), employeeId: `NS-${String(draft.employees.length + 1).padStart(4, '0')}`, companyId: company?.id, branchId: body.branchId ?? null, departmentId: body.departmentId ?? null, department: body.department || null, designation: body.designation || null, employmentType: body.employmentType || 'Permanent', status: 'ONBOARDING', joiningDate: body.joiningDate || new Date().toISOString().slice(0, 10), annualCtc: body.annualCtc || null, version: 1, user: { id: null, name, email: body.email || '', role: 'EMPLOYEE', accountStatus: 'NOT_CREATED' }, ...body }; draft.employees.unshift(row); appendAudit(draft, { actorId: currentUser?.id, companyId: company?.id, action: 'EMPLOYEE_CREATED', entityType: 'EMPLOYEE', entityId: row.id, newValue: row }); return row; }); return ok(created, 201); }
   const employeeMatch = path.match(/^\/employees\/([^/]+)(?:\/(actions|account))?$/);
   if (employeeMatch) { const found = state.employees.find((item) => item.id === employeeMatch[1]) as Row | undefined; if (!found) return fail(404, 'NOT_FOUND', 'Employee not found.'); if (currentUser?.role !== 'SUPER_ADMIN' && !recordWithinScope(state, currentUser, found, method === 'GET' ? 'EMPLOYEE_MANAGEMENT.VIEW' : 'EMPLOYEE_MANAGEMENT.EDIT')) return fail(403, 'SCOPE_DENIED', 'This employee is outside your assigned organizational scope.'); if (method === 'GET') return ok(employeeView(state, found)); const body = await bodyOf(request); const updated = await updateMockState((draft) => { const row = draft.employees.find((item) => item.id === employeeMatch[1]) as Row; const before = structuredClone(row); if (employeeMatch[2] === 'actions') { const action = String(body.action || '').toUpperCase(); const transitions: Record<string, string> = { ACTIVATE: 'ACTIVE', DEACTIVATE: 'SUSPENDED', SUSPEND: 'SUSPENDED', RESIGN: 'RESIGNATION', START_NOTICE: 'NOTICE_PERIOD', EXIT: 'EXITED', TRANSFER: 'TRANSFER' }; row.status = transitions[action] ?? row.status; if (action === 'EXIT' && row.userId) { const user = draft.users.find((item) => item.id === row.userId); if (user) user.isActive = false; } } else if (employeeMatch[2] === 'account') (row.user as Row).accountStatus = 'INVITED'; else Object.assign(row, body); row.version = Number(row.version || 0) + 1; appendAudit(draft, { actorId: currentUser?.id, companyId: row.companyId, action: 'EMPLOYEE_UPDATED', entityType: 'EMPLOYEE', entityId: row.id, oldValue: before, newValue: row }); return employeeView(draft, row); }); return ok(updated); }
@@ -352,7 +335,7 @@ const resolver: HttpResponseResolver = async ({ request }) => {
     const created = await updateMockState((draft) => {
       const createdAt = new Date().toISOString();
       const planId = id('plan');
-      const planDraft = { baseVersionId: null, name: body.name, pricing: { monthly: Number(body.price), annual: Number(body.annualPrice ?? Number(body.price) * 10) }, trial: { enabled: body.trialEnabled !== false, days: Number(body.defaultTrialDays ?? 5) }, moduleIds, limits: { employees: Number(body.maxUsers), branches: Number(body.maxBranches ?? 2), storageGB: Number(body.storageGB ?? 5), apiRequests: Number(body.apiRequests ?? 10000) }, features: body.features ?? [], revision: 1, updatedBy: currentUser?.id, updatedAt: createdAt };
+      const planDraft = { baseVersionId: null, name: body.name, pricing: { monthly: Number(body.price), annual: Number(body.annualPrice ?? Number(body.price) * 10) }, trial: { enabled: false, days: 0 }, moduleIds, limits: { employees: Number(body.maxUsers), branches: Number(body.maxBranches ?? 2), storageGB: Number(body.storageGB ?? 5), apiRequests: Number(body.apiRequests ?? 10000) }, features: body.features ?? [], revision: 1, updatedBy: currentUser?.id, updatedAt: createdAt };
       const plan = { id: planId, name: body.name, type: String(body.type).toUpperCase(), status: 'DRAFT', price: planDraft.pricing.monthly, annualPrice: planDraft.pricing.annual, maxUsers: planDraft.limits.employees, maxBranches: planDraft.limits.branches, storageGB: planDraft.limits.storageGB, apiRequests: planDraft.limits.apiRequests, trialEnabled: planDraft.trial.enabled, defaultTrialDays: planDraft.trial.days, moduleIds, features: planDraft.features, currentVersionId: null, draft: planDraft, draftRevision: 1, hasUnpublishedChanges: true, versionCount: 0, activeSubscriptionCount: 0, createdAt };
       draft.plans.push(plan);
       appendAudit(draft, { actorId: currentUser?.id, action: 'PLAN_DRAFT_CREATED', entityType: 'PLAN', entityId: planId, newValue: planDraft });
@@ -405,7 +388,7 @@ const resolver: HttpResponseResolver = async ({ request }) => {
         const moduleIds = [...new Set([...coreIds, ...(body.moduleIds ?? plan.moduleIds).map((item: string | Row) => typeof item === 'string' ? item : item.id)])];
         const revision = Number(plan.draftRevision ?? 0) + 1;
         const current = plan.draft ?? plan.currentVersionId ?? {};
-        const draftRecord = { baseVersionId: plan.currentVersionId?.id ?? null, name: body.name ?? current.name ?? plan.name, pricing: { monthly: Number(body.price ?? current.pricing?.monthly ?? plan.price), annual: Number(body.annualPrice ?? current.pricing?.annual ?? plan.annualPrice) }, trial: { enabled: body.trialEnabled ?? current.trial?.enabled ?? plan.trialEnabled, days: Number(body.defaultTrialDays ?? current.trial?.days ?? plan.defaultTrialDays ?? 5) }, moduleIds, limits: { employees: Number(body.maxUsers ?? current.limits?.employees ?? plan.maxUsers), branches: Number(body.maxBranches ?? current.limits?.branches ?? plan.maxBranches), storageGB: Number(body.storageGB ?? current.limits?.storageGB ?? plan.storageGB), apiRequests: Number(body.apiRequests ?? current.limits?.apiRequests ?? plan.apiRequests ?? 10000) }, features: body.features ?? current.features ?? plan.features, revision, updatedBy: currentUser?.id, updatedAt: new Date().toISOString() };
+        const draftRecord = { baseVersionId: plan.currentVersionId?.id ?? null, name: body.name ?? current.name ?? plan.name, pricing: { monthly: Number(body.price ?? current.pricing?.monthly ?? plan.price), annual: Number(body.annualPrice ?? current.pricing?.annual ?? plan.annualPrice) }, trial: { enabled: false, days: 0 }, moduleIds, limits: { employees: Number(body.maxUsers ?? current.limits?.employees ?? plan.maxUsers), branches: Number(body.maxBranches ?? current.limits?.branches ?? plan.maxBranches), storageGB: Number(body.storageGB ?? current.limits?.storageGB ?? plan.storageGB), apiRequests: Number(body.apiRequests ?? current.limits?.apiRequests ?? plan.apiRequests ?? 10000) }, features: body.features ?? current.features ?? plan.features, revision, updatedBy: currentUser?.id, updatedAt: new Date().toISOString() };
         Object.assign(plan, { name: draftRecord.name, price: draftRecord.pricing.monthly, annualPrice: draftRecord.pricing.annual, maxUsers: draftRecord.limits.employees, maxBranches: draftRecord.limits.branches, storageGB: draftRecord.limits.storageGB, apiRequests: draftRecord.limits.apiRequests, trialEnabled: draftRecord.trial.enabled, defaultTrialDays: draftRecord.trial.days, moduleIds, features: draftRecord.features, draft: draftRecord, draftRevision: revision, hasUnpublishedChanges: true });
         appendAudit(draft, { actorId: currentUser?.id, action: 'PLAN_DRAFT_UPDATED', entityType: 'PLAN', entityId: plan.id, oldValue: found.draft, newValue: draftRecord });
         return plan;
@@ -421,43 +404,17 @@ const resolver: HttpResponseResolver = async ({ request }) => {
     const result = page(rows, url);
     return ok({ subscriptions: result.rows, pagination: result.pagination, stats: { monthlyRevenue: allRows.filter((item) => item.status === 'ACTIVE').reduce((sum, item) => sum + Number(item.billingCycle === 'Annual' ? item.amount / 10 : item.amount), 0), active: allRows.filter((item) => item.status === 'ACTIVE').length, trial: allRows.filter((item) => item.status === 'TRIAL').length, pastDue: allRows.filter((item) => item.status === 'PAST_DUE').length, suspended: allRows.filter((item) => item.status === 'SUSPENDED').length, expiringSoon: allRows.filter((item) => ['TRIAL', 'ACTIVE'].includes(item.status) && new Date(item.endDate).getTime() < Date.now() + 30 * 86_400_000).length } });
   }
-  if (path === '/subscriptions' && method === 'POST') {
-    const body = await bodyOf(request);
-    const company = (state.companies as Row[]).find((item) => item.id === body.companyId);
-    const selectedPlan = (state.plans as Row[]).find((item) => item.type === body.plan || item.id === body.planId);
-    const version = (state.planVersions as Row[]).find((item) => item.id === body.planVersionId)
-      ?? (state.planVersions as Row[]).find((item) => item.id === selectedPlan?.currentVersionId?.id);
-    if (!company) return fail(404, 'NOT_FOUND', 'Company not found.');
-    if (!version) return fail(422, 'PUBLISHED_PLAN_REQUIRED', 'Select a published plan version before assigning it.');
-    const plan = (state.plans as Row[]).find((item) => item.id === version.planId);
-    const created = await updateMockState((draft) => {
-      const startDate = new Date().toISOString(); const endDate = new Date(Date.now() + Number(body.months || 12) * 30 * 86_400_000).toISOString();
-      const existing = (draft.subscriptions as Row[]).find((item) => item.companyId === body.companyId);
-      const values = { companyId: body.companyId, planId: plan.id, planVersionId: version.id, plan: plan.type, billingCycle: body.billingCycle ?? 'Monthly', amount: Number(body.billingCycle === 'Annual' ? version.pricing.annual : version.pricing.monthly), startDate, endDate, currentPeriodEnd: endDate, trialEndsAt: null, status: 'ACTIVE', isActive: true };
-      const subscription = existing ? Object.assign(existing, values) : { id: id('subscription'), ...values };
-      if (!existing) draft.subscriptions.push(subscription);
-      const tenant = (draft.companies as Row[]).find((item) => item.id === body.companyId); Object.assign(tenant, { plan: plan.type, status: 'ACTIVE', maxUsers: version.limits.employees, planExpiry: endDate });
-      appendAudit(draft, { actorId: currentUser?.id, companyId: body.companyId, action: existing ? 'SUBSCRIPTION_REASSIGNED' : 'SUBSCRIPTION_ASSIGNED', entityType: 'SUBSCRIPTION', entityId: subscription.id, oldValue: existing ? { planVersionId: existing.planVersionId } : null, newValue: { planVersionId: version.id }, description: `${plan.name} version ${version.version} assigned` });
-      return subscription;
-    });
-    return ok(created, 201);
-  }
+  if (path === '/subscriptions' && method === 'POST') return fail(405, 'ONLINE_CHECKOUT_REQUIRED', 'Subscriptions are created and renewed only through online checkout.');
   const subscriptionAction = path.match(/^\/subscriptions\/([^/]+)\/(extend-trial|change-plan|migrate|suspend|reactivate|cancel|renew|retry-payment)$/);
   if (subscriptionAction && method === 'POST') {
+    const action = subscriptionAction[2];
+    if (!['suspend', 'cancel'].includes(action)) return fail(405, 'ONLINE_CHECKOUT_REQUIRED', 'Subscription access changes require customer checkout.');
     const body = await bodyOf(request); const existing = (state.subscriptions as Row[]).find((item) => item.id === subscriptionAction[1]);
     if (!existing) return fail(404, 'NOT_FOUND', 'Subscription not found.');
-    const action = subscriptionAction[2];
-    const targetVersion = ['change-plan', 'migrate'].includes(action) ? (state.planVersions as Row[]).find((item) => item.id === body.planVersionId) : null;
-    if (['change-plan', 'migrate'].includes(action) && !targetVersion) return fail(422, 'PUBLISHED_PLAN_REQUIRED', 'Choose a valid published plan version.');
     const updated = await updateMockState((draft) => {
       const subscription = (draft.subscriptions as Row[]).find((item) => item.id === subscriptionAction[1]); const before = structuredClone(subscription);
-      if (action === 'extend-trial') { subscription.status = 'TRIAL'; subscription.trialEndsAt = new Date(new Date(subscription.trialEndsAt ?? Date.now()).getTime() + Number(body.days || 0) * 86_400_000).toISOString(); subscription.endDate = subscription.trialEndsAt; }
-      if (['change-plan', 'migrate'].includes(action)) { const plan = (draft.plans as Row[]).find((item) => item.id === targetVersion.planId); subscription.planId = plan.id; subscription.planVersionId = targetVersion.id; subscription.plan = plan.type; subscription.amount = Number(subscription.billingCycle === 'Annual' ? targetVersion.pricing.annual : targetVersion.pricing.monthly); const tenant = (draft.companies as Row[]).find((item) => item.id === subscription.companyId); Object.assign(tenant, { plan: plan.type, maxUsers: targetVersion.limits.employees }); }
       if (action === 'suspend') { subscription.status = 'SUSPENDED'; subscription.isActive = false; subscription.suspensionReason = body.reason; }
-      if (action === 'reactivate') { subscription.status = 'ACTIVE'; subscription.isActive = true; }
-      if (action === 'cancel') { subscription.status = 'CANCELLED'; subscription.isActive = false; }
-      if (action === 'renew') { subscription.status = body.paymentConfirmed === false ? 'PAST_DUE' : 'ACTIVE'; subscription.isActive = body.paymentConfirmed !== false; subscription.billingCycle = body.billingCycle ?? subscription.billingCycle; if (body.paymentConfirmed !== false) { subscription.endDate = new Date(Date.now() + (subscription.billingCycle === 'Annual' ? 365 : 30) * 86_400_000).toISOString(); subscription.currentPeriodEnd = subscription.endDate; } }
-      if (action === 'retry-payment') { const successful = body.simulateFailure !== true; subscription.status = successful ? 'ACTIVE' : 'PAST_DUE'; subscription.isActive = successful; draft.payments.unshift({ id: id('payment'), companyId: subscription.companyId, subscriptionId: subscription.id, amount: subscription.amount, currency: 'INR', source: body.provider ?? 'RAZORPAY', status: successful ? 'PAID' : 'FAILED', idempotencyKey: body.idempotencyKey ?? id('idem'), createdAt: new Date().toISOString() }); }
+      if (action === 'cancel') { subscription.cancelAtPeriodEnd = true; subscription.cancellationReason = body.reason; }
       appendAudit(draft, { actorId: currentUser?.id, companyId: subscription.companyId, action: `SUBSCRIPTION_${action.replace('-', '_').toUpperCase()}`, entityType: 'SUBSCRIPTION', entityId: subscription.id, oldValue: before, newValue: subscription, description: body.reason });
       return subscription;
     });
@@ -468,7 +425,21 @@ const resolver: HttpResponseResolver = async ({ request }) => {
   const overrideMatch = path.match(/^\/entitlement-overrides\/([^/]+)$/); if (overrideMatch && method === 'DELETE') { const found = (state.entitlementOverrides as Row[]).find((item) => item.id === overrideMatch[1]); if (!found) return fail(404, 'NOT_FOUND', 'Entitlement override not found.'); await updateMockState((draft) => { draft.entitlementOverrides = draft.entitlementOverrides.filter((item) => item.id !== found.id); appendAudit(draft, { actorId: currentUser?.id, companyId: found.companyId, action: 'ENTITLEMENT_OVERRIDE_REVOKED', entityType: 'ENTITLEMENT_OVERRIDE', entityId: found.id, oldValue: found }); }); return ok(null); }
   if (path === '/reports/revenue-trend' && method === 'GET') return ok(['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'].map((month, index) => ({ month, revenue: 180000 + index * 22000 })));
   if (path === '/subscription' && method === 'GET') { const company = companyFor(state, currentUser, url); return ok({ subscription: subscriptionFor(state, company?.id), status: subscriptionAccess(state, company?.id), entitlements: effectiveEntitlements(state, company?.id) }); }
-  if (path === '/subscription/checkout' && method === 'POST') { const body = await bodyOf(request); const company = companyFor(state, currentUser, url); const version = (state.planVersions as Row[]).find((item) => item.id === body.planVersionId); if (!version) return fail(422, 'PUBLISHED_PLAN_REQUIRED', 'Choose a valid published plan version.'); const payment = await updateMockState((draft) => { const paymentId = id('payment'); const orderId = id('order'); draft.payments.unshift({ id: paymentId, companyId: company?.id, amount: body.billingCycle === 'Annual' ? version.pricing.annual : version.pricing.monthly, currency: version.currency, source: body.provider ?? 'RAZORPAY', status: 'PAID', reference: orderId, createdAt: new Date().toISOString() }); return { paymentId, orderId, amount: body.billingCycle === 'Annual' ? version.pricing.annual : version.pricing.monthly, currency: version.currency, keyId: 'mock_provider_key', provider: body.provider ?? 'RAZORPAY', message: 'Mock checkout completed successfully.' }; }); return ok(payment, 201); }
+  if (path === '/subscription/checkout' && method === 'POST') {
+    const body = await bodyOf(request);
+    if (body.provider && body.provider !== 'RAZORPAY') return fail(422, 'UNSUPPORTED_PAYMENT_PROVIDER', 'Online subscription checkout currently accepts Razorpay only.');
+    const company = companyFor(state, currentUser, url);
+    const version = (state.planVersions as Row[]).find((item) => item.id === body.planVersionId);
+    if (!version) return fail(422, 'PUBLISHED_PLAN_REQUIRED', 'Choose a valid published plan version.');
+    const payment = await updateMockState((draft) => {
+      const paymentId = id('payment');
+      const orderId = id('order');
+      const amount = body.billingCycle === 'Annual' ? version.pricing.annual : version.pricing.monthly;
+      draft.payments.unshift({ id: paymentId, companyId: company?.id, amount, currency: version.currency, source: 'RAZORPAY', status: 'PAID', reference: orderId, createdAt: new Date().toISOString() });
+      return { paymentId, orderId, amount, currency: version.currency, keyId: 'mock_provider_key', provider: 'RAZORPAY', message: 'Mock checkout completed successfully.' };
+    });
+    return ok(payment, 201);
+  }
   if (path === '/entitlements' && method === 'GET') { const company = companyFor(state, currentUser, url); return ok(effectiveEntitlements(state, company?.id)); }
 
   if (path === '/modules' && method === 'GET') { const companyId = url.searchParams.get('companyId'); if (!companyId) return ok({ modules: state.modules.map((item) => ({ ...item, isEnabled: null, enabled: null })) }); return ok({ modules: effectiveEntitlements(state, companyId).modules }); }
@@ -493,10 +464,36 @@ const resolver: HttpResponseResolver = async ({ request }) => {
   const reportExportMatch = path.match(/^\/reports\/([^/]+)\/export$/); if (reportExportMatch && method === 'POST') { const visibleEmployees = (state.employees as Row[]).filter((item) => recordWithinScope(state, currentUser, item)); const csv = `report,scope,records\n${reportExportMatch[1]},${currentUser?.role},${visibleEmployees.length}\n`; return new HttpResponse(csv, { headers: { 'Content-Type': 'text/csv', 'Content-Disposition': `attachment; filename="${reportExportMatch[1]}-report.csv"` } }); }
   if (path.startsWith('/reports/') && method === 'GET') { const type = path.split('/').pop(); const employees = (state.employees as Row[]).filter((item) => recordWithinScope(state, currentUser, item)); const employeeIds = new Set(employees.map((item) => item.id)); const attendance = (state.attendance as Row[]).filter((item) => employeeIds.has(item.employeeId)); const leaves = (state.leaves as Row[]).filter((item) => employeeIds.has(item.employeeId)); const payslips = (state.payslips as Row[]).filter((item) => employeeIds.has(item.employeeId)); if (type === 'workforce') return ok({ summary: { total: employees.length, active: employees.filter((item) => item.status === 'ACTIVE').length, inactive: employees.filter((item) => item.status !== 'ACTIVE').length }, byDepartment: [...new Set(employees.map((item) => item.department))].map((department) => ({ department, count: employees.filter((item) => item.department === department).length, active: employees.filter((item) => item.department === department && item.status === 'ACTIVE').length })), byEmploymentType: ['Permanent', 'Contract'].map((employmentType) => ({ type: employmentType, count: employees.filter((item) => item.employmentType === employmentType).length })), recentJoinees: employees.slice(0, 5).map((item) => ({ employeeId: item.employeeId, name: (item.user as Row).name, department: item.department, designation: item.designation, joiningDate: item.joiningDate, status: item.status })) }); if (type === 'leave') return ok({ total: leaves.length, byStatus: ['PENDING', 'APPROVED', 'REJECTED'].map((status) => ({ status, count: leaves.filter((item) => item.status === status).length })), byType: ['Casual', 'Sick', 'Earned'].map((leaveType) => ({ type: leaveType, count: leaves.filter((item) => item.leaveType === leaveType).length })) }); if (type === 'payroll') return ok({ summary: { totalNet: payslips.reduce((sum, item) => sum + Number(item.netPay), 0), totalGross: payslips.reduce((sum, item) => sum + Number(item.grossSalary), 0), totalDeductions: payslips.reduce((sum, item) => sum + Number(item.totalDeductions), 0), count: payslips.length }, byMonth: [{ label: 'Sep', net: payslips.reduce((sum, item) => sum + Number(item.netPay), 0), count: payslips.length }], recent: payslips.slice(0, 5).map((item) => ({ id: item.id, employeeName: (payslipView(state, item).employee as Row)?.user.name, month: item.month, year: item.year, netSalary: item.netPay, status: item.status })) }); if (type === 'attendance') return ok({ period: { year: new Date().getFullYear(), month: new Date().getMonth() + 1 }, totalRecords: attendance.length, totalEmployees: employees.length, byStatus: { Present: attendance.filter((item) => item.status === 'Present').length, Late: attendance.filter((item) => item.status === 'Late').length, Absent: attendance.filter((item) => item.status === 'Absent').length, Leave: 0, Holiday: 0 } }); }
 
-  if (path === '/notifications' && method === 'GET') { const rows = state.notifications.filter((item) => item.userId === currentUser?.id); return ok({ notifications: rows, unreadCount: rows.filter((item) => !item.isRead).length, pagination: { total: rows.length, page: 1, limit: 50, totalPages: 1 } }); }
-  if (path === '/notifications/read' && method === 'PATCH') { const body = await bodyOf(request); await updateMockState((draft) => { draft.notifications.forEach((item: Row) => { if ((body.ids as string[])?.includes(item.id)) item.isRead = true; }); }); return ok(null); }
+  if (path === '/notifications' && method === 'GET') {
+    const ownedRows = state.notifications.filter((item) => item.userId === currentUser?.id);
+    const unreadCount = ownedRows.filter((item) => !item.isRead && !item.readAt).length;
+    const status = url.searchParams.get('status');
+    const rows = status === 'unread' ? ownedRows.filter((item) => !item.isRead && !item.readAt) : ownedRows;
+    const limit = Math.max(1, Math.min(100, Number(url.searchParams.get('limit') || 50)));
+    const requestedCursor = Number(url.searchParams.get('cursor') || 0);
+    const start = Number.isFinite(requestedCursor) && requestedCursor > 0 ? Math.floor(requestedCursor) : 0;
+    const pageRows = rows.slice(start, start + limit);
+    const nextCursor = start + pageRows.length < rows.length ? String(start + pageRows.length) : null;
+    return ok({
+      items: pageRows,
+      notifications: pageRows,
+      nextCursor,
+      unreadCount,
+      unread: unreadCount,
+      pagination: { total: rows.length, page: Math.floor(start / limit) + 1, limit, totalPages: Math.max(1, Math.ceil(rows.length / limit)) },
+    });
+  }
+  if (path === '/notifications/read' && method === 'PATCH') {
+    const body = await bodyOf(request);
+    if (!Array.isArray(body.ids) || !body.ids.length || body.ids.some((value: unknown) => typeof value !== 'string')) return fail(422, 'VALIDATION_ERROR', 'At least one valid notification id is required.');
+    const ids = [...new Set(body.ids as string[])];
+    const ownedIds = new Set(state.notifications.filter((item) => item.userId === currentUser?.id).map((item) => item.id));
+    if (ids.some((notificationId) => !ownedIds.has(notificationId))) return fail(404, 'NOT_FOUND', 'Notification not found.');
+    await updateMockState((draft) => { draft.notifications.forEach((item: Row) => { if (ids.includes(item.id) && item.userId === currentUser?.id) item.isRead = true; }); });
+    return ok(null);
+  }
   if (path === '/notifications/read-all' && method === 'PATCH') { await updateMockState((draft) => { draft.notifications.forEach((item: Row) => { if (item.userId === currentUser?.id) item.isRead = true; }); }); return ok(null); }
-  const notificationRead = path.match(/^\/notifications\/([^/]+)\/read$/); if (notificationRead && method === 'PATCH') { await updateMockState((draft) => { const row = draft.notifications.find((item) => item.id === notificationRead[1]) as Row; if (row) row.isRead = true; }); return ok(null); }
+  const notificationRead = path.match(/^\/notifications\/([^/]+)\/read$/); if (notificationRead && method === 'PATCH') { const row = state.notifications.find((item) => item.id === notificationRead[1]); if (!row || row.userId !== currentUser?.id) return fail(404, 'NOT_FOUND', 'Notification not found.'); await updateMockState((draft) => { const ownedRow = draft.notifications.find((item) => item.id === notificationRead[1] && item.userId === currentUser?.id) as Row | undefined; if (ownedRow) ownedRow.isRead = true; }); return ok(null); }
   if (path === '/notifications/preferences' && method === 'GET') return ok({ preferences: { email: true, inApp: true, payroll: true, leave: true, support: true } });
   if (path === '/notifications/preferences' && method === 'PUT') return ok(await bodyOf(request));
 
@@ -508,12 +505,12 @@ const resolver: HttpResponseResolver = async ({ request }) => {
   if (path === '/audit-events' && method === 'GET') { const visible = currentUser?.role === 'SUPER_ADMIN' ? state.audit : (state.audit as Row[]).filter((item) => item.companyId === currentUser?.companyId); const result = page(visible as Row[], url); return ok({ logs: result.rows, pagination: result.pagination }); }
   if (path === '/search' && method === 'GET') { const query = (url.searchParams.get('q') || '').toLowerCase(); return ok({ query, companies: (state.companies as Row[]).filter((item) => String(item.name).toLowerCase().includes(query)).slice(0, 5).map((item) => ({ id: item.id, title: item.name, subtitle: item.companyCode, path: `/companies` })), employees: (state.employees as Row[]).filter((item) => String((item.user as Row).name).toLowerCase().includes(query)).slice(0, 5).map((item) => ({ id: item.id, title: (item.user as Row).name, subtitle: item.employeeId, path: `/hr/employees` })), tickets: [], documents: [] }); }
 
-  if (path === '/payments' && method === 'GET') { const rows = (state.payments as Row[]).map((item) => ({ ...item, company: state.companies.find((company) => company.id === item.companyId) })); const result = page(rows, url); return ok({ payments: result.rows, pagination: result.pagination }); }
+  if (path === '/payments' && method === 'GET') { const source = url.searchParams.get('source'); const status = url.searchParams.get('status'); const rows = (state.payments as Row[]).filter((item) => (!source || source === 'ALL' || item.source === source) && (!status || status === 'ALL' || item.status === status)).map((item) => ({ ...item, company: state.companies.find((company) => company.id === item.companyId) })); const result = page(rows, url); return ok({ payments: result.rows, pagination: result.pagination }); }
   if (path === '/payments/mine' && method === 'GET') return ok(state.payments.filter((item) => item.companyId === currentUser?.companyId));
-  if (path === '/payments/offline' && method === 'POST') { const body = await bodyOf(request); const created = await updateMockState((draft) => { const row = { id: id('payment'), source: 'OFFLINE', currency: 'INR', createdAt: new Date().toISOString(), ...body }; draft.payments.unshift(row); return row; }); return ok(created, 201); }
+  if (path === '/payments/offline' && method === 'POST') return fail(405, 'ONLINE_PAYMENT_REQUIRED', 'Payments must be collected through online checkout.');
   if (path === '/invoices' && method === 'GET') { const rows = currentUser?.role === 'SUPER_ADMIN' ? state.invoices : (state.invoices as Row[]).filter((item) => item.companyId === currentUser?.companyId); return ok(rows); }
   const invoiceDownloadMatch = path.match(/^\/invoices\/([^/]+)\/download$/); if (invoiceDownloadMatch && method === 'GET') { const invoice = (state.invoices as Row[]).find((item) => item.id === invoiceDownloadMatch[1]); if (!invoice) return fail(404, 'NOT_FOUND', 'Invoice not found.'); if (currentUser?.role !== 'SUPER_ADMIN' && invoice.companyId !== currentUser?.companyId) return fail(403, 'SCOPE_DENIED', 'Invoice belongs to another company.'); const invoiceNumber = invoice.invoiceNumber ?? invoice.number; const content = new Blob([`VOOK INVOICE\n${invoiceNumber}\n${invoice.currency} ${invoice.amount ?? invoice.amountMinor / 100}`], { type: 'application/pdf' }); return new HttpResponse(content, { headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${invoiceNumber}.pdf"` } }); }
-  const paymentMatch = path.match(/^\/payments\/([^/]+)$/); if (paymentMatch && method === 'PATCH') { const body = await bodyOf(request); const updated = await updateMockState((draft) => { const row = draft.payments.find((item) => item.id === paymentMatch[1]) as Row; Object.assign(row, body); return row; }); return ok(updated); }
+  const paymentMatch = path.match(/^\/payments\/([^/]+)$/); if (paymentMatch && method === 'PATCH') return fail(405, 'PAYMENT_HISTORY_READ_ONLY', 'Payment records are immutable and reflect the online payment provider.');
 
   if (path === '/integrations' && method === 'GET') return ok((state.integrations as Row[]).map(integrationView));
   const integrationMatch = path.match(/^\/integrations\/([^/]+)(?:\/(test|activate|disable))?$/);
@@ -550,9 +547,15 @@ const resolver: HttpResponseResolver = async ({ request }) => {
     });
     return ok(updated);
   }
-  if (path === '/attendance-integrations' && method === 'GET') { const company = companyFor(state, currentUser, url); const verification = (state.attendancePolicy as Row).verification ?? {}; return ok({ manifests: [{ key: 'MOBILE_GEOLOCATION', name: 'Mobile GPS', description: 'Web and mobile geolocation attendance.', mode: 'MOBILE', fields: [] }, { key: 'BIOMETRIC_API', name: 'Biometric API', description: 'Cloud-connected biometric attendance provider.', mode: 'API', fields: ['baseUrl', 'apiSecret'] }, { key: 'LOCAL_BRIDGE', name: 'Local Bridge', description: 'On-premise device bridge.', mode: 'BRIDGE', fields: ['bridgeId', 'callbackKey'] }], connections: (state.attendanceIntegrations as Row[]).filter((item) => item.companyId === company?.id), policy: { verificationMethods: { gps: verification.gpsRequired, geofence: verification.geofenceRequired, device: verification.deviceRequired, face: verification.selfieRequired, biometric: verification.biometricEnabled }, requireAnyVerification: true, minimumGpsAccuracyMeters: (state.attendancePolicy as Row).minimumGpsAccuracyMeters ?? 100, allowRemoteAttendance: (state.attendancePolicy as Row).allowRemoteAttendance ?? false } }); }
-  if (path === '/attendance-integrations' && method === 'POST') { const body = await bodyOf(request); const company = companyFor(state, currentUser, url); const created = await updateMockState((draft) => { const connection = { id: id('connection'), companyId: company?.id, status: 'DRAFT', connectionMode: body.providerKey === 'LOCAL_BRIDGE' ? 'BRIDGE' : body.providerKey === 'MOBILE_GEOLOCATION' ? 'MOBILE' : 'API', secretConfigured: Boolean((body.secrets as Row)?.apiSecret), createdAt: new Date().toISOString(), ...body, secrets: undefined }; draft.attendanceIntegrations.push(connection); appendAudit(draft, { actorId: currentUser?.id, companyId: company?.id, action: 'ATTENDANCE_CONNECTION_CREATED', entityType: 'ATTENDANCE_INTEGRATION', entityId: connection.id, newValue: { providerKey: connection.providerKey } }); return connection; }); return ok(created, 201); }
-  const attendanceConnection = path.match(/^\/attendance-integrations\/([^/]+)\/(test|activate)$/); if (attendanceConnection && method === 'POST') { const found = (state.attendanceIntegrations as Row[]).find((item) => item.id === attendanceConnection[1]); if (!found) return fail(404, 'NOT_FOUND', 'Attendance connection not found.'); if (attendanceConnection[2] === 'activate' && found.status !== 'TESTED') return fail(409, 'CONNECTION_NOT_TESTED', 'Test the connection before activation.'); const updated = await updateMockState((draft) => { const connection = (draft.attendanceIntegrations as Row[]).find((item) => item.id === found.id); connection.status = attendanceConnection[2] === 'test' ? 'TESTED' : 'ACTIVE'; connection.lastTestedAt = attendanceConnection[2] === 'test' ? new Date().toISOString() : connection.lastTestedAt; appendAudit(draft, { actorId: currentUser?.id, companyId: connection.companyId, action: `ATTENDANCE_CONNECTION_${connection.status}`, entityType: 'ATTENDANCE_INTEGRATION', entityId: connection.id, oldValue: found, newValue: connection }); return connection; }); return ok(updated); }
+  if (path === '/attendance-integrations' && method === 'GET') {
+    const verification = (state.attendancePolicy as Row).verification ?? {};
+    return ok({ policy: {
+      verificationMethods: { gps: verification.gpsRequired, geofence: verification.geofenceRequired, device: verification.deviceRequired, face: verification.selfieRequired, biometric: verification.biometricEnabled },
+      requireAnyVerification: true,
+      minimumGpsAccuracyMeters: (state.attendancePolicy as Row).minimumGpsAccuracyMeters ?? 100,
+      allowRemoteAttendance: (state.attendancePolicy as Row).allowRemoteAttendance ?? false,
+    } });
+  }
   if (path === '/attendance-verification-policy' && method === 'PUT') { const body = await bodyOf(request); const saved = await updateMockState((draft) => { const before = structuredClone(draft.attendancePolicy); const methods = (body.verificationMethods ?? {}) as Row; draft.attendancePolicy = { ...draft.attendancePolicy, minimumGpsAccuracyMeters: body.minimumGpsAccuracyMeters, allowRemoteAttendance: body.allowRemoteAttendance, verification: { gpsRequired: methods.gps !== false, geofenceRequired: methods.geofence !== false, deviceRequired: Boolean(methods.device), ipRequired: false, selfieRequired: Boolean(methods.face), biometricEnabled: Boolean(methods.biometric) } }; appendAudit(draft, { actorId: currentUser?.id, companyId: currentUser?.companyId, action: 'ATTENDANCE_POLICY_UPDATED', entityType: 'ATTENDANCE_POLICY', entityId: currentUser?.companyId ?? 'platform', oldValue: before, newValue: draft.attendancePolicy, description: body.reason }); return draft.attendancePolicy; }); return ok(saved); }
 
   if (path === '/settings/platform' && method === 'GET') return ok(state.settings);
@@ -560,11 +563,43 @@ const resolver: HttpResponseResolver = async ({ request }) => {
   if (path === '/profile' && method === 'GET') { const employee = state.employees.find((item) => item.userId === currentUser?.id); return ok({ ...currentUser, employee }); }
   if ((path === '/profile' || path === '/auth/session') && method === 'PATCH') { const body = await bodyOf(request); const updated = await updateMockState((draft) => { const row = draft.users.find((item) => item.id === currentUser?.id); if (row) Object.assign(row, body); return row; }); return ok(updated); }
   if (path === '/onboarding/plans' && method === 'GET') return ok(state.plans);
-  if (path === '/onboarding/trial' && method === 'POST') { const body = await bodyOf(request); const admin = (body.admin ?? {}) as Row; const company = (body.company ?? {}) as Row; const adminEmail = body.adminEmail ?? body.email ?? admin.email; if (!company.name || !admin.name || !adminEmail) return fail(422, 'VALIDATION_ERROR', 'Company name, administrator name, and email are required.'); if ((state.registrations as Row[]).some((item) => item.adminEmail === adminEmail && item.acquisition === 'ONLINE_TRIAL')) return fail(409, 'TRIAL_ALREADY_USED', 'This administrator already has a trial registration.'); const plan = (state.plans as Row[]).find((item) => item.id === body.planId || item.type === body.plan); const version = (state.planVersions as Row[]).find((item) => item.id === (body.planVersionId ?? plan?.currentVersionId?.id)); if (!version) return fail(422, 'PUBLISHED_PLAN_REQUIRED', 'Select a published plan before starting a trial.'); if (!version.trial.enabled) return fail(409, 'TRIAL_NOT_AVAILABLE', 'The selected plan does not offer a trial.'); const registration = await updateMockState((draft) => { const registrationId = id('registration'); const row = { id: registrationId, registrationId, acquisition: 'ONLINE_TRIAL', companyName: company.name, companyEmail: company.email, adminName: admin.name, adminEmail, planId: version.planId, planVersionId: version.id, trialDays: version.trial.days, status: 'PENDING_VERIFICATION', emailVerified: false, createdAt: new Date().toISOString() }; draft.registrations.push(row); return row; }); return ok({ ...registration, message: `Demo ${registration.trialDays}-day trial registration created.` }, 201); }
-  if (path === '/onboarding/checkout' && method === 'POST') { const body = await bodyOf(request); const admin = (body.admin ?? {}) as Row; const company = (body.company ?? {}) as Row; const adminEmail = body.adminEmail ?? body.email ?? admin.email; if (!company.name || !admin.name || !adminEmail) return fail(422, 'VALIDATION_ERROR', 'Company name, administrator name, and email are required.'); const prior = (state.registrations as Row[]).find((item) => body.idempotencyKey && item.idempotencyKey === body.idempotencyKey); if (prior) { const version = (state.planVersions as Row[]).find((item) => item.id === prior.planVersionId); return ok({ registrationId: prior.registrationId, orderId: prior.orderId, amount: prior.billingCycle === 'Annual' ? version?.pricing.annual : version?.pricing.monthly, currency: version?.currency, keyId: 'mock_provider_key', provider: prior.provider, status: prior.status, idempotentReplay: true }, 200); } const plan = (state.plans as Row[]).find((item) => item.id === body.planId || item.type === body.plan); const version = (state.planVersions as Row[]).find((item) => item.id === (body.planVersionId ?? plan?.currentVersionId?.id)); if (!version) return fail(422, 'PUBLISHED_PLAN_REQUIRED', 'Select a published plan before checkout.'); const result = await updateMockState((draft) => { const registrationId = id('registration'); const orderId = id('order'); const provider = ['RAZORPAY', 'PAYU'].includes(body.provider) ? body.provider : 'RAZORPAY'; const row = { id: registrationId, registrationId, acquisition: 'ONLINE_PURCHASE', companyName: company.name, companyEmail: company.email, adminName: admin.name, adminEmail, planId: version.planId, planVersionId: version.id, billingCycle: body.billingCycle ?? 'Monthly', provider, orderId, status: body.simulateFailure ? 'FAILED' : 'PAID', emailVerified: false, idempotencyKey: body.idempotencyKey ?? orderId, createdAt: new Date().toISOString() }; draft.registrations.push(row); draft.payments.unshift({ id: id('payment'), companyId: null, registrationId, amount: row.billingCycle === 'Annual' ? version.pricing.annual : version.pricing.monthly, currency: version.currency, source: provider, status: body.simulateFailure ? 'FAILED' : 'PAID', reference: orderId, idempotencyKey: row.idempotencyKey, createdAt: new Date().toISOString() }); return { registrationId, orderId, amount: row.billingCycle === 'Annual' ? version.pricing.annual : version.pricing.monthly, currency: version.currency, keyId: 'mock_provider_key', provider, status: row.status }; }); return ok(result, 201); }
+  if (path === '/onboarding/trial' && method === 'POST') return fail(410, 'ONLINE_CHECKOUT_REQUIRED', 'Signup requires an online subscription purchase; free trials are unavailable.');
+  if (path === '/onboarding/checkout' && method === 'POST') {
+    const body = await bodyOf(request);
+    const admin = (body.admin ?? {}) as Row;
+    const company = (body.company ?? {}) as Row;
+    const adminEmail = body.adminEmail ?? body.email ?? admin.email;
+    if (!company.name || !admin.name || !adminEmail) return fail(422, 'VALIDATION_ERROR', 'Company name, administrator name, and email are required.');
+    if (body.provider && body.provider !== 'RAZORPAY') return fail(422, 'UNSUPPORTED_PAYMENT_PROVIDER', 'Online signup currently accepts Razorpay checkout only.');
+    const plan = (state.plans as Row[]).find((item) => item.id === body.planId || item.type === body.plan);
+    const version = (state.planVersions as Row[]).find((item) => item.id === (body.planVersionId ?? plan?.currentVersionId?.id));
+    if (!version) return fail(422, 'PUBLISHED_PLAN_REQUIRED', 'Select a published plan before checkout.');
+    const result = await updateMockState((draft) => {
+      const registrationId = id('registration');
+      const orderId = id('order');
+      const provider = 'RAZORPAY';
+      const status = body.simulateFailure ? 'FAILED' : 'PAID';
+      const row = { id: registrationId, registrationId, acquisition: 'ONLINE_PURCHASE', companyName: company.name, companyEmail: company.email, adminName: admin.name, adminEmail, planId: version.planId, planVersionId: version.id, billingCycle: body.billingCycle ?? 'Monthly', provider, orderId, status, emailVerified: false, createdAt: new Date().toISOString() };
+      draft.registrations.push(row);
+      draft.payments.unshift({ id: id('payment'), companyId: null, registrationId, amount: row.billingCycle === 'Annual' ? version.pricing.annual : version.pricing.monthly, currency: version.currency, source: provider, status, reference: orderId, createdAt: new Date().toISOString() });
+      return { registrationId, orderId, amount: row.billingCycle === 'Annual' ? version.pricing.annual : version.pricing.monthly, currency: version.currency, keyId: 'mock_provider_key', provider, status: row.status };
+    });
+    return ok(result, 201);
+  }
   const checkoutStatus = path.match(/^\/onboarding\/checkout\/([^/]+)$/); if (checkoutStatus && method === 'GET') { const registration = (state.registrations as Row[]).find((item) => item.registrationId === checkoutStatus[1]); return registration ? ok({ status: registration.status, provider: registration.provider }) : fail(404, 'NOT_FOUND', 'Registration not found.'); }
   if (/^\/onboarding\/checkout\/[^/]+\/resend-verification$/.test(path) && method === 'POST') return ok({ message: 'Verification sent.' });
-  if (path === '/onboarding/verify-email' && method === 'POST') { const body = await bodyOf(request); const registration = (state.registrations as Row[]).find((item) => item.registrationId === body.registrationId || item.registrationId === body.token || item.verificationToken === body.token); if (!registration) return fail(404, 'INVALID_VERIFICATION', 'This verification link is invalid or expired.'); if (registration.status === 'FAILED') return fail(409, 'PAYMENT_REQUIRED', 'Payment must succeed before this registration can be verified.'); const result = await updateMockState((draft) => { const stored = (draft.registrations as Row[]).find((item) => item.registrationId === registration.registrationId); const company = provisionVerifiedRegistration(draft, stored); return { verified: true, companyId: company?.id, adminEmail: stored.adminEmail, demoPassword: MOCK_PASSWORD }; }); return ok(result); }
+  if (path === '/onboarding/verify-email' && method === 'POST') {
+    const body = await bodyOf(request);
+    const registration = (state.registrations as Row[]).find((item) => item.registrationId === body.registrationId || item.registrationId === body.token || item.verificationToken === body.token);
+    if (!registration) return fail(404, 'INVALID_VERIFICATION', 'This verification link is invalid or expired.');
+    if (registration.acquisition !== 'ONLINE_PURCHASE' || !['PAID', 'PROVISIONED'].includes(registration.status)) return fail(409, 'PAYMENT_REQUIRED', 'A successful online checkout is required before this registration can be verified.');
+    const result = await updateMockState((draft) => {
+      const stored = (draft.registrations as Row[]).find((item) => item.registrationId === registration.registrationId);
+      const company = provisionVerifiedRegistration(draft, stored);
+      return { verified: true, companyId: company?.id, adminEmail: stored.adminEmail, demoPassword: MOCK_PASSWORD };
+    });
+    return ok(result);
+  }
   if (path === '/onboarding' && method === 'GET') { const company = companyFor(state, currentUser, url); const onboarding = (state.onboardings as Row[]).find((item) => item.companyId === company?.id) ?? state.onboarding; return ok({ onboarding, company, firstBranch: (state.offices as Row[]).find((item) => item.companyId === company?.id) ?? null, entitlements: effectiveEntitlements(state, company?.id) }); }
   const onboardingStep = path.match(/^\/onboarding\/([^/]+)$/); if (onboardingStep && method === 'PATCH') { const body = await bodyOf(request); const company = companyFor(state, currentUser, url); const updated = await updateMockState((draft) => { let onboarding = (draft.onboardings as Row[]).find((item) => item.companyId === company?.id); if (!onboarding) { onboarding = { companyId: company?.id, status: 'NOT_STARTED', steps: [] }; draft.onboardings.push(onboarding); } const steps = onboarding.steps as Row[]; let step = steps.find((item) => item.key === onboardingStep[1]); if (!step) { step = { key: onboardingStep[1], status: 'NOT_STARTED' }; steps.push(step); } Object.assign(step, body, body.status === 'COMPLETED' ? { completedAt: new Date().toISOString() } : {}); if (onboardingStep[1] === 'company-profile' && body.data) Object.assign((draft.companies as Row[]).find((item) => item.id === company?.id), body.data); if (onboardingStep[1] === 'first-branch' && body.data && !(draft.offices as Row[]).some((item) => item.companyId === company?.id)) draft.offices.push({ id: id('office'), _id: id('office'), companyId: company?.id, isActive: true, ...body.data }); const done = steps.filter((item) => ['COMPLETED', 'SKIPPED'].includes(item.status)).length; onboarding.status = done === steps.length ? 'COMPLETED' : done ? 'IN_PROGRESS' : 'NOT_STARTED'; appendAudit(draft, { actorId: currentUser?.id, companyId: company?.id, action: 'ONBOARDING_STEP_UPDATED', entityType: 'ONBOARDING', entityId: onboardingStep[1], newValue: step }); return onboarding; }); return ok(updated); }
 

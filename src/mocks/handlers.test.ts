@@ -35,6 +35,33 @@ describe('mock API behavior', () => {
     expect((await forbidden.json()).error.code).toBe('FORBIDDEN');
   });
 
+  it('returns paginated notification inbox data and honors unread status', async () => {
+    expect((await login('employee@demo.vook.app')).status).toBe(200);
+    const unreadResponse = await fetch(endpoint('/notifications?status=unread&limit=1'));
+    const unreadBody = (await unreadResponse.json()).data;
+    expect(unreadResponse.status).toBe(200);
+    expect(unreadBody.items).toHaveLength(1);
+    expect(unreadBody.nextCursor).toBeNull();
+    expect(unreadBody.unreadCount).toBe(1);
+
+    expect((await json('/notifications/notification_2/read', 'PATCH')).status).toBe(200);
+    const refreshedUnread = (await (await fetch(endpoint('/notifications?status=unread'))).json()).data;
+    expect(refreshedUnread.items).toHaveLength(0);
+    expect(refreshedUnread.unreadCount).toBe(0);
+    const all = (await (await fetch(endpoint('/notifications?status=all'))).json()).data;
+    expect(all.items[0]).toMatchObject({ id: 'notification_2', isRead: true });
+  });
+
+  it('prevents a user from marking another account’s notifications as read', async () => {
+    expect((await login('companyadmin@demo.vook.app')).status).toBe(200);
+    const ownAndForeign = await json('/notifications/read', 'PATCH', { ids: ['notification_1', 'notification_2'] });
+    expect(ownAndForeign.status).toBe(404);
+    expect((await json('/notifications/notification_2/read', 'PATCH')).status).toBe(404);
+    const state = await getMockState();
+    expect(state.notifications.find((item) => item.id === 'notification_1')?.isRead).toBe(false);
+    expect(state.notifications.find((item) => item.id === 'notification_2')?.isRead).toBe(false);
+  });
+
   it('enforces tenant scope while filtering and paginating', async () => {
     expect((await login('manager@demo.vook.app')).status).toBe(200);
     const response = await fetch(endpoint('/employees?companyId=company_apex&page=1&pageSize=1&search=an'));
@@ -43,6 +70,17 @@ describe('mock API behavior', () => {
     expect(body.data.employees.length).toBeLessThanOrEqual(1);
     expect(body.data.employees.every((employee: { companyId: string }) => employee.companyId === 'company_northstar')).toBe(true);
     expect(body.data.pagination).toMatchObject({ page: 1, pageSize: 1 });
+  });
+
+  it('returns only directory-safe employee data to the Super Admin', async () => {
+    expect((await login('superadmin@demo.vook.app')).status).toBe(200);
+    const response = await fetch(endpoint('/employees?status=ACTIVE&search=northstar&page=1&limit=100'));
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body.data.privacy).toContain('Salary, banking, documents and identity records are excluded');
+    expect(body.data.companies[0]).toEqual(expect.objectContaining({ _id: expect.any(String), companyCode: expect.any(String) }));
+    expect(body.data.employees.length).toBeGreaterThan(0);
+    expect(body.data.employees.every((employee: Record<string, unknown>) => !('annualCtc' in employee) && !('bankName' in employee))).toBe(true);
   });
 
   it('persists CRUD changes and validates malformed records', async () => {
@@ -74,28 +112,63 @@ describe('mock API behavior', () => {
     expect(await download.text()).toBe('demo receipt');
   });
 
-  it('publishes immutable plans, pins subscriptions, and migrates explicitly', async () => {
+  it('disables trials in saved plan drafts and keeps existing subscriptions pinned', async () => {
     expect((await login('superadmin@demo.vook.app')).status).toBe(200);
-    const createdResponse = await json('/plans', 'POST', { name: 'Field Teams', type: 'FIELD', price: 4500, annualPrice: 45000, maxUsers: 80, moduleIds: ['module_attendance'], defaultTrialDays: 7 });
+    const createdResponse = await json('/plans', 'POST', { name: 'Field Teams', type: 'FIELD', price: 4500, annualPrice: 45000, maxUsers: 80, moduleIds: ['module_attendance'], trialEnabled: true, defaultTrialDays: 7 });
     const created = (await createdResponse.json()).data;
     expect(created.status).toBe('DRAFT');
+    expect(created.draft.trial).toEqual({ enabled: false, days: 0 });
     expect(created.moduleIds).toEqual(expect.arrayContaining(['module_dashboard', 'module_support', 'module_subscription', 'module_company_settings', 'module_roles', 'module_attendance']));
 
     const v1Response = await json(`/plans/${created.id}/publish`, 'POST', { draftRevision: created.draftRevision, reason: 'Initial commercial launch' });
     const v1 = (await v1Response.json()).data;
     expect(v1.version).toBe(1);
-    await json('/subscriptions', 'POST', { companyId: 'company_orbit', planVersionId: v1.id, billingCycle: 'Monthly', months: 12, reason: 'Customer approved version 1' });
+    expect(v1.trial).toEqual({ enabled: false, days: 0 });
 
-    const savedDraftResponse = await json(`/plans/${created.id}`, 'PUT', { draftRevision: created.draftRevision, maxUsers: 120, moduleIds: ['module_attendance', 'module_leave'] });
+    const before = await getMockState();
+    const pinned = before.subscriptions.find((item) => item.companyId === 'company_orbit')!;
+    const proPlan = before.plans.find((item) => item.id === 'plan_pro')!;
+    const savedDraftResponse = await json(`/plans/${proPlan.id}`, 'PUT', { draftRevision: proPlan.draftRevision, maxUsers: 300, trialEnabled: true, defaultTrialDays: 14 });
     const savedDraft = (await savedDraftResponse.json()).data;
-    const v2 = (await (await json(`/plans/${created.id}/publish`, 'POST', { draftRevision: savedDraft.draftRevision, reason: 'Add leave module' })).json()).data;
-    let state = await getMockState();
-    expect(state.subscriptions.find((item) => item.companyId === 'company_orbit')?.planVersionId).toBe(v1.id);
-    const subscription = state.subscriptions.find((item) => item.companyId === 'company_orbit')!;
-    await json(`/subscriptions/${subscription.id}/migrate`, 'POST', { planVersionId: v2.id, reason: 'Customer accepted version 2' });
-    state = await getMockState();
-    expect(state.subscriptions.find((item) => item.id === subscription.id)?.planVersionId).toBe(v2.id);
-    expect(state.audit.some((event) => event.action === 'SUBSCRIPTION_MIGRATE')).toBe(true);
+    expect(savedDraft.draft.trial).toEqual({ enabled: false, days: 0 });
+    const v2 = (await (await json(`/plans/${proPlan.id}/publish`, 'POST', { draftRevision: savedDraft.draftRevision, reason: 'Update employee limit' })).json()).data;
+    const after = await getMockState();
+    expect(v2.trial).toEqual({ enabled: false, days: 0 });
+    expect(after.subscriptions.find((item) => item.id === pinned.id)?.planVersionId).toBe(pinned.planVersionId);
+    expect(after.companies.find((item) => item.id === 'company_orbit')?.plan).toBe('PRO');
+  });
+
+  it('rejects manual provisioning and payment changes while preserving support actions', async () => {
+    expect((await login('superadmin@demo.vook.app')).status).toBe(200);
+    const before = await getMockState();
+    const companyCount = before.companies.length;
+    const subscriptionCount = before.subscriptions.length;
+    const paymentCount = before.payments.length;
+
+    expect((await json('/companies', 'POST', { name: 'Manual Tenant', adminEmail: 'manual@example.test' })).status).toBe(405);
+    expect((await json('/subscriptions', 'POST', { companyId: 'company_orbit', planVersionId: 'plan_pro_v1' })).status).toBe(405);
+    for (const action of ['extend-trial', 'change-plan', 'migrate', 'reactivate', 'renew', 'retry-payment']) {
+      expect((await json(`/subscriptions/${before.subscriptions[0].id}/${action}`, 'POST', {})).status).toBe(405);
+    }
+    expect((await json('/payments/offline', 'POST', { companyId: 'company_orbit', amount: 1000 })).status).toBe(405);
+    expect((await json(`/payments/${before.payments[0].id}`, 'PATCH', { status: 'PAID' })).status).toBe(405);
+    const onlinePayments = (await (await fetch(endpoint('/payments?source=RAZORPAY&status=PAID'))).json()).data.payments;
+    expect(onlinePayments.length).toBeGreaterThan(0);
+    expect(onlinePayments.every((payment: { source: string; status: string }) => payment.source === 'RAZORPAY' && payment.status === 'PAID')).toBe(true);
+    expect((await json('/subscription/checkout', 'POST', { planVersionId: 'plan_pro_v1', billingCycle: 'Annual', provider: 'PAYU' })).status).toBe(422);
+    expect((await json('/onboarding/trial', 'POST', { company: { name: 'Trial Tenant' }, admin: { name: 'Trial Owner', email: 'trial@example.test' }, plan: 'PRO' })).status).toBe(410);
+
+    const failedSupportMutation = await json(`/subscriptions/${before.subscriptions[0].id}/suspend`, 'POST', { reason: 'Support hold' });
+    expect(failedSupportMutation.status).toBe(200);
+    const scheduledCancel = await json(`/subscriptions/${before.subscriptions[1].id}/cancel`, 'POST', { reason: 'Customer requested cancellation' });
+    expect(scheduledCancel.status).toBe(200);
+    expect((await scheduledCancel.json()).data).toMatchObject({ cancelAtPeriodEnd: true, status: before.subscriptions[1].status });
+
+    const after = await getMockState();
+    expect(after.companies).toHaveLength(companyCount);
+    expect(after.subscriptions).toHaveLength(subscriptionCount);
+    expect(after.payments).toHaveLength(paymentCount);
+    expect(after.subscriptions.find((item) => item.id === before.subscriptions[0].id)?.status).toBe('SUSPENDED');
   });
 
   it('protects Company Admin and persists custom scoped roles', async () => {
@@ -142,7 +215,8 @@ describe('mock API behavior', () => {
   it('normalizes integration manifests and never persists provider secrets', async () => {
     expect((await login('superadmin@demo.vook.app')).status).toBe(200);
     const listed = (await (await fetch(endpoint('/integrations'))).json()).data;
-    expect(listed).toHaveLength(3);
+    expect(listed).toHaveLength(4);
+    expect(listed.map((provider: { providerKey: string }) => provider.providerKey)).toContain('WHATSAPP');
     expect(listed.every((provider: { publicFields?: unknown[]; secretFields?: unknown[] }) => Array.isArray(provider.publicFields) && Array.isArray(provider.secretFields))).toBe(true);
 
     const saved = await json('/integrations/PAYU', 'PUT', { publicConfig: { merchantKey: 'demo-merchant' }, secrets: { merchantSalt: 'never-store-this' }, reason: 'Configure sandbox provider' });
@@ -156,18 +230,44 @@ describe('mock API behavior', () => {
     expect(stored).not.toHaveProperty('secrets');
   });
 
-  it('replays checkout idempotently and provisions the verified PayU tenant', async () => {
-    const payload = { company: { name: 'Document Demo Labs', email: 'hello@document.demo' }, admin: { name: 'Demo Owner', email: 'owner@document.demo' }, plan: 'PRO', billingCycle: 'Annual', provider: 'PAYU', idempotencyKey: 'document-demo-annual' };
+  it('configures WhatsApp in platform integrations', async () => {
+    expect((await login('superadmin@demo.vook.app')).status).toBe(200);
+    const integrations = (await (await fetch(endpoint('/integrations'))).json()).data;
+    const whatsapp = integrations.find((provider: { providerKey: string }) => provider.providerKey === 'WHATSAPP');
+    expect(whatsapp.publicFields.map((field: { key: string }) => field.key)).toEqual(['phoneNumberId', 'businessAccountId']);
+    expect(whatsapp.secretFields.map((field: { key: string }) => field.key)).toContain('accessToken');
+
+    const savedWhatsApp = await json('/integrations/WHATSAPP', 'PUT', { publicConfig: { phoneNumberId: '123456789', businessAccountId: '987654321' }, secrets: { accessToken: 'demo-access-token' }, reason: 'Configure WhatsApp demo' });
+    expect((await savedWhatsApp.json()).data).toMatchObject({ status: 'DRAFT', secretConfigured: true });
+    expect((await json('/integrations/WHATSAPP/test', 'POST')).status).toBe(200);
+    expect((await json('/integrations/WHATSAPP/activate', 'POST', { reason: 'Demo test passed' })).status).toBe(200);
+
+    const state = await getMockState();
+    const storedWhatsApp = state.integrations.find((provider) => provider.providerKey === 'WHATSAPP');
+    expect(storedWhatsApp).not.toHaveProperty('secrets');
+  });
+
+  it('requires Razorpay checkout before provisioning a tenant', async () => {
+    const payload = { company: { name: 'Document Demo Labs', email: 'hello@document.demo' }, admin: { name: 'Demo Owner', email: 'owner@document.demo' }, plan: 'PRO', billingCycle: 'Annual', provider: 'RAZORPAY' };
+    expect((await json('/onboarding/checkout', 'POST', { ...payload, provider: 'PAYU' })).status).toBe(422);
+    expect((await json('/onboarding/trial', 'POST', payload)).status).toBe(410);
+
+    const failedResponse = await json('/onboarding/checkout', 'POST', { ...payload, admin: { ...payload.admin, email: 'failed@document.demo' }, simulateFailure: true });
+    const failedOrder = (await failedResponse.json()).data;
+    expect(failedOrder.status).toBe('FAILED');
+    expect((await json('/onboarding/verify-email', 'POST', { token: failedOrder.registrationId })).status).toBe(409);
+
     const first = await json('/onboarding/checkout', 'POST', payload);
     const order = (await first.json()).data;
-    const replay = await json('/onboarding/checkout', 'POST', payload);
-    expect((await replay.json()).data).toMatchObject({ registrationId: order.registrationId, orderId: order.orderId, idempotentReplay: true });
+    expect(first.status).toBe(201);
+    expect(order).toMatchObject({ provider: 'RAZORPAY', status: 'PAID' });
     const verified = await json('/onboarding/verify-email', 'POST', { token: order.registrationId });
     expect(verified.status).toBe(200);
     expect((await login('owner@document.demo')).status).toBe(200);
     const state = await getMockState();
     const registration = state.registrations.find((item) => item.registrationId === order.registrationId)!;
     expect(registration.status).toBe('PROVISIONED');
+    expect(state.companies.find((item) => item.id === registration.companyId)?.status).toBe('ACTIVE');
     expect(state.subscriptions.some((item) => item.companyId === registration.companyId && item.planVersionId === registration.planVersionId)).toBe(true);
     expect(state.invoices.some((item) => item.companyId === registration.companyId)).toBe(true);
   });
