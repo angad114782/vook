@@ -6,20 +6,12 @@ import { ErrorBoundary } from '../ErrorBoundary';
 import GlobalSearch from '../search/GlobalSearch';
 import NotificationBell from '../notifications/NotificationBell';
 import { SidebarMobileTrigger } from './RoleSidebar';
-
-const avatarColors = [
-  { bg: '#eef2ff', color: '#6366f1' }, { bg: '#f0fdf4', color: '#10b981' },
-  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fdf4ff', color: '#ec4899' },
-];
-const getAv = (name?: string) => avatarColors[(name ?? 'E').charCodeAt(0) % avatarColors.length]!;
-const initials = (name?: string) => (name ?? 'Employee').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+import UserAvatar from './UserAvatar';
 
 export default function EmployeeLayout() {
   const { user } = useAuthStore();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   if (!user || !['EMPLOYEE', 'SUPER_ADMIN'].includes(user.role)) return <Navigate to="/login" replace />;
-
-  const av = getAv(user.name ?? 'E');
 
   return (
     <div style={{ display: 'flex', height: '100vh', backgroundColor: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
@@ -38,7 +30,7 @@ export default function EmployeeLayout() {
               <p className="app-topbar__profile-copy" style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>{user.name}</p>
               <p className="app-topbar__profile-copy" style={{ fontSize: '10px', color: '#94a3b8' }}>Employee</p>
             </div>
-            <div style={{ width: '34px', height: '34px', borderRadius: '50%', backgroundColor: av.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: av.color, fontWeight: 700, fontSize: '12px' }}>{initials(user.name ?? 'E')}</div>
+            <UserAvatar user={user} size={34} style={{ borderRadius: '50%' }} />
             </div>
           </div>
         </div>

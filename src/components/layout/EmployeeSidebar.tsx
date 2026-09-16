@@ -1,4 +1,4 @@
-import { CalendarCheck, FileText, FolderOpen, LayoutDashboard, Plane, Receipt, Settings } from 'lucide-react';
+import { CalendarCheck, FileText, FolderOpen, LayoutDashboard, Plane, Receipt, Settings, UserCircle } from 'lucide-react';
 import RoleSidebar, { type RoleNavGroup } from './RoleSidebar';
 
 const groups: RoleNavGroup[] = [
@@ -16,5 +16,5 @@ const groups: RoleNavGroup[] = [
 interface EmployeeSidebarProps { mobileOpen?: boolean; onMobileClose?: () => void }
 
 export default function EmployeeSidebar(props: EmployeeSidebarProps) {
-  return <RoleSidebar {...props} portalKey="employee" roleLabel="Employee" workspaceLabel="My workspace" dashboard={{ to: '/employee/dashboard', label: 'Dashboard', Icon: LayoutDashboard }} groups={groups} accountLink={{ to: '/employee/settings', label: 'My settings', Icon: Settings }} />;
+  return <RoleSidebar {...props} portalKey="employee" roleLabel="Employee" workspaceLabel="My workspace" dashboard={{ to: '/employee/dashboard', label: 'Dashboard', Icon: LayoutDashboard }} groups={groups} accountLinks={[{ to: '/employee/profile', label: 'Profile', Icon: UserCircle }, { to: '/employee/settings', label: 'My settings', Icon: Settings }]} />;
 }

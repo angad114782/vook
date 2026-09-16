@@ -4,6 +4,7 @@ import { ChevronDown, LogOut, Menu, PanelLeftClose, PanelLeftOpen, X } from 'luc
 import { useAuthStore } from '../../store/authStore';
 import { useAccess } from '../../hooks/queries/useAccess';
 import { routeVisible } from '../../config/routeAccess';
+import UserAvatar from './UserAvatar';
 
 export type SidebarIcon = ComponentType<{ size?: number; 'aria-hidden'?: boolean }>;
 export type RoleNavItem = { to: string; label: string; Icon: SidebarIcon };
@@ -22,6 +23,7 @@ interface RoleSidebarProps {
   feature?: { to: string; eyebrow: string; label: string; Icon: SidebarIcon };
   footerLinks?: RoleNavItem[];
   accountLink?: { to: string; label: string; Icon: SidebarIcon };
+  accountLinks?: RoleNavItem[];
 }
 
 const isNested = (entry: RoleNavEntry): entry is Extract<RoleNavEntry, { children: RoleNavItem[] }> => 'children' in entry;
@@ -44,12 +46,14 @@ export default function RoleSidebar({
   feature,
   footerLinks = [],
   accountLink,
+  accountLinks,
 }: RoleSidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
   const access = useAccess();
   const sidebarRef = useRef<HTMLElement>(null);
+  const userMenuRef = useRef<HTMLDetailsElement>(null);
   const storageKey = `vook-sidebar-collapsed-${portalKey}`;
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(storageKey) === 'true');
   const [openMenus, setOpenMenus] = useState<string[]>(() => activeParentKeys(groups, location.pathname));
@@ -74,11 +78,32 @@ export default function RoleSidebar({
     };
   }, [mobileOpen, onMobileClose]);
 
+  useEffect(() => {
+    const closeUserMenuOnOutsidePointer = (event: PointerEvent) => {
+      const menu = userMenuRef.current;
+      if (menu?.open && !menu.contains(event.target as Node)) menu.removeAttribute('open');
+    };
+    const closeUserMenuOnEscape = (event: KeyboardEvent) => {
+      const menu = userMenuRef.current;
+      if (event.key === 'Escape' && menu?.open) {
+        menu.removeAttribute('open');
+        menu.querySelector<HTMLElement>('summary')?.focus();
+      }
+    };
+
+    document.addEventListener('pointerdown', closeUserMenuOnOutsidePointer);
+    document.addEventListener('keydown', closeUserMenuOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeUserMenuOnOutsidePointer);
+      document.removeEventListener('keydown', closeUserMenuOnEscape);
+    };
+  }, []);
+
   const linkTo = (path: string) => preserveSearch && location.search
     ? { pathname: path, search: location.search }
     : path;
   const visible = (item: RoleNavItem) => routeVisible(access, item.to);
-  const initials = (user?.name ?? roleLabel).split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase();
+  const menuAccountLinks = accountLinks ?? (accountLink ? [accountLink] : []);
   const toggleCollapsed = () => setCollapsed((current) => {
     localStorage.setItem(storageKey, String(!current));
     return !current;
@@ -121,7 +146,7 @@ export default function RoleSidebar({
       </nav>
       <div className="sidebar-user">
         {footerLinks.filter(visible).map((item) => <NavLink key={item.to} to={linkTo(item.to)} onClick={onMobileClose} title={collapsed ? item.label : undefined} data-tooltip={item.label} className={({ isActive }) => `ca-nav-link${isActive ? ' is-active' : ''}`}><item.Icon size={17} aria-hidden /><span>{item.label}</span></NavLink>)}
-        <details className="ca-user-menu"><summary title={collapsed ? user?.name : undefined} data-tooltip={user?.name ?? 'Account'}><span className="ca-user-avatar">{initials}</span><span className="ca-user-copy"><strong>{user?.name}</strong><small>{roleLabel}</small></span><ChevronDown className="ca-user-chevron" size={14} aria-hidden /></summary><div className="ca-user-menu__popover">{accountLink && <NavLink to={linkTo(accountLink.to)} onClick={(event) => { closeUserMenu(event); onMobileClose?.(); }}><accountLink.Icon size={15} aria-hidden /> {accountLink.label}</NavLink>}<button onClick={async () => { await logout(); navigate('/login'); }}><LogOut size={15} aria-hidden /> Sign out</button></div></details>
+        <details ref={userMenuRef} className="ca-user-menu"><summary title={collapsed ? user?.name : undefined} data-tooltip={user?.name ?? 'Account'}><UserAvatar user={user} name={user?.name ?? roleLabel} size={30} className="ca-user-avatar" /><span className="ca-user-copy"><strong>{user?.name}</strong><small>{roleLabel}</small></span><ChevronDown className="ca-user-chevron" size={14} aria-hidden /></summary><div className="ca-user-menu__popover">{menuAccountLinks.map((item) => <NavLink key={item.to} to={linkTo(item.to)} onClick={(event) => { closeUserMenu(event); onMobileClose?.(); }}><item.Icon size={15} aria-hidden /> {item.label}</NavLink>)}<button onClick={async () => { await logout(); navigate('/login'); }}><LogOut size={15} aria-hidden /> Sign out</button></div></details>
       </div>
       <button type="button" className="ca-sidebar-rail" onClick={toggleCollapsed} aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'} title={collapsed ? 'Expand navigation' : 'Collapse navigation'}>{collapsed ? <PanelLeftOpen size={15} aria-hidden /> : <PanelLeftClose size={15} aria-hidden />}</button>
     </aside>

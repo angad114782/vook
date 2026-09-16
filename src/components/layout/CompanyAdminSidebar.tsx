@@ -1,4 +1,4 @@
-import { Activity, BarChart2, Blocks, Building2, CalendarCheck, CheckSquare, CreditCard, GitBranch, KeyRound, LayoutDashboard, LifeBuoy, Settings, Shield, ShieldCheck, UserCog, Users } from 'lucide-react';
+import { Activity, BarChart2, Blocks, Building2, CalendarCheck, CheckSquare, CreditCard, GitBranch, LayoutDashboard, LifeBuoy, Settings, Shield, ShieldCheck, UserCircle, UserCog, Users } from 'lucide-react';
 import RoleSidebar, { type RoleNavGroup } from './RoleSidebar';
 
 const groups: RoleNavGroup[] = [
@@ -33,5 +33,5 @@ const groups: RoleNavGroup[] = [
 interface CompanyAdminSidebarProps { mobileOpen?: boolean; onMobileClose?: () => void }
 
 export default function CompanyAdminSidebar(props: CompanyAdminSidebarProps) {
-  return <RoleSidebar {...props} portalKey="company-admin" roleLabel="Company Admin" workspaceLabel="Company workspace" preserveSearch dashboard={{ to: '/company-admin/dashboard', label: 'Dashboard', Icon: LayoutDashboard }} groups={groups} feature={{ to: '/company-admin/onboarding', eyebrow: 'Company checklist', label: 'Finish setup', Icon: CheckSquare }} footerLinks={[{ to: '/company-admin/support', label: 'Support', Icon: LifeBuoy }]} accountLink={{ to: '/company-admin/account-security', label: 'Account & security', Icon: KeyRound }} />;
+  return <RoleSidebar {...props} portalKey="company-admin" roleLabel="Company Admin" workspaceLabel="Company workspace" preserveSearch dashboard={{ to: '/company-admin/dashboard', label: 'Dashboard', Icon: LayoutDashboard }} groups={groups} feature={{ to: '/company-admin/onboarding', eyebrow: 'Company checklist', label: 'Finish setup', Icon: CheckSquare }} footerLinks={[{ to: '/company-admin/support', label: 'Support', Icon: LifeBuoy }]} accountLinks={[{ to: '/company-admin/profile', label: 'Profile', Icon: UserCircle }]} />;
 }

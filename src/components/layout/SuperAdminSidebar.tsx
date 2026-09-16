@@ -1,4 +1,4 @@
-import { Activity, Bell, Building2, CreditCard, Headphones, KeyRound, LayoutDashboard, ReceiptIndianRupee, Settings, ShieldCheck, Users } from 'lucide-react';
+import { Activity, Bell, Building2, CreditCard, Headphones, KeyRound, LayoutDashboard, ReceiptIndianRupee, Settings, ShieldCheck, UserCircle, Users } from 'lucide-react';
 import RoleSidebar, { type RoleNavGroup } from './RoleSidebar';
 
 const groups: RoleNavGroup[] = [
@@ -26,5 +26,5 @@ const groups: RoleNavGroup[] = [
 interface SuperAdminSidebarProps { mobileOpen?: boolean; onMobileClose?: () => void }
 
 export default function SuperAdminSidebar(props: SuperAdminSidebarProps) {
-  return <RoleSidebar {...props} portalKey="super-admin" roleLabel="Super Admin" workspaceLabel="Control plane" dashboard={{ to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard }} groups={groups} footerLinks={[{ to: '/support', label: 'Support', Icon: Headphones }]} accountLink={{ to: '/security', label: 'Account security', Icon: KeyRound }} />;
+  return <RoleSidebar {...props} portalKey="super-admin" roleLabel="Super Admin" workspaceLabel="Control plane" dashboard={{ to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard }} groups={groups} footerLinks={[{ to: '/support', label: 'Support', Icon: Headphones }]} accountLinks={[{ to: '/profile', label: 'Profile', Icon: UserCircle }]} />;
 }

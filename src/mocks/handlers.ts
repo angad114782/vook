@@ -183,7 +183,14 @@ const resolver: HttpResponseResolver = async ({ request }) => {
   if (path.startsWith('/auth/security/') && ['POST', 'DELETE'].includes(method)) return ok({ message: 'Session access updated.' });
   if (path === '/auth/2fa/status' && method === 'GET') return ok({ enabled: !!currentUser?.twoFactorEnabled, enrollmentRequired: false });
   if (path === '/auth/2fa/setup' && method === 'POST') return ok({ secret: 'JBSWY3DPEHPK3PXP', otpauthUrl: 'otpauth://totp/Vook:demo', qrCodeDataUrl: '' });
-  if (path === '/auth/2fa/verify' && method === 'POST') return ok({ enabled: true });
+  if (path === '/auth/2fa/verify' && method === 'POST') {
+    if (currentUser) await updateMockState((draft) => { const user = draft.users.find((item) => item.id === currentUser.id); if (user) user.twoFactorEnabled = true; });
+    return ok({ enabled: true });
+  }
+  if (path === '/auth/2fa/disable' && method === 'POST') {
+    if (currentUser) await updateMockState((draft) => { const user = draft.users.find((item) => item.id === currentUser.id); if (user) user.twoFactorEnabled = false; });
+    return ok({ enabled: false });
+  }
   const publicRequest = path.startsWith('/onboarding') || (path === '/plans' && method === 'GET');
   if (!currentUser && !publicRequest) return fail(401, 'UNAUTHENTICATED', 'Sign in with a demo account.');
   if (currentUser) {

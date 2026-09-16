@@ -4,6 +4,7 @@ import GlobalSearch from '../search/GlobalSearch';
 import { useNotificationCenter } from '../../hooks/useNotificationCenter';
 import NotificationBell from '../notifications/NotificationBell';
 import { SidebarMobileTrigger } from './RoleSidebar';
+import UserAvatar from './UserAvatar';
 
 export default function TopBar({ onOpenNavigation }: { onOpenNavigation?: () => void }) {
   const { user } = useAuthStore();
@@ -18,7 +19,7 @@ export default function TopBar({ onOpenNavigation }: { onOpenNavigation?: () => 
         </button>
         <NotificationBell supportPath="/support" inboxPath="/notifications" />
         <div className="app-topbar__profile" style={profile}>
-          <div style={avatar}>{user?.name?.charAt(0) ?? 'A'}</div>
+          <UserAvatar user={user} size={32} style={{ borderRadius: '50%' }} />
           <div className="app-topbar__profile-copy">
             <p style={profileName}>{user?.name}</p>
             <p style={profileRole}>Super Admin</p>
@@ -38,6 +39,5 @@ const icon: React.CSSProperties = {
   cursor: 'pointer', display: 'grid', placeItems: 'center', color: '#64748b',
 };
 const profile: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 12, borderLeft: '1px solid #e2e8f0' };
-const avatar: React.CSSProperties = { width: 32, height: 32, borderRadius: '50%', background: '#dcfce7', display: 'grid', placeItems: 'center', color: '#15803d', fontWeight: 700, fontSize: 12 };
 const profileName: React.CSSProperties = { margin: 0, color: '#0f172a', fontSize: 13, fontWeight: 600 };
 const profileRole: React.CSSProperties = { margin: '2px 0 0', color: '#94a3b8', fontSize: 11 };

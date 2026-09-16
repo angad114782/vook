@@ -9,6 +9,7 @@ import { NotificationProvider } from './components/notifications/NotificationPro
 
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const NotificationInboxPage = lazy(() => import('./pages/NotificationInboxPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 
 // Auth
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
@@ -85,7 +86,6 @@ const CASupportPage          = lazy(() => import('./pages/company-admin/CASuppor
 const CAOnboardingPage       = lazy(() => import('./pages/company-admin/CAOnboardingPage'));
 const CAPlanPage             = lazy(() => import('./pages/company-admin/CAPlanPage'));
 const CALandingPage          = lazy(() => import('./pages/company-admin/CALandingPage'));
-const CAAccountSecurityPage  = lazy(() => import('./pages/company-admin/CAAccountSecurityPage'));
 const CAAttendanceIntegrationsPage = lazy(() => import('./pages/company-admin/CAAttendanceIntegrationsPage'));
 
 // Employee pages
@@ -173,6 +173,7 @@ export default function App() {
             <Route path="platform-employees" element={<PlatformEmployeesPage />} />
             <Route path="notifications-admin" element={<NotificationsAdminPage />} />
             <Route path="notifications" element={<NotificationInboxPage />} />
+            <Route path="profile" element={<ProfilePage />} />
           </Route>
 
           {/* HR routes */}
@@ -187,6 +188,7 @@ export default function App() {
             <Route path="payroll"    element={guarded(<PayrollPage />, 'PAYROLL.VIEW', 'Payroll')} />
             <Route path="documents"  element={<DocumentPoliciesPage />} />
             <Route path="settings"   element={<HRSettingsPage />} />
+            <Route path="profile"   element={<ProfilePage />} />
           </Route>
 
           {/* Company Admin routes */}
@@ -213,10 +215,11 @@ export default function App() {
             <Route path="activity"   element={<CAActivityPage />} />
             <Route path="modules"    element={<CAModulesPage />} />
             <Route path="settings/company"   element={<CASettingsPage />} />
-            <Route path="account-security"   element={<CAAccountSecurityPage />} />
+            <Route path="account-security"   element={<Navigate to="/company-admin/profile" replace />} />
             <Route path="settings/roles"     element={<CARolesPage />} />
             <Route path="settings/workflows" element={<CAWorkflowsPage />} />
             <Route path="support" element={<CASupportPage />} />
+            <Route path="profile" element={<ProfilePage />} />
           </Route>
 
           {/* Employee routes */}
@@ -230,6 +233,7 @@ export default function App() {
             <Route path="expenses"   element={guarded(<MyExpensesPage />, undefined, 'Expense Management')} />
             <Route path="documents"  element={guarded(<DocumentsPage />, 'DOCUMENTS.VIEW', 'Documents')} />
             <Route path="settings"   element={<EmployeeSettingsPage />} />
+            <Route path="profile"   element={<ProfilePage />} />
           </Route>
 
           {/* Finance routes */}
@@ -243,6 +247,7 @@ export default function App() {
             <Route path="expenses"         element={guarded(<ExpensesPage />, 'EXPENSE_MANAGEMENT.VIEW', 'Expense Management')} />
             <Route path="reports"          element={guarded(<FinanceReportsPage />, 'REPORTS_ANALYTICS.VIEW', 'Reports & Analytics')} />
             <Route path="settings"         element={<FinanceSettingsPage />} />
+            <Route path="profile"          element={<ProfilePage />} />
           </Route>
 
           {/* Manager routes */}
@@ -255,6 +260,7 @@ export default function App() {
             <Route path="attendance" element={guarded(<ManagerAttendancePage />, 'ATTENDANCE.VIEW', 'Attendance')} />
             <Route path="reports"    element={guarded(<ManagerReportsPage />, 'REPORTS_ANALYTICS.VIEW', 'Reports & Analytics')} />
             <Route path="settings"   element={<ManagerSettingsPage />} />
+            <Route path="profile"   element={<ProfilePage />} />
           </Route>
 
           {/* Supervisor routes */}
@@ -267,6 +273,7 @@ export default function App() {
             <Route path="shifts"     element={guarded(<ShiftManagementPage />, undefined, 'Shift Management')} />
             <Route path="approvals"  element={guarded(<SupervisorApprovalsPage />, 'APPROVALS.VIEW', 'Approvals')} />
             <Route path="settings"   element={<SupervisorSettingsPage />} />
+            <Route path="profile"   element={<ProfilePage />} />
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />

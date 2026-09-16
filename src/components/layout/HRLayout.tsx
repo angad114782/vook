@@ -7,6 +7,7 @@ import { ErrorBoundary } from '../ErrorBoundary';
 import GlobalSearch from '../search/GlobalSearch';
 import NotificationBell from '../notifications/NotificationBell';
 import { SidebarMobileTrigger } from './RoleSidebar';
+import UserAvatar from './UserAvatar';
 
 function HRTopBar({ onOpenNavigation }: { onOpenNavigation: () => void }) {
   const { user } = useAuthStore();
@@ -29,9 +30,7 @@ function HRTopBar({ onOpenNavigation }: { onOpenNavigation: () => void }) {
             <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', textAlign: 'right' }}>{user?.name ?? 'HR User'}</p>
             <p style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'right' }}>Human Resource</p>
           </div>
-          <div style={{ width: '34px', height: '34px', borderRadius: '50%', backgroundColor: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, color: '#0d4a47' }}>
-            {user ? user.name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase() : 'HR'}
-          </div>
+          <UserAvatar user={user} size={34} style={{ borderRadius: '50%' }} />
         </div>
       </div>
     </div>

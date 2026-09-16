@@ -1,4 +1,4 @@
-import { CalendarDays, CheckSquare, Clock, DollarSign, FileText, LayoutDashboard, Settings, Users } from 'lucide-react';
+import { CalendarDays, CheckSquare, Clock, DollarSign, FileText, LayoutDashboard, Settings, UserCircle, Users } from 'lucide-react';
 import RoleSidebar, { type RoleNavGroup } from './RoleSidebar';
 
 const groups: RoleNavGroup[] = [
@@ -17,5 +17,5 @@ const groups: RoleNavGroup[] = [
 interface HRSidebarProps { mobileOpen?: boolean; onMobileClose?: () => void }
 
 export default function HRSidebar(props: HRSidebarProps) {
-  return <RoleSidebar {...props} portalKey="hr" roleLabel="Human Resources" workspaceLabel="People operations" dashboard={{ to: '/hr/dashboard', label: 'Dashboard', Icon: LayoutDashboard }} groups={groups} accountLink={{ to: '/hr/settings', label: 'HR settings', Icon: Settings }} />;
+  return <RoleSidebar {...props} portalKey="hr" roleLabel="Human Resources" workspaceLabel="People operations" dashboard={{ to: '/hr/dashboard', label: 'Dashboard', Icon: LayoutDashboard }} groups={groups} accountLinks={[{ to: '/hr/profile', label: 'Profile', Icon: UserCircle }, { to: '/hr/settings', label: 'HR settings', Icon: Settings }]} />;
 }

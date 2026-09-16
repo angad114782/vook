@@ -18,16 +18,31 @@ export default function GlobalSearch() {
   const { user } = useAuthStore();
   const [value, setValue] = useState('');
   const [data, setData] = useState<GlobalSearchResponse | null>(null);
+  const [resultsOpen, setResultsOpen] = useState(false);
   const [active, setActive] = useState(0);
   const debounced = useDebouncedValue(value.trim().replace(/\s+/g, ' '), 500);
   const inputRef = useRef<HTMLInputElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const resultsOpenRef = useRef(false);
   const flat = useMemo(() => groups.flatMap((g) => (data?.[g.key] ?? [])), [data]);
+  const updateResultsOpen = (open: boolean) => {
+    resultsOpenRef.current = open;
+    setResultsOpen(open);
+  };
+
+  useEffect(() => {
+    const closeResultsOnOutsidePointer = (event: PointerEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) updateResultsOpen(false);
+    };
+    document.addEventListener('pointerdown', closeResultsOnOutsidePointer);
+    return () => document.removeEventListener('pointerdown', closeResultsOnOutsidePointer);
+  }, []);
 
   useEffect(() => {
     const q = debounced.slice(0, 100);
-    if (q.length < 2) { setData(null); setActive(0); return; }
+    if (q.length < 2) { setData(null); updateResultsOpen(false); setActive(0); return; }
     const controller = new AbortController();
-    searchApi.global(q, controller.signal).then((r) => { setData(r.data); setActive(0); }).catch((err) => {
+    searchApi.global(q, controller.signal).then((r) => { setData(r.data); if (resultsOpenRef.current) setResultsOpen(true); setActive(0); }).catch((err) => {
       if (err?.code !== 'ERR_CANCELED' && err?.name !== 'CanceledError') setData(null);
     });
     return () => controller.abort();
@@ -40,7 +55,7 @@ export default function GlobalSearch() {
       if (e.key === 'ArrowDown') { e.preventDefault(); setActive((i) => (i + 1) % flat.length); }
       if (e.key === 'ArrowUp') { e.preventDefault(); setActive((i) => (i - 1 + flat.length) % flat.length); }
       if (e.key === 'Enter') { e.preventDefault(); select(flat[active]); }
-      if (e.key === 'Escape') { setValue(''); inputRef.current?.blur(); }
+      if (e.key === 'Escape') { setValue(''); setData(null); updateResultsOpen(false); inputRef.current?.blur(); }
     };
     window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey);
   });
@@ -57,15 +72,15 @@ export default function GlobalSearch() {
       navigate(`${path}?search=${encodeURIComponent(item.name)}`);
     }
     else navigate(user?.role === 'COMPANY_ADMIN' ? '/company-admin/users' : location.pathname);
-    setValue(''); setData(null);
+    setValue(''); setData(null); updateResultsOpen(false);
   };
 
   const count = flat.length;
-  return <div className="global-search" style={{ position: 'relative' }}>
+  return <div ref={searchRef} className="global-search" style={{ position: 'relative' }}>
     <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-    <input ref={inputRef} value={value} onChange={(e) => setValue(e.target.value)} placeholder="Search people, companies, IDs..." aria-label="Global search" style={{ width: '100%', padding: '8px 32px 8px 36px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', color: '#0f172a', outline: 'none', backgroundColor: '#f8fafc', fontFamily: 'Inter, sans-serif' }} />
-    {value && <button onClick={() => { setValue(''); setData(null); }} aria-label="Clear search" style={{ position: 'absolute', right: 8, top: 7, border: 0, background: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={14} /></button>}
-    {data && <div className="global-search__results" role="listbox" style={{ position: 'absolute', top: 44, left: 0, width: 360, maxHeight: 420, overflowY: 'auto', background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, boxShadow: '0 12px 30px rgba(15,23,42,.14)', zIndex: 100 }}>
+    <input ref={inputRef} value={value} onFocus={() => updateResultsOpen(value.trim().length >= 2)} onChange={(e) => { setValue(e.target.value); updateResultsOpen(true); }} placeholder="Search people, companies, IDs..." aria-label="Global search" style={{ width: '100%', padding: '8px 32px 8px 36px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', color: '#0f172a', outline: 'none', backgroundColor: '#f8fafc', fontFamily: 'Inter, sans-serif' }} />
+    {value && <button onClick={() => { setValue(''); setData(null); updateResultsOpen(false); }} aria-label="Clear search" style={{ position: 'absolute', right: 8, top: 7, border: 0, background: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={14} /></button>}
+    {data && resultsOpen && <div className="global-search__results" role="listbox" style={{ position: 'absolute', top: 44, left: 0, width: 360, maxHeight: 420, overflowY: 'auto', background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, boxShadow: '0 12px 30px rgba(15,23,42,.14)', zIndex: 100 }}>
       {count === 0 ? <p style={{ padding: 16, fontSize: 12, color: '#64748b' }}>No matching records.</p> : groups.map((g) => data[g.key].length > 0 && <div key={g.key}><p style={{ padding: '10px 12px 5px', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>{g.label}</p>{data[g.key].map((item) => { const index = flat.indexOf(item); const Icon = g.icon; return <button key={`${item.type}-${item.id}`} role="option" aria-selected={index === active} onMouseEnter={() => setActive(index)} onClick={() => select(item)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 12px', border: 0, background: index === active ? '#f0fdfa' : 'white', textAlign: 'left', cursor: 'pointer' }}><Icon size={15} color="#0d7470" /><span style={{ minWidth: 0, flex: 1 }}><span style={{ display: 'block', fontSize: 12, color: '#0f172a', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span><span style={{ display: 'block', fontSize: 10, color: '#64748b' }}>{item.companyCode ?? item.employeeId ?? item.subtitle}</span></span></button>; })}</div>)}
     </div>}
   </div>;

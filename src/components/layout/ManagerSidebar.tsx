@@ -1,4 +1,4 @@
-import { BarChart2, CheckSquare, Clock, LayoutDashboard, Settings, Users } from 'lucide-react';
+import { BarChart2, CheckSquare, Clock, LayoutDashboard, Settings, UserCircle, Users } from 'lucide-react';
 import RoleSidebar, { type RoleNavGroup } from './RoleSidebar';
 
 const groups: RoleNavGroup[] = [
@@ -15,5 +15,5 @@ const groups: RoleNavGroup[] = [
 interface ManagerSidebarProps { mobileOpen?: boolean; onMobileClose?: () => void }
 
 export default function ManagerSidebar(props: ManagerSidebarProps) {
-  return <RoleSidebar {...props} portalKey="manager" roleLabel="Manager" workspaceLabel="Team workspace" dashboard={{ to: '/manager/dashboard', label: 'Dashboard', Icon: LayoutDashboard }} groups={groups} accountLink={{ to: '/manager/settings', label: 'Manager settings', Icon: Settings }} />;
+  return <RoleSidebar {...props} portalKey="manager" roleLabel="Manager" workspaceLabel="Team workspace" dashboard={{ to: '/manager/dashboard', label: 'Dashboard', Icon: LayoutDashboard }} groups={groups} accountLinks={[{ to: '/manager/profile', label: 'Profile', Icon: UserCircle }, { to: '/manager/settings', label: 'Manager settings', Icon: Settings }]} />;
 }

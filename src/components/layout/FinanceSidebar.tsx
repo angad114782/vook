@@ -1,4 +1,4 @@
-import { BarChart2, CreditCard, FileText, Landmark, LayoutDashboard, Receipt, Settings } from 'lucide-react';
+import { BarChart2, CreditCard, FileText, Landmark, LayoutDashboard, Receipt, Settings, UserCircle } from 'lucide-react';
 import RoleSidebar, { type RoleNavGroup } from './RoleSidebar';
 
 const groups: RoleNavGroup[] = [
@@ -16,5 +16,5 @@ const groups: RoleNavGroup[] = [
 interface FinanceSidebarProps { mobileOpen?: boolean; onMobileClose?: () => void }
 
 export default function FinanceSidebar(props: FinanceSidebarProps) {
-  return <RoleSidebar {...props} portalKey="finance" roleLabel="Finance" workspaceLabel="Finance workspace" dashboard={{ to: '/finance/dashboard', label: 'Dashboard', Icon: LayoutDashboard }} groups={groups} accountLink={{ to: '/finance/settings', label: 'Finance settings', Icon: Settings }} />;
+  return <RoleSidebar {...props} portalKey="finance" roleLabel="Finance" workspaceLabel="Finance workspace" dashboard={{ to: '/finance/dashboard', label: 'Dashboard', Icon: LayoutDashboard }} groups={groups} accountLinks={[{ to: '/finance/profile', label: 'Profile', Icon: UserCircle }, { to: '/finance/settings', label: 'Finance settings', Icon: Settings }]} />;
 }
