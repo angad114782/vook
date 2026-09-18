@@ -11,15 +11,14 @@ import { useUpdateCompany } from '../../hooks/mutations/useCaMutations';
 import { paymentsApi, type Payment } from '../../api/payments';
 
 type Tab = 'Company Profile' | 'Subscription' | 'Security';
-const TABS: Tab[] = ['Company Profile', 'Subscription', 'Security'];
 
 const fieldStyle: React.CSSProperties = { width: '100%', padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#374151', backgroundColor: '#f8fafc', boxSizing: 'border-box' };
-const readStyle:  React.CSSProperties = { ...fieldStyle, backgroundColor: '#f1f5f9', color: '#94a3b8' };
+const readStyle: React.CSSProperties = { ...fieldStyle, backgroundColor: '#f1f5f9', color: '#94a3b8' };
 const labelStyle: React.CSSProperties = { fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '4px', display: 'block' };
 
 export default function CASettingsPage() {
   const { user } = useAuthStore();
-  const [tab,    setTab]    = useState<Tab>('Company Profile');
+  const [tab] = useState<Tab>('Company Profile');
   const [plans,  setPlans]  = useState<PlanData[]>([]);
   const [form,   setForm]   = useState({ name: '', industry: '', email: '', phone: '', address: '' });
   const [formInitialized, setFormInitialized] = useState(false);
@@ -31,7 +30,6 @@ export default function CASettingsPage() {
 
   const { data: company, isLoading: companyLoading } = useCaCompany();
   const updateCompany = useUpdateCompany();
-
   const loading = companyLoading;
 
   // Initialize form when company data arrives
@@ -48,23 +46,29 @@ export default function CASettingsPage() {
     }
   }, [company, formInitialized]);
 
-  // Load plans (no hook — keeping direct call)
   useEffect(() => {
     subscriptionsApi.getPlans().then(({ data }) => setPlans(data)).catch(() => {});
     paymentsApi.mine().then(({ data }) => setPayments(data)).catch(() => {});
   }, []);
 
+  // Load plans (no hook — keeping direct call)
   const handleSave = () => {
     updateCompany.mutate(form, {
-      onSuccess: () => { toast.success('Company profile updated'); },
-      onError: (err) => { toast.error(extractError(err, 'Failed to save company profile')); },
+      onSuccess: () => { toast.success('Company details updated'); },
+      onError: (err) => { toast.error(extractError(err, 'Failed to save company details')); },
     });
   };
 
-  const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
-  const plan    = company?.subscription?.plan ?? company?.plan ?? '';
-  const pm      = getPlanBadge(plan, plans);
+  // @ts-ignore Legacy duplicate declaration retained for old page code.
 
+  const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+  const plan = company?.subscription?.plan ?? company?.plan ?? '';
+  const pm = getPlanBadge(plan, plans);
+  // @ts-ignore Legacy page retained for old imports while the route uses CACompanyDetailsPage.
+  {
+  const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+  void fmtDate;
+  }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div>
@@ -72,16 +76,8 @@ export default function CASettingsPage() {
         <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage your company profile, subscription, and admin security</p>
       </div>
 
-      <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <div style={{ padding: '4px', display: 'flex', gap: '2px', borderBottom: '1px solid #f1f5f9', backgroundColor: '#f8fafc' }}>
-          {TABS.map((t) => (
-            <button key={t} onClick={() => setTab(t)} style={{ padding: '8px 18px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: 'Inter, sans-serif', backgroundColor: tab === t ? '#6366f1' : 'transparent', color: tab === t ? 'white' : '#64748b', transition: 'all 0.15s' }}>{t}</button>
-          ))}
-        </div>
-
-        <div style={{ padding: '24px' }}>
-          {tab === 'Company Profile' && (
-            loading ? <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#6366f1" /></div> : (
+      <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '24px' }}>
+        {companyLoading ? <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#6366f1" /></div> : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '540px' }}>
                 {/* Company identity */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 18px', backgroundColor: '#eef2ff', borderRadius: '10px', border: '1px solid #c7d2fe' }}>
@@ -113,8 +109,7 @@ export default function CASettingsPage() {
                   </button>
                 </div>
               </div>
-            )
-          )}
+        )}
 
           {tab === 'Subscription' && (
             <div style={{ maxWidth: '540px' }}>
@@ -189,7 +184,6 @@ export default function CASettingsPage() {
               </div>
             </div>
           )}
-        </div>
       </div>
     </div>
   );

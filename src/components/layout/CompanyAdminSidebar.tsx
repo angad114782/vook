@@ -22,7 +22,7 @@ const groups: RoleNavGroup[] = [
     ] },
     { to: '/company-admin/settings/workflows', label: 'Workflows', Icon: GitBranch },
     { to: '/company-admin/activity', label: 'Activity log', Icon: Activity },
-    { to: '/company-admin/settings/company', label: 'Company settings', Icon: Settings },
+    { to: '/company-admin/settings/company', label: 'Company details', Icon: Settings },
   ] },
   { label: 'Plan', entries: [
     { to: '/company-admin/modules', label: 'Plan and modules', Icon: Blocks },

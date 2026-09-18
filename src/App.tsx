@@ -79,7 +79,7 @@ const CAUsersPage            = lazy(() => import('./pages/company-admin/CAUsersP
 const CADepartmentsPage      = lazy(() => import('./pages/company-admin/CADepartmentsPage'));
 const CAActivityPage         = lazy(() => import('./pages/company-admin/CAActivityPage'));
 const CAModulesPage          = lazy(() => import('./pages/company-admin/CAModulesPage'));
-const CASettingsPage         = lazy(() => import('./pages/company-admin/CASettingsPage'));
+const CACompanyDetailsPage   = lazy(() => import('./pages/company-admin/CACompanyDetailsPage'));
 const CARolesPage            = lazy(() => import('./pages/company-admin/CARolesPage'));
 const CAWorkflowsPage        = lazy(() => import('./pages/company-admin/CAWorkflowsPage'));
 const CASupportPage          = lazy(() => import('./pages/company-admin/CASupportPage'));
@@ -214,7 +214,7 @@ export default function App() {
             <Route path="departments" element={guarded(<CADepartmentsPage />, 'ORGANIZATION.VIEW', 'Organization')} />
             <Route path="activity"   element={<CAActivityPage />} />
             <Route path="modules"    element={<CAModulesPage />} />
-            <Route path="settings/company"   element={<CASettingsPage />} />
+            <Route path="settings/company"   element={<CACompanyDetailsPage />} />
             <Route path="account-security"   element={<Navigate to="/company-admin/profile" replace />} />
             <Route path="settings/roles"     element={<CARolesPage />} />
             <Route path="settings/workflows" element={<CAWorkflowsPage />} />
