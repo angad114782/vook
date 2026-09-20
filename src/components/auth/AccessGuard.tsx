@@ -15,7 +15,7 @@ export default function AccessGuard({ permission, module, children }: { permissi
       : reason === 'ENTITLEMENT'
         ? `${module} is not included in the company's pinned plan version. A Super Admin can migrate the subscription or add a time-bound override.`
         : `Your current role assignments do not grant ${permission ?? 'the required action'} for this record scope.`;
-    const dashboardPath = `${location.pathname.split('/').slice(0, 2).join('/')}/dashboard`;
+    const portalPath = location.pathname.split('/').slice(0, 2).join('/') || '/';
     return (
       <div style={{ display: 'grid', placeItems: 'center', minHeight: 280 }}>
         <div style={{ maxWidth: 430, width: '100%', padding: '24px', textAlign: 'center', background: 'white', border: '1px solid #e2e8f0', borderRadius: 12 }}>
@@ -28,8 +28,8 @@ export default function AccessGuard({ permission, module, children }: { permissi
             {moduleMissing && <span style={{ padding: '4px 8px', borderRadius: 5, background: '#eff6ff', color: '#1d4ed8', fontSize: 11 }}>Module: {module}</span>}
             <span style={{ padding: '4px 8px', borderRadius: 5, background: '#f1f5f9', color: '#475569', fontSize: 11 }}>Reason: {reason ?? 'SCOPE'}</span>
           </div>
-          <Link to={dashboardPath} style={{ display: 'inline-block', padding: '8px 14px', borderRadius: 7, background: '#0d4a47', color: 'white', textDecoration: 'none', fontSize: 12, fontWeight: 600 }}>
-            Return to dashboard
+          <Link to={portalPath} style={{ display: 'inline-block', padding: '8px 14px', borderRadius: 7, background: '#0d4a47', color: 'white', textDecoration: 'none', fontSize: 12, fontWeight: 600 }}>
+            Return to workspace
           </Link>
         </div>
       </div>

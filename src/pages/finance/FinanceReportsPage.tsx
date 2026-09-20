@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useFinancePayrollReport, useFinanceAttendanceReport, useFinanceWorkforceReport } from '../../hooks/queries/useFinanceQueries';
+import { useAccess } from '../../hooks/queries/useAccess';
 
 type Tab = 'Payroll Report' | 'Expense Report' | 'Cost Analysis';
 const TABS: Tab[] = ['Payroll Report', 'Expense Report', 'Cost Analysis'];
@@ -50,6 +51,8 @@ type WorkforceReport = {
 const fmtMoney = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
 export default function FinanceReportsPage() {
+  const access = useAccess();
+  const canExport = access.can('REPORTS_ANALYTICS.EXPORT');
   const [tab, setTab] = useState<Tab>('Payroll Report');
 
   const { data: payroll, isLoading: payrollLoading } = useFinancePayrollReport(undefined, true);
@@ -72,7 +75,7 @@ export default function FinanceReportsPage() {
           <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Reports</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Financial summaries and analytics across payroll, expenses, and costs</p>
         </div>
-        <button style={{ padding: '8px 16px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Export Report</button>
+        {canExport && <button style={{ padding: '8px 16px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Export Report</button>}
       </div>
 
       <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>

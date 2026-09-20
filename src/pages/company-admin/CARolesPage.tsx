@@ -262,8 +262,16 @@ export default function CARolesPage() {
   });
   const rolesQuery = useQuery({
     queryKey: ["ca", "role-definitions"],
-    queryFn: () =>
-      organizationApi.getRoleDefinitions().then((response) => response.data),
+    queryFn: async () => {
+      const response = await organizationApi.getRoleDefinitions();
+      const payload = response.data as
+        | RoleDefinition[]
+        | { roles?: RoleDefinition[]; items?: RoleDefinition[] };
+
+      return Array.isArray(payload)
+        ? payload
+        : payload.roles ?? payload.items ?? [];
+    },
   });
   const [selectedId, setSelectedId] = useState("");
   const [permissions, setPermissions] = useState<string[]>([]);
@@ -347,12 +355,43 @@ export default function CARolesPage() {
     );
   };
 
-  if (rolesQuery.isLoading || modulesQuery.isLoading || !selected)
+  if (rolesQuery.isLoading || modulesQuery.isLoading)
     return (
       <div className="admin-loading">
         <Loader2 className="spin" size={22} /> Loading tenant access model…
       </div>
     );
+
+  const accessModelError = rolesQuery.error ?? modulesQuery.error;
+  if (accessModelError) {
+    return (
+      <div className="empty-state" role="alert">
+        <strong>Tenant access model could not be loaded</strong>
+        <span>{extractError(accessModelError, "Please try again.")}</span>
+        <button
+          className="admin-button admin-button--secondary"
+          disabled={rolesQuery.isFetching || modulesQuery.isFetching}
+          onClick={() => {
+            void Promise.all([rolesQuery.refetch(), modulesQuery.refetch()]);
+          }}
+        >
+          {rolesQuery.isFetching || modulesQuery.isFetching
+            ? "Retrying..."
+            : "Try again"}
+        </button>
+      </div>
+    );
+  }
+
+  if (!selected) {
+    return (
+      <div className="empty-state">
+        <strong>No role definitions found</strong>
+        <span>Create or provision a role before configuring permissions.</span>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-page">
       <header className="admin-page__header">

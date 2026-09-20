@@ -7,6 +7,8 @@ import { useCreateShift } from '../../hooks/mutations/useHrMutations';
 import { extractError } from '../../utils/errorUtils';
 import { toast } from 'sonner';
 import LegacyDrawer from '../../components/ui/LegacyDrawer';
+import { useAccess } from '../../hooks/queries/useAccess';
+import { isMockMode } from '../../config/runtime';
 
 type ShiftTab = 'Shift Assignment' | 'Workforce Planning' | 'Shortage Alerts';
 const SHIFT_TABS: ShiftTab[] = ['Shift Assignment', 'Workforce Planning', 'Shortage Alerts'];
@@ -38,6 +40,8 @@ function ShiftCard({ label, color, employees }: { label: string; color: string; 
 }
 
 export default function ShiftManagementPage() {
+  const access = useAccess();
+  const canCreate = access.can('SHIFT_MANAGEMENT.CREATE');
   const [tab, setTab] = useState<ShiftTab>('Shift Assignment');
   const [date, setDate] = useState('Today');
   const [department, setDepartment] = useState('All Departments');
@@ -53,16 +57,58 @@ export default function ShiftManagementPage() {
     return params;
   }, [form.date, department]);
 
-  const { data: shiftData, isLoading: shiftsLoading } = useSupShifts(shiftsParams);
-  const { data: empData } = useSupWorkforce({ limit: '200' });
+  const { data: shiftData, isLoading: shiftsLoading } = useSupShifts(shiftsParams, !isMockMode);
+  const { data: empData, isLoading: workforceLoading } = useSupWorkforce({ limit: '200' });
 
-  const stats     = shiftData?.stats     ?? { totalWorkers: 0, morningShift: 0, eveningShift: 0, nightShift: 0 };
-  const shifts    = shiftData?.shifts    ?? { Morning: [], Evening: [], Night: [] };
-  const plans: ShiftPlan[]     = shiftData?.plans     ?? [];
-  const shortages: ShiftShortage[] = shiftData?.shortages ?? [];
+  const fallbackShiftData = useMemo(() => {
+    if (!isMockMode) return undefined;
+    const employees = empData?.employees ?? [];
+    const grouped = { Morning: [] as ShiftAssignment[], Evening: [] as ShiftAssignment[], Night: [] as ShiftAssignment[] };
+    employees.forEach((employee) => {
+      if (!SHIFT_ORDER.includes(employee.shiftType as 'Morning' | 'Evening' | 'Night')) return;
+      const shiftName = employee.shiftType as 'Morning' | 'Evening' | 'Night';
+      grouped[shiftName].push({
+        id: `derived-${employee.id}`,
+        employeeId: employee.id,
+        name: employee.user.name,
+        workerCode: employee.employeeId,
+        dept: employee.department ?? 'Unassigned',
+        role: employee.designation ?? 'Worker',
+        shift: employee.shiftTiming ?? (shiftName === 'Morning' ? '06:00 - 14:00' : shiftName === 'Evening' ? '14:00 - 22:00' : '22:00 - 06:00'),
+        shiftName,
+        status: 'Assigned',
+      });
+    });
+    const departments = [...new Set(employees.map((employee) => employee.department ?? 'Unassigned'))];
+    const plans = departments.flatMap((department) => SHIFT_ORDER.map((shiftName) => {
+      const assigned = grouped[shiftName].filter((shift) => shift.dept === department).length;
+      const required = Math.max(assigned, 1);
+      return { department, shift: shiftName, required, assigned, shortage: required - assigned } satisfies ShiftPlan;
+    }));
+    const shortages = plans.filter((plan) => plan.shortage > 0).map((plan) => ({
+      station: `${plan.department} - ${plan.shift}`,
+      shift: `${plan.shift} Shift`,
+      required: plan.required,
+      actual: plan.assigned,
+      severity: plan.shortage > 1 ? 'critical' : 'high',
+    } satisfies ShiftShortage));
+    return {
+      stats: { totalWorkers: SHIFT_ORDER.reduce((total, key) => total + grouped[key].length, 0), morningShift: grouped.Morning.length, eveningShift: grouped.Evening.length, nightShift: grouped.Night.length },
+      shifts: grouped,
+      plans,
+      shortages,
+    };
+  }, [empData?.employees]);
+
+  const effectiveShiftData = shiftData ?? fallbackShiftData;
+
+  const stats     = effectiveShiftData?.stats     ?? { totalWorkers: 0, morningShift: 0, eveningShift: 0, nightShift: 0 };
+  const shifts    = effectiveShiftData?.shifts    ?? { Morning: [], Evening: [], Night: [] };
+  const plans: ShiftPlan[]     = effectiveShiftData?.plans     ?? [];
+  const shortages: ShiftShortage[] = effectiveShiftData?.shortages ?? [];
   const employees: Employee[]  = empData?.employees   ?? [];
 
-  const loading = shiftsLoading;
+  const loading = isMockMode ? workforceLoading : shiftsLoading;
 
   // Sync form.date when date tab changes
   const handleDateChange = (d: string) => {
@@ -98,9 +144,9 @@ export default function ShiftManagementPage() {
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage shift assignments and workforce planning</p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={() => setShowAssign(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+          {canCreate && !isMockMode && <button onClick={() => setShowAssign(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
             <Plus size={13} /> Assign Shift
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -188,9 +234,9 @@ export default function ShiftManagementPage() {
               <option>Understaffed</option>
               <option>Fulfilled</option>
             </select>
-            <button onClick={() => setShowAssign(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+            {canCreate && !isMockMode && <button onClick={() => setShowAssign(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
               <Plus size={12} /> Assign Worker
-            </button>
+            </button>}
           </div>
 
           <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
@@ -256,7 +302,7 @@ export default function ShiftManagementPage() {
                   <p style={{ fontSize: '11px', color: '#dc2626', marginTop: '3px', fontWeight: 600 }}>Short by {s.required - s.actual} workers</p>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                  <button onClick={() => setShowAssign(true)} style={{ padding: '6px 14px', backgroundColor: '#0d7470', border: 'none', borderRadius: '7px', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Assign Worker</button>
+                  {canCreate && !isMockMode && <button onClick={() => setShowAssign(true)} style={{ padding: '6px 14px', backgroundColor: '#0d7470', border: 'none', borderRadius: '7px', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Assign Worker</button>}
                 </div>
               </div>
             ))}
@@ -275,7 +321,7 @@ export default function ShiftManagementPage() {
                   <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{s.shift}</p>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => setShowAssign(true)} style={{ padding: '6px 14px', backgroundColor: '#0d7470', border: 'none', borderRadius: '7px', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Assign Worker</button>
+                  {canCreate && !isMockMode && <button onClick={() => setShowAssign(true)} style={{ padding: '6px 14px', backgroundColor: '#0d7470', border: 'none', borderRadius: '7px', color: 'white', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Assign Worker</button>}
                 </div>
               </div>
             ))}
@@ -284,7 +330,7 @@ export default function ShiftManagementPage() {
         </>
       )}
 
-      {showAssign && (
+      {canCreate && !isMockMode && showAssign && (
         <LegacyDrawer open onClose={() => setShowAssign(false)} direction="right" className="legacy-form-drawer">
           <div style={{ width: '420px', backgroundColor: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 18px 40px rgba(0,0,0,0.14)' }}>
             <div style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -10,6 +10,7 @@ import { useEmployees } from '../../hooks/queries/useHrQueries';
 import { useCreateEmployee, useUpdateEmployee } from '../../hooks/mutations/useHrMutations';
 import PaginationBar from '../../components/data/Pagination';
 import LegacyDrawer from '../../components/ui/LegacyDrawer';
+import { useAccess } from '../../hooks/queries/useAccess';
 
 const DEPARTMENTS = ['Engineering', 'Sales', 'Marketing', 'HR', 'Design', 'Finance'];
 const SHIFTS = ['Morning', 'Evening', 'Night'];
@@ -157,6 +158,9 @@ function EmployeeModal({ emp, onClose }: { emp?: Employee; onClose: () => void }
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function EmployeesPage() {
+  const access = useAccess();
+  const canCreate = access.can('EMPLOYEE_MANAGEMENT.CREATE');
+  const canEdit = access.can('EMPLOYEE_MANAGEMENT.EDIT');
   const [urlParams, setUrlParams] = useSearchParams();
   const search = urlParams.get('search') ?? '';
   const deptFilter = urlParams.get('department') ?? 'ALL';
@@ -191,9 +195,9 @@ export default function EmployeesPage() {
           <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Employee List</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage and track all employee information</p>
         </div>
-        <button onClick={() => setModal({ open: true })} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px', backgroundColor: '#0d7470', border: 'none', borderRadius: '9px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+        {canCreate && <button onClick={() => setModal({ open: true })} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px', backgroundColor: '#0d7470', border: 'none', borderRadius: '9px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
           <Plus size={15} /> Add Employee
-        </button>
+        </button>}
       </div>
 
       {/* Department tabs */}
@@ -231,7 +235,7 @@ export default function EmployeesPage() {
                 {employees.map((e, i) => {
                   const av = getAv(e.user.name);
                   return (
-                    <tr key={e.id} onClick={() => setModal({ open: true, emp: e })} style={{ borderBottom: i < employees.length - 1 ? '1px solid #f8fafc' : 'none', cursor: 'pointer' }}>
+                    <tr key={e.id} onClick={() => canEdit && setModal({ open: true, emp: e })} style={{ borderBottom: i < employees.length - 1 ? '1px solid #f8fafc' : 'none', cursor: canEdit ? 'pointer' : 'default' }}>
                       <td style={{ padding: '13px 18px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <div style={{ width: '34px', height: '34px', borderRadius: '50%', backgroundColor: av.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: av.color, fontWeight: 700, fontSize: '11px', flexShrink: 0 }}>{initials(e.user.name)}</div>
@@ -251,7 +255,7 @@ export default function EmployeesPage() {
                         <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: e.status === 'Active' ? '#dcfce7' : '#f1f5f9', color: e.status === 'Active' ? '#15803d' : '#475569' }}>{e.status}</span>
                       </td>
                       <td style={{ padding: '13px 18px' }}>
-                        <button onClick={(e2) => { e2.stopPropagation(); setModal({ open: true, emp: e }); }} style={{ width: '30px', height: '30px', borderRadius: '7px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}><Edit2 size={13} /></button>
+                        {canEdit && <button aria-label={`Edit ${e.user.name}`} onClick={(e2) => { e2.stopPropagation(); setModal({ open: true, emp: e }); }} style={{ width: '30px', height: '30px', borderRadius: '7px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}><Edit2 size={13} /></button>}
                       </td>
                     </tr>
                   );
@@ -267,7 +271,7 @@ export default function EmployeesPage() {
 
       <PaginationBar page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} limit={limit} onPageChange={(nextPage) => updateUrl({ page: String(nextPage) })} />
 
-      {modal.open && <EmployeeModal emp={modal.emp} onClose={() => setModal({ open: false })} />}
+      {modal.open && ((modal.emp && canEdit) || (!modal.emp && canCreate)) && <EmployeeModal emp={modal.emp} onClose={() => setModal({ open: false })} />}
     </div>
   );
 }

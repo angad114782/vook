@@ -1,5 +1,7 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Drawer, DrawerContent } from './drawer';
+
+const DRAWER_EXIT_DURATION = 500;
 
 interface LegacyDrawerProps {
   open: boolean;
@@ -12,6 +14,21 @@ interface LegacyDrawerProps {
 /** Compatibility frame for legacy page content while its inner markup is normalized. */
 export default function LegacyDrawer({ open, onClose, children, direction = 'bottom', className = '' }: LegacyDrawerProps) {
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [renderOpen, setRenderOpen] = useState(open);
+
+  useEffect(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setRenderOpen(open);
+  }, [open]);
+
+  useEffect(() => () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     const active = document.activeElement;
@@ -26,8 +43,26 @@ export default function LegacyDrawer({ open, onClose, children, direction = 'bot
     };
   }, [open]);
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+
+    if (nextOpen) {
+      setRenderOpen(true);
+      return;
+    }
+
+    setRenderOpen(false);
+    closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null;
+      onClose();
+    }, DRAWER_EXIT_DURATION);
+  };
+
   return (
-    <Drawer open={open} onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }} direction={direction} shouldScaleBackground={false}>
+    <Drawer open={renderOpen} onOpenChange={handleOpenChange} direction={direction} shouldScaleBackground={false}>
       <DrawerContent className={`legacy-drawer ${className}`}>{children}</DrawerContent>
     </Drawer>
   );

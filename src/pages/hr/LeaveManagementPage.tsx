@@ -3,13 +3,15 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { type LeaveRequest } from '../../api/hr';
-import { Search, CheckCircle2, XCircle, Clock, CalendarDays, Loader2, X } from 'lucide-react';
+import { Search, CheckCircle2, XCircle, Clock, CalendarDays, Loader2, Plus, X } from 'lucide-react';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import PaginationBar from '../../components/data/Pagination';
 import { extractError } from '../../utils/errorUtils';
 import { useLeaves } from '../../hooks/queries/useHrQueries';
 import { useUpdateLeave } from '../../hooks/mutations/useHrMutations';
 import LegacyDrawer from '../../components/ui/LegacyDrawer';
+import { useAccess } from '../../hooks/queries/useAccess';
+import { useApplyLeave } from '../../hooks/mutations/useEmployeeMutations';
 
 const STATUS_META: Record<string, { bg: string; color: string }> = {
   Pending:  { bg: '#fef9c3', color: '#854d0e' },
@@ -28,7 +30,7 @@ const getAv = (name?: string) => avatarColors[(name ?? 'H').charCodeAt(0) % avat
 const initials = (name?: string) => (name ?? 'User').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
-function DetailModal({ leave, onClose, onAction }: { leave: LeaveRequest; onClose: () => void; onAction: (id: string, status: string) => void }) {
+function DetailModal({ leave, onClose, onAction, canApprove, canReject }: { leave: LeaveRequest; onClose: () => void; onAction: (id: string, status: string) => void; canApprove: boolean; canReject: boolean }) {
   const sm = STATUS_META[leave.status] ?? STATUS_META['Pending']!;
   const av = getAv(leave.employee.user.name);
   return (
@@ -61,14 +63,14 @@ function DetailModal({ leave, onClose, onAction }: { leave: LeaveRequest; onClos
             </div>
           ))}
         </div>
-        {leave.status === 'Pending' && (
+        {leave.status === 'Pending' && (canApprove || canReject) && (
           <div style={{ padding: '14px 22px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            <button onClick={() => { onAction(leave.id, 'Rejected'); onClose(); }} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 16px', border: '1.5px solid #fecaca', borderRadius: '8px', backgroundColor: 'white', color: '#b91c1c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+            {canReject && <button onClick={() => { onAction(leave.id, 'Rejected'); onClose(); }} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 16px', border: '1.5px solid #fecaca', borderRadius: '8px', backgroundColor: 'white', color: '#b91c1c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
               <XCircle size={14} /> Reject
-            </button>
-            <button onClick={() => { onAction(leave.id, 'Approved'); onClose(); }} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 16px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+            </button>}
+            {canApprove && <button onClick={() => { onAction(leave.id, 'Approved'); onClose(); }} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 16px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
               <CheckCircle2 size={14} /> Approve
-            </button>
+            </button>}
           </div>
         )}
       </div>
@@ -77,6 +79,10 @@ function DetailModal({ leave, onClose, onAction }: { leave: LeaveRequest; onClos
 }
 
 export default function LeaveManagementPage() {
+  const access = useAccess();
+  const canCreate = access.can('LEAVE_MANAGEMENT.CREATE');
+  const canApprove = access.can('LEAVE_MANAGEMENT.APPROVE');
+  const canReject = access.can('LEAVE_MANAGEMENT.REJECT');
   const [urlParams, setUrlParams] = useSearchParams();
   const search = urlParams.get('search') ?? '';
   const statusFilter = urlParams.get('status') ?? 'ALL';
@@ -84,6 +90,9 @@ export default function LeaveManagementPage() {
   const page = Math.max(1, Number(urlParams.get('page') ?? '1') || 1);
   const limit = 20;
   const [viewLeave, setViewLeave] = useState<LeaveRequest | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [createError, setCreateError] = useState('');
+  const [createForm, setCreateForm] = useState({ leaveType: 'Casual Leave', startDate: '', endDate: '', reason: '' });
 
   const debouncedSearch = useDebouncedValue(search, 500);
 
@@ -98,6 +107,7 @@ export default function LeaveManagementPage() {
   const pagination = data?.pagination ?? { total: 0, page: 1, limit: 20, totalPages: 1 };
 
   const updateLeave = useUpdateLeave();
+  const applyLeave = useApplyLeave();
 
   const updateUrl = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(urlParams);
@@ -115,6 +125,26 @@ export default function LeaveManagementPage() {
     });
   };
 
+  const handleCreate = () => {
+    if (!createForm.startDate || !createForm.endDate || !createForm.reason.trim()) {
+      setCreateError('Leave type, dates, and reason are required.');
+      return;
+    }
+    if (createForm.endDate < createForm.startDate) {
+      setCreateError('End date must be on or after the start date.');
+      return;
+    }
+    setCreateError('');
+    applyLeave.mutate(createForm, {
+      onSuccess: () => {
+        setShowCreate(false);
+        setCreateForm({ leaveType: 'Casual Leave', startDate: '', endDate: '', reason: '' });
+        toast.success('Leave request created successfully');
+      },
+      onError: (error) => setCreateError(extractError(error, 'Failed to create leave request')),
+    });
+  };
+
   const statCards = [
     { label: 'Total Requests', value: stats.total,    icon: CalendarDays,  color: '#3b82f6', bg: '#eff6ff' },
     { label: 'Pending',        value: stats.pending,  icon: Clock,         color: '#f59e0b', bg: '#fffbeb' },
@@ -126,9 +156,12 @@ export default function LeaveManagementPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div>
-        <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Leave Management</h1>
-        <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Review and manage employee leave requests</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+        <div>
+          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Leave Management</h1>
+          <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Review and manage employee leave requests</p>
+        </div>
+        {canCreate && <button onClick={() => setShowCreate(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', backgroundColor: '#0d7470', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}><Plus size={14} /> Create request</button>}
       </div>
 
       <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
@@ -190,8 +223,8 @@ export default function LeaveManagementPage() {
                       <td style={{ padding: '12px 18px' }}>
                         <div style={{ display: 'flex', gap: '6px' }}>
                           {l.status === 'Pending' && <>
-                            <button onClick={(e) => { e.stopPropagation(); void handleAction(l.id, 'Approved'); }} style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', backgroundColor: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#15803d' }}><CheckCircle2 size={13} /></button>
-                            <button onClick={(e) => { e.stopPropagation(); void handleAction(l.id, 'Rejected'); }} style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', backgroundColor: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#b91c1c' }}><XCircle size={13} /></button>
+                            {canApprove && <button aria-label={`Approve leave for ${l.employee.user.name}`} onClick={(e) => { e.stopPropagation(); void handleAction(l.id, 'Approved'); }} style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', backgroundColor: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#15803d' }}><CheckCircle2 size={13} /></button>}
+                            {canReject && <button aria-label={`Reject leave for ${l.employee.user.name}`} onClick={(e) => { e.stopPropagation(); void handleAction(l.id, 'Rejected'); }} style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', backgroundColor: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#b91c1c' }}><XCircle size={13} /></button>}
                           </>}
                         </div>
                       </td>
@@ -204,7 +237,22 @@ export default function LeaveManagementPage() {
         )}
       </div>
       <PaginationBar page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} limit={limit} onPageChange={(p) => updateUrl({ page: String(p) })} />
-      {viewLeave && <DetailModal leave={viewLeave} onClose={() => setViewLeave(null)} onAction={(id, status) => handleAction(id, status)} />}
+      {viewLeave && <DetailModal leave={viewLeave} onClose={() => setViewLeave(null)} onAction={(id, status) => handleAction(id, status)} canApprove={canApprove} canReject={canReject} />}
+      {canCreate && showCreate && <LegacyDrawer open onClose={() => { setShowCreate(false); setCreateError(''); }} direction="right" className="legacy-form-drawer">
+        <div style={{ backgroundColor: 'white', borderRadius: '14px', width: '440px', maxWidth: '94vw', padding: '28px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}><div><h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>Create leave request</h3><p style={{ fontSize: '12px', color: '#64748b', marginTop: '3px' }}>Submit a leave request for your own employee record.</p></div><button aria-label="Close create leave form" onClick={() => { setShowCreate(false); setCreateError(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button></div>
+          {createError && <div role="alert" style={{ padding: '10px 14px', backgroundColor: '#fef2f2', borderRadius: '8px', color: '#dc2626', fontSize: '12px', marginBottom: '14px' }}>{createError}</div>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>Leave type<select value={createForm.leaveType} onChange={(event) => setCreateForm((current) => ({ ...current, leaveType: event.target.value }))} style={{ ...selectStyle, display: 'block', width: '100%', marginTop: '5px', boxSizing: 'border-box' }}>{LEAVE_TYPES.map((type) => <option key={type}>{type}</option>)}</select></label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>From<input type="date" value={createForm.startDate} onChange={(event) => setCreateForm((current) => ({ ...current, startDate: event.target.value }))} style={{ ...selectStyle, display: 'block', width: '100%', marginTop: '5px', boxSizing: 'border-box' }} /></label>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>To<input type="date" value={createForm.endDate} onChange={(event) => setCreateForm((current) => ({ ...current, endDate: event.target.value }))} style={{ ...selectStyle, display: 'block', width: '100%', marginTop: '5px', boxSizing: 'border-box' }} /></label>
+            </div>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>Reason<textarea rows={4} value={createForm.reason} onChange={(event) => setCreateForm((current) => ({ ...current, reason: event.target.value }))} style={{ ...selectStyle, display: 'block', width: '100%', marginTop: '5px', boxSizing: 'border-box', resize: 'vertical' }} /></label>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}><button onClick={() => { setShowCreate(false); setCreateError(''); }} style={{ flex: 1, padding: '10px', border: '1.5px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', color: '#374151', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>Cancel</button><button onClick={handleCreate} disabled={applyLeave.isPending} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: '8px', backgroundColor: '#0d7470', color: 'white', fontSize: '13px', fontWeight: 600, cursor: applyLeave.isPending ? 'not-allowed' : 'pointer', opacity: applyLeave.isPending ? 0.65 : 1 }}>{applyLeave.isPending ? 'Creating…' : 'Create request'}</button></div>
+        </div>
+      </LegacyDrawer>}
     </div>
   );
 }

@@ -1,18 +1,8 @@
-import { CalendarDays, CheckSquare, Clock, DollarSign, FileText, LayoutDashboard, Settings, UserCircle, Users } from 'lucide-react';
-import RoleSidebar, { type RoleNavGroup } from './RoleSidebar';
+import { LayoutDashboard, Settings, UserCircle } from 'lucide-react';
+import RoleSidebar from './RoleSidebar';
+import { assignableRoleGroups } from './assignableRoleNavigation';
 
-const groups: RoleNavGroup[] = [
-  { label: 'People', entries: [{ to: '/hr/employees', label: 'Employees', Icon: Users }] },
-  { label: 'Time & leave', entries: [
-    { to: '/hr/attendance', label: 'Attendance', Icon: Clock },
-    { to: '/hr/leaves', label: 'Leave management', Icon: CalendarDays },
-  ] },
-  { label: 'Operations', entries: [
-    { to: '/hr/approvals', label: 'Approvals', Icon: CheckSquare },
-    { to: '/hr/payroll', label: 'Payroll', Icon: DollarSign },
-    { to: '/hr/documents', label: 'Document policies', Icon: FileText },
-  ] },
-];
+const groups = assignableRoleGroups('/hr', { workforce: '/hr/employees' });
 
 interface HRSidebarProps { mobileOpen?: boolean; onMobileClose?: () => void }
 

@@ -28,6 +28,7 @@ export async function getMockState(): Promise<MockState> {
     // Add newly shipped providers without wiping saved demo configuration.
     const seededState = createMockSeed();
     const seededIntegrations = seededState.integrations;
+    stored.integrations ??= [];
     const storedProviderKeys = new Set(
       stored.integrations.map((item) => String(item.providerKey ?? item.key).toUpperCase()),
     );
@@ -52,6 +53,30 @@ export async function getMockState(): Promise<MockState> {
     });
     if (missingIntegrations.length) {
       stored.integrations.push(...structuredClone(missingIntegrations));
+      catalogChanged = true;
+    }
+
+    // Role definitions are seeded tenant configuration. Backfill definitions
+    // introduced after an existing demo database was first created without
+    // replacing custom roles or other user-generated state.
+    const storedRoleDefinitionIds = new Set(
+      (stored.roleDefinitions ?? []).map((item) => String(item.id)),
+    );
+    const missingRoleDefinitions = seededState.roleDefinitions.filter(
+      (item) => !storedRoleDefinitionIds.has(String(item.id)),
+    );
+    if (missingRoleDefinitions.length) {
+      stored.roleDefinitions = [
+        ...(stored.roleDefinitions ?? []),
+        ...structuredClone(missingRoleDefinitions),
+      ];
+      catalogChanged = true;
+    }
+
+    // Keep global notification queries working for demo databases created
+    // before notifications were added to the seed.
+    if (!stored.notifications) {
+      stored.notifications = structuredClone(seededState.notifications);
       catalogChanged = true;
     }
 

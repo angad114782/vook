@@ -1,17 +1,8 @@
-import { BarChart2, CreditCard, FileText, Landmark, LayoutDashboard, Receipt, Settings, UserCircle } from 'lucide-react';
-import RoleSidebar, { type RoleNavGroup } from './RoleSidebar';
+import { LayoutDashboard, Settings, UserCircle } from 'lucide-react';
+import RoleSidebar from './RoleSidebar';
+import { assignableRoleGroups } from './assignableRoleNavigation';
 
-const groups: RoleNavGroup[] = [
-  { label: 'Payroll', entries: [{ key: 'payroll', label: 'Payroll operations', Icon: CreditCard, children: [
-    { to: '/finance/payroll', label: 'Payroll runs', Icon: CreditCard },
-    { to: '/finance/salary-structure', label: 'Salary structure', Icon: Landmark },
-    { to: '/finance/payslips', label: 'Payslips', Icon: FileText },
-  ] }] },
-  { label: 'Finance', entries: [
-    { to: '/finance/expenses', label: 'Expenses', Icon: Receipt },
-    { to: '/finance/reports', label: 'Reports', Icon: BarChart2 },
-  ] },
-];
+const groups = assignableRoleGroups('/finance');
 
 interface FinanceSidebarProps { mobileOpen?: boolean; onMobileClose?: () => void }
 

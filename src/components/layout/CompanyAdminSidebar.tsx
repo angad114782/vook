@@ -1,4 +1,4 @@
-import { Activity, BarChart2, Blocks, Building2, CalendarCheck, CheckSquare, CreditCard, GitBranch, LayoutDashboard, LifeBuoy, Settings, Shield, ShieldCheck, UserCircle, UserCog, Users } from 'lucide-react';
+import { Activity, BarChart2, Blocks, Building2, CalendarCheck, CalendarDays, CheckSquare, CreditCard, FileText, FolderOpen, GitBranch, LayoutDashboard, LifeBuoy, Receipt, Settings, Shield, ShieldCheck, UserCircle, UserCog, Users } from 'lucide-react';
 import RoleSidebar, { type RoleNavGroup } from './RoleSidebar';
 
 const groups: RoleNavGroup[] = [
@@ -10,9 +10,14 @@ const groups: RoleNavGroup[] = [
     { key: 'time-attendance', label: 'Time & attendance', Icon: CalendarCheck, children: [
       { to: '/company-admin/attendance', label: 'Attendance', Icon: CalendarCheck },
       { to: '/company-admin/attendance-integrations', label: 'Attendance policy', Icon: ShieldCheck },
+      { to: '/company-admin/shifts', label: 'Shift management', Icon: CalendarDays },
     ] },
+    { to: '/company-admin/leaves', label: 'Leave management', Icon: CalendarDays },
     { to: '/company-admin/approvals', label: 'Approvals', Icon: CheckSquare },
     { to: '/company-admin/payroll/overview', label: 'Payroll', Icon: CreditCard },
+    { to: '/company-admin/payslips', label: 'Payslips', Icon: FileText },
+    { to: '/company-admin/expenses', label: 'Expenses', Icon: Receipt },
+    { to: '/company-admin/documents', label: 'Documents', Icon: FolderOpen },
     { to: '/company-admin/reports', label: 'Reports', Icon: BarChart2 },
   ] },
   { label: 'Administration', entries: [

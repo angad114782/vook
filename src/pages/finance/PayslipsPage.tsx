@@ -2,10 +2,11 @@ import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import type { Payslip } from '../../api/hr';
 import { Eye, Download, Loader2, BarChart2, Search } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import PaginationBar from '../../components/data/Pagination';
 import { useFinancePayslips } from '../../hooks/queries/useFinanceQueries';
+import { useAccess } from '../../hooks/queries/useAccess';
 
 const fmtPay = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
@@ -23,7 +24,11 @@ const QUICK = [
 ];
 
 export default function PayslipsPage() {
+  const access = useAccess();
+  const canExport = access.can('PAYSLIPS.EXPORT');
   const navigate = useNavigate();
+  const location = useLocation();
+  const portalPath = location.pathname.split('/').slice(0, 2).join('/');
   const [search, setSearch] = useState('');
   const [month, setMonth] = useState('February');
   const [year, setYear] = useState('2026');
@@ -100,7 +105,7 @@ export default function PayslipsPage() {
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', gap: '6px' }}>
                           <button style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}><Eye size={13} /></button>
-                          <button style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}><Download size={13} /></button>
+                          {canExport && <button aria-label={`Download ${p.payslipId}`} style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}><Download size={13} /></button>}
                         </div>
                       </td>
                     </tr>
@@ -118,8 +123,8 @@ export default function PayslipsPage() {
         <div style={{ padding: '14px 20px', borderTop: '1px solid #f1f5f9' }}>
           <p style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>QUICK ACTIONS</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-            {QUICK.map(({ label, icon: Icon }) => (
-              <button key={label} onClick={() => navigate('/finance/reports')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: 'white', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+            {QUICK.filter(({ label }) => label !== 'Download Report' || canExport).map(({ label, icon: Icon }) => (
+              <button key={label} onClick={() => navigate(`${portalPath}/reports`)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: 'white', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
                 onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#2563eb'; el.style.backgroundColor = '#eff6ff'; }}
                 onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#e2e8f0'; el.style.backgroundColor = 'white'; }}>
                 <Icon size={18} color="#2563eb" />

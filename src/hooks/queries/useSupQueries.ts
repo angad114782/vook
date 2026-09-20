@@ -22,10 +22,11 @@ export const useSupAttendance = (params?: Record<string, string>) =>
     queryFn: () => hrApi.getAttendanceRecords(params).then((r) => r.data),
   });
 
-export const useSupShifts = (params?: Record<string, string>) =>
+export const useSupShifts = (params?: Record<string, string>, enabled = true) =>
   useQuery({
     queryKey: qk.sup.shifts(params),
     queryFn: () => hrApi.getShifts(params).then((r) => r.data),
+    enabled,
   });
 
 export const useSupApprovals = (params?: Record<string, string>) =>

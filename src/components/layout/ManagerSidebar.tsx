@@ -1,16 +1,8 @@
-import { BarChart2, CheckSquare, Clock, LayoutDashboard, Settings, UserCircle, Users } from 'lucide-react';
-import RoleSidebar, { type RoleNavGroup } from './RoleSidebar';
+import { LayoutDashboard, Settings, UserCircle } from 'lucide-react';
+import RoleSidebar from './RoleSidebar';
+import { assignableRoleGroups } from './assignableRoleNavigation';
 
-const groups: RoleNavGroup[] = [
-  { label: 'Team', entries: [
-    { to: '/manager/workforce', label: 'Workforce', Icon: Users },
-    { to: '/manager/attendance', label: 'Attendance', Icon: Clock },
-  ] },
-  { label: 'Decisions', entries: [
-    { to: '/manager/approvals', label: 'Approvals', Icon: CheckSquare },
-    { to: '/manager/reports', label: 'Reports', Icon: BarChart2 },
-  ] },
-];
+const groups = assignableRoleGroups('/manager');
 
 interface ManagerSidebarProps { mobileOpen?: boolean; onMobileClose?: () => void }
 

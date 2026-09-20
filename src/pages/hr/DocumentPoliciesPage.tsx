@@ -9,6 +9,7 @@ import { extractError } from '../../utils/errorUtils';
 import { useDocuments } from '../../hooks/queries/useHrQueries';
 import { useCreateDocument, useDeleteDocument } from '../../hooks/mutations/useHrMutations';
 import LegacyDrawer from '../../components/ui/LegacyDrawer';
+import { useAccess } from '../../hooks/queries/useAccess';
 
 const CATEGORIES = ['Safety', 'HR Policy', 'Compliance', 'IT Policy', 'Finance'];
 const CAT_COLOR: Record<string, { bg: string; color: string }> = {
@@ -138,6 +139,10 @@ function CreateDocModal({ onClose }: { onClose: () => void }) {
 }
 
 export default function DocumentPoliciesPage() {
+  const access = useAccess();
+  const canCreate = access.can('DOCUMENTS.CREATE');
+  const canDelete = access.can('DOCUMENTS.DELETE');
+  const canExport = access.can('DOCUMENTS.EXPORT');
   const [search,         setSearch]         = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [showCreate,     setShowCreate]     = useState(false);
@@ -187,12 +192,12 @@ export default function DocumentPoliciesPage() {
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage company documents, policies, and compliance files</p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={() => setShowCreate(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', border: '1.5px solid #e2e8f0', borderRadius: '9px', backgroundColor: 'white', color: '#374151', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+          {canCreate && <button onClick={() => setShowCreate(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', border: '1.5px solid #e2e8f0', borderRadius: '9px', backgroundColor: 'white', color: '#374151', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
             <Upload size={14} /> Upload Document
-          </button>
-          <button onClick={() => setShowCreate(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', backgroundColor: '#0d7470', border: 'none', borderRadius: '9px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+          </button>}
+          {canCreate && <button onClick={() => setShowCreate(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', backgroundColor: '#0d7470', border: 'none', borderRadius: '9px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
             <Plus size={14} /> Create Policy
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -239,9 +244,9 @@ export default function DocumentPoliciesPage() {
                       <td style={{ padding: '13px 18px' }}>
                         <div style={{ display: 'flex', gap: '6px' }}>
                           <button onClick={() => void openDocument(d)} disabled={!d.fileUrl} style={{ opacity: d.fileUrl ? 1 : 0.4, width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: d.fileUrl ? 'pointer' : 'not-allowed', color: '#64748b' }} title="View document"><Eye size={13} /></button>
-                          <button onClick={() => void openDocument(d, true)} disabled={!d.fileUrl} style={{ opacity: d.fileUrl ? 1 : 0.4, width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: d.fileUrl ? 'pointer' : 'not-allowed', color: '#64748b' }} title="Download document"><Download size={13} /></button>
+                          {canExport && <button onClick={() => void openDocument(d, true)} disabled={!d.fileUrl} style={{ opacity: d.fileUrl ? 1 : 0.4, width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: d.fileUrl ? 'pointer' : 'not-allowed', color: '#64748b' }} title="Download document"><Download size={13} /></button>}
                           <button style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'not-allowed', opacity: 0.4, color: '#64748b' }}><Edit2 size={13} /></button>
-                          <button onClick={() => handleDelete(d.id)} style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #fecaca', backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#b91c1c' }}><Trash2 size={13} /></button>
+                          {canDelete && <button aria-label={`Delete ${d.name}`} onClick={() => handleDelete(d.id)} style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #fecaca', backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#b91c1c' }}><Trash2 size={13} /></button>}
                         </div>
                       </td>
                     </tr>
@@ -255,7 +260,7 @@ export default function DocumentPoliciesPage() {
       </div>
 
       <PaginationBar page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} limit={limit} onPageChange={(p) => setPage(p)} />
-      {showCreate && <CreateDocModal onClose={() => setShowCreate(false)} />}
+      {canCreate && showCreate && <CreateDocModal onClose={() => setShowCreate(false)} />}
     </div>
   );
 }

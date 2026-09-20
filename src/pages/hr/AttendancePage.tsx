@@ -10,6 +10,7 @@ import { extractError } from '../../utils/errorUtils';
 import { useHrAttendance, useAttendanceRecords, useEmployees } from '../../hooks/queries/useHrQueries';
 import { useCreateAttendance } from '../../hooks/mutations/useHrMutations';
 import LegacyDrawer from '../../components/ui/LegacyDrawer';
+import { useAccess } from '../../hooks/queries/useAccess';
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Present: { bg: '#f0fdf4', color: '#15803d' },
@@ -135,6 +136,8 @@ function AddRecordModal({ onClose }: { onClose: () => void }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function AttendancePage() {
+  const access = useAccess();
+  const canCreate = access.can('ATTENDANCE.CREATE');
   const [urlParams, setUrlParams] = useSearchParams();
   const tab = urlParams.get('tab') === 'records' ? 'records' : 'overview';
   const page = Math.max(1, Number(urlParams.get('page') ?? '1') || 1);
@@ -179,7 +182,7 @@ export default function AttendancePage() {
           <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Attendance</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Company-wide attendance overview and daily records</p>
         </div>
-        {tab === 'records' && (
+        {tab === 'records' && canCreate && (
           <button onClick={() => setShowAddModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px', backgroundColor: '#0d7470', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
             <Plus size={14} /> Add Record
           </button>
@@ -314,7 +317,7 @@ export default function AttendancePage() {
         </div>
       )}
 
-      {showAddModal && (
+      {canCreate && showAddModal && (
         <AddRecordModal onClose={() => setShowAddModal(false)} />
       )}
     </div>

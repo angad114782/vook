@@ -1,14 +1,8 @@
-import { CalendarDays, CheckSquare, Clock, LayoutDashboard, Settings, UserCircle, Users } from 'lucide-react';
-import RoleSidebar, { type RoleNavGroup } from './RoleSidebar';
+import { LayoutDashboard, Settings, UserCircle } from 'lucide-react';
+import RoleSidebar from './RoleSidebar';
+import { assignableRoleGroups } from './assignableRoleNavigation';
 
-const groups: RoleNavGroup[] = [
-  { label: 'Team operations', entries: [
-    { to: '/supervisor/workforce', label: 'Workforce', Icon: Users },
-    { to: '/supervisor/attendance', label: 'Attendance', Icon: Clock },
-    { to: '/supervisor/shifts', label: 'Shift management', Icon: CalendarDays },
-  ] },
-  { label: 'Decisions', entries: [{ to: '/supervisor/approvals', label: 'Approvals', Icon: CheckSquare }] },
-];
+const groups = assignableRoleGroups('/supervisor');
 
 interface SupervisorSidebarProps { mobileOpen?: boolean; onMobileClose?: () => void }
 

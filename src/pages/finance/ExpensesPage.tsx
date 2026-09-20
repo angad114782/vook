@@ -2,13 +2,15 @@ import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { type Expense } from '../../api/finance';
-import { Search, CheckCircle2, X, Loader2, Paperclip } from 'lucide-react';
+import { Search, CheckCircle2, X, Loader2, Paperclip, Plus } from 'lucide-react';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import PaginationBar from '../../components/data/Pagination';
 import { extractError } from '../../utils/errorUtils';
 import { useFinanceExpenses } from '../../hooks/queries/useFinanceQueries';
 import { useFinanceUpdateExpense } from '../../hooks/mutations/useFinanceMutations';
 import LegacyDrawer from '../../components/ui/LegacyDrawer';
+import { useAccess } from '../../hooks/queries/useAccess';
+import { useSubmitExpense } from '../../hooks/mutations/useEmployeeMutations';
 
 type Tab = 'All Request' | 'Pending Requests' | 'Approved Requests' | 'Completed Requests';
 const TABS: Tab[] = ['All Request', 'Pending Requests', 'Approved Requests', 'Completed Requests'];
@@ -25,11 +27,18 @@ const fmtAmt  = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
 export default function ExpensesPage() {
+  const access = useAccess();
+  const canCreate = access.can('EXPENSE_MANAGEMENT.CREATE');
+  const canApprove = access.can('EXPENSE_MANAGEMENT.APPROVE');
+  const canReject = access.can('EXPENSE_MANAGEMENT.REJECT');
   const [tab,         setTab]         = useState<Tab>('All Request');
   const [search,      setSearch]      = useState('');
   const [page,        setPage]        = useState(1);
   const [limit]                       = useState(20);
   const [viewExpense, setViewExpense] = useState<Expense | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [createError, setCreateError] = useState('');
+  const [createForm, setCreateForm] = useState({ category: 'Travel', amount: '', description: '' });
 
   const debouncedSearch = useDebouncedValue(search, 500);
 
@@ -45,6 +54,7 @@ export default function ExpensesPage() {
   const pagination = data?.pagination ?? { total: 0, page: 1, limit: 20, totalPages: 1 };
 
   const updateExpense = useFinanceUpdateExpense();
+  const submitExpense = useSubmitExpense();
 
   const handleTabChange = (t: Tab) => { setTab(t); setPage(1); };
   const handleSearchChange = (v: string) => { setSearch(v); setPage(1); };
@@ -58,12 +68,28 @@ export default function ExpensesPage() {
       },
     );
   };
+  const handleCreate = () => {
+    const amount = Number(createForm.amount);
+    if (!Number.isFinite(amount) || amount <= 0 || !createForm.description.trim()) {
+      setCreateError('Enter a positive amount and a description.');
+      return;
+    }
+    setCreateError('');
+    submitExpense.mutate({ category: createForm.category, amount, description: createForm.description }, {
+      onSuccess: () => {
+        setShowCreate(false);
+        setCreateForm({ category: 'Travel', amount: '', description: '' });
+        toast.success('Expense submitted successfully');
+      },
+      onError: (error) => setCreateError(extractError(error, 'Failed to submit expense')),
+    });
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div>
-        <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Expenses</h1>
-        <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Review, validate, and track employee expense claims</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+        <div><h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Expenses</h1><p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Review, validate, and track employee expense claims</p></div>
+        {canCreate && <button onClick={() => setShowCreate(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', backgroundColor: '#0d7470', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}><Plus size={14} /> Submit expense</button>}
       </div>
 
       {/* Stats */}
@@ -139,8 +165,8 @@ export default function ExpensesPage() {
                         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                           {exp.status === 'Pending' && (
                             <>
-                              <button onClick={(e) => { e.stopPropagation(); handleAction(exp.id, 'Approved'); }} style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', backgroundColor: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><CheckCircle2 size={13} color="white" /></button>
-                              <button onClick={(e) => { e.stopPropagation(); handleAction(exp.id, 'Rejected'); }} style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', backgroundColor: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><X size={13} color="white" /></button>
+                              {canApprove && <button aria-label="Approve expense" onClick={(e) => { e.stopPropagation(); handleAction(exp.id, 'Approved'); }} style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', backgroundColor: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><CheckCircle2 size={13} color="white" /></button>}
+                              {canReject && <button aria-label="Reject expense" onClick={(e) => { e.stopPropagation(); handleAction(exp.id, 'Rejected'); }} style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', backgroundColor: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><X size={13} color="white" /></button>}
                             </>
                           )}
                         </div>
@@ -187,15 +213,27 @@ export default function ExpensesPage() {
                 </div>
               )}
             </div>
-            {viewExpense.status === 'Pending' && (
+            {viewExpense.status === 'Pending' && (canApprove || canReject) && (
               <div style={{ padding: '14px 22px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button onClick={() => { handleAction(viewExpense.id, 'Rejected'); setViewExpense(null); }} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 16px', border: '1.5px solid #fecaca', borderRadius: '8px', backgroundColor: 'white', color: '#b91c1c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}><X size={13} /> Reject</button>
-                <button onClick={() => { handleAction(viewExpense.id, 'Approved'); setViewExpense(null); }} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 16px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}><CheckCircle2 size={13} /> Approve</button>
+                {canReject && <button onClick={() => { handleAction(viewExpense.id, 'Rejected'); setViewExpense(null); }} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 16px', border: '1.5px solid #fecaca', borderRadius: '8px', backgroundColor: 'white', color: '#b91c1c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}><X size={13} /> Reject</button>}
+                {canApprove && <button onClick={() => { handleAction(viewExpense.id, 'Approved'); setViewExpense(null); }} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 16px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}><CheckCircle2 size={13} /> Approve</button>}
               </div>
             )}
           </div>
         </LegacyDrawer>
       )}
+      {canCreate && showCreate && <LegacyDrawer open onClose={() => { setShowCreate(false); setCreateError(''); }} direction="right" className="legacy-form-drawer">
+        <div style={{ backgroundColor: 'white', borderRadius: '14px', width: '420px', maxWidth: '94vw', padding: '28px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}><h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>Submit expense</h3><button aria-label="Close expense form" onClick={() => { setShowCreate(false); setCreateError(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button></div>
+          {createError && <div role="alert" style={{ padding: '10px 14px', backgroundColor: '#fef2f2', borderRadius: '8px', color: '#dc2626', fontSize: '12px', marginBottom: '14px' }}>{createError}</div>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>Category<select value={createForm.category} onChange={(event) => setCreateForm((current) => ({ ...current, category: event.target.value }))} style={{ display: 'block', width: '100%', marginTop: '5px', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', boxSizing: 'border-box' }}>{Object.keys(CAT_META).map((category) => <option key={category}>{category}</option>)}</select></label>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>Amount<input type="number" min="0" value={createForm.amount} onChange={(event) => setCreateForm((current) => ({ ...current, amount: event.target.value }))} style={{ display: 'block', width: '100%', marginTop: '5px', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', boxSizing: 'border-box' }} /></label>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>Description<textarea rows={4} value={createForm.description} onChange={(event) => setCreateForm((current) => ({ ...current, description: event.target.value }))} style={{ display: 'block', width: '100%', marginTop: '5px', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', boxSizing: 'border-box', resize: 'vertical' }} /></label>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}><button onClick={() => setShowCreate(false)} style={{ flex: 1, padding: '10px', border: '1.5px solid #e2e8f0', borderRadius: '8px', background: 'white', fontWeight: 600 }}>Cancel</button><button onClick={handleCreate} disabled={submitExpense.isPending} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: '8px', background: '#0d7470', color: 'white', fontWeight: 600, opacity: submitExpense.isPending ? 0.65 : 1 }}>{submitExpense.isPending ? 'Submitting…' : 'Submit expense'}</button></div>
+        </div>
+      </LegacyDrawer>}
     </div>
   );
 }

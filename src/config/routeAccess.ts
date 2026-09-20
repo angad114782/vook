@@ -9,9 +9,14 @@ export const routeAccess: Record<string, RouteAccessRule> = {
   '/company-admin/dashboard': { module: 'Dashboard', permission: 'DASHBOARD.VIEW' },
   '/company-admin/workforce': { module: 'Employee Management', permission: 'EMPLOYEE_MANAGEMENT.VIEW' },
   '/company-admin/attendance': { module: 'Attendance', permission: 'ATTENDANCE.VIEW' },
+  '/company-admin/shifts': { module: 'Shift Management', permission: 'SHIFT_MANAGEMENT.VIEW' },
+  '/company-admin/leaves': { module: 'Leave Management', permission: 'LEAVE_MANAGEMENT.VIEW' },
   '/company-admin/departments': { module: 'Organization', permission: 'ORGANIZATION.VIEW' },
   '/company-admin/approvals': { module: 'Approvals', permission: 'APPROVALS.VIEW' },
   '/company-admin/payroll/overview': { module: 'Payroll', permission: 'PAYROLL.VIEW' },
+  '/company-admin/payslips': { module: 'Payslips', permission: 'PAYSLIPS.VIEW' },
+  '/company-admin/expenses': { module: 'Expense Management', permission: 'EXPENSE_MANAGEMENT.VIEW' },
+  '/company-admin/documents': { module: 'Documents', permission: 'DOCUMENTS.VIEW' },
   '/company-admin/reports': { module: 'Reports & Analytics', permission: 'REPORTS_ANALYTICS.VIEW' },
   '/company-admin/attendance-integrations': { module: 'Attendance', permission: 'ATTENDANCE.VIEW' },
   '/company-admin/users': { module: 'Employee Management', permission: 'EMPLOYEE_MANAGEMENT.VIEW' },
@@ -51,6 +56,29 @@ export const routeAccess: Record<string, RouteAccessRule> = {
   '/employee/documents': { module: 'Documents', permission: 'DOCUMENTS.VIEW' },
 };
 
+const assignableRouteRules: Record<string, RouteAccessRule> = {
+  dashboard: { module: 'Dashboard', permission: 'DASHBOARD.VIEW' },
+  workforce: { module: 'Employee Management', permission: 'EMPLOYEE_MANAGEMENT.VIEW' },
+  employees: { module: 'Employee Management', permission: 'EMPLOYEE_MANAGEMENT.VIEW' },
+  attendance: { module: 'Attendance', permission: 'ATTENDANCE.VIEW' },
+  shifts: { module: 'Shift Management', permission: 'SHIFT_MANAGEMENT.VIEW' },
+  leaves: { module: 'Leave Management', permission: 'LEAVE_MANAGEMENT.VIEW' },
+  approvals: { module: 'Approvals', permission: 'APPROVALS.VIEW' },
+  payroll: { module: 'Payroll', permission: 'PAYROLL.VIEW' },
+  payslips: { module: 'Payslips', permission: 'PAYSLIPS.VIEW' },
+  expenses: { module: 'Expense Management', permission: 'EXPENSE_MANAGEMENT.VIEW' },
+  documents: { module: 'Documents', permission: 'DOCUMENTS.VIEW' },
+  reports: { module: 'Reports & Analytics', permission: 'REPORTS_ANALYTICS.VIEW' },
+};
+
+export function routeAccessRule(path: string): RouteAccessRule | undefined {
+  const explicit = routeAccess[path];
+  if (explicit) return explicit;
+  const [, portal, section] = path.split('/');
+  if (!['hr', 'finance', 'manager', 'supervisor', 'employee'].includes(portal ?? '')) return undefined;
+  return assignableRouteRules[section ?? ''];
+}
+
 export interface RouteAccessReader {
   can(permission: string): boolean;
   moduleEnabled(module: string): boolean;
@@ -58,7 +86,7 @@ export interface RouteAccessReader {
 }
 
 export function routeVisible(access: RouteAccessReader, path: string): boolean {
-  const rule = routeAccess[path];
+  const rule = routeAccessRule(path);
   if (!rule) return true;
   const restricted = ['PAST_DUE', 'SUSPENDED', 'CANCELLED'].includes(access.data?.subscription?.state ?? '');
   if (restricted && !rule.recovery) return false;

@@ -52,6 +52,7 @@ export const useSubmitExpense = () => {
       employeeApi.submitExpense(data).then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['emp', 'expenses'] });
+      qc.invalidateQueries({ queryKey: ['finance', 'expenses'] });
       qc.invalidateQueries({ queryKey: ['ca', 'dashboard'] });
     },
   });

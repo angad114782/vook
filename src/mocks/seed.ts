@@ -1,4 +1,4 @@
-export const MOCK_SCHEMA_VERSION = 4;
+export const MOCK_SCHEMA_VERSION = 5;
 export const MOCK_PASSWORD = "Demo@123";
 
 export type DemoRole =
@@ -517,19 +517,39 @@ export const createMockSeed = (now = new Date()): MockState => {
       kind: "TEMPLATE",
       locked: false,
       permissions: [
-        ...permissionsFor([
-          "DASHBOARD",
-          "ORGANIZATION",
-          "EMPLOYEE_MANAGEMENT",
-          "ATTENDANCE",
-          "SHIFT_MANAGEMENT",
-          "LEAVE_MANAGEMENT",
-          "APPROVALS",
-          "POLICIES",
-          "DOCUMENTS",
-          "REPORTS_ANALYTICS",
-        ]),
+        ...permissionsFor(["DASHBOARD", "ORGANIZATION"], ["VIEW"]),
+        ...permissionsFor(
+          ["EMPLOYEE_MANAGEMENT"],
+          ["VIEW", "CREATE", "EDIT", "EXPORT"],
+        ),
+        ...permissionsFor(
+          ["ATTENDANCE"],
+          ["VIEW", "CREATE", "EDIT", "APPROVE", "REJECT", "EXPORT", "OVERRIDE"],
+        ),
+        ...permissionsFor(
+          ["SHIFT_MANAGEMENT"],
+          ["VIEW", "CREATE", "EDIT", "CONFIGURE"],
+        ),
+        ...permissionsFor(
+          ["LEAVE_MANAGEMENT"],
+          ["VIEW", "CREATE", "EDIT", "APPROVE", "REJECT", "EXPORT", "CONFIGURE"],
+        ),
+        ...permissionsFor(
+          ["APPROVALS"],
+          ["VIEW", "APPROVE", "REJECT", "CONFIGURE"],
+        ),
+        ...permissionsFor(
+          ["POLICIES"],
+          ["VIEW", "CREATE", "EDIT", "CONFIGURE"],
+        ),
+        ...permissionsFor(
+          ["DOCUMENTS"],
+          ["VIEW", "CREATE", "EDIT", "DELETE", "EXPORT"],
+        ),
+        ...permissionsFor(["REPORTS_ANALYTICS"], ["VIEW", "EXPORT"]),
         ...permissionsFor(["PAYROLL"], ["VIEW"]),
+        ...permissionsFor(["EXPENSE_MANAGEMENT", "NOTIFICATIONS"], ["VIEW"]),
+        ...permissionsFor(["SUPPORT"], ["VIEW", "CREATE"]),
       ],
       revision: 1,
     },
@@ -541,19 +561,25 @@ export const createMockSeed = (now = new Date()): MockState => {
       kind: "TEMPLATE",
       locked: false,
       permissions: [
-        ...permissionsFor([
-          "DASHBOARD",
-          "PAYROLL",
-          "PAYSLIPS",
-          "EXPENSE_MANAGEMENT",
-          "APPROVALS",
-          "REPORTS_ANALYTICS",
-        ]).filter(
-          (permission) =>
-            !permission.endsWith(".FINALIZE") &&
-            !permission.endsWith(".PUBLISH"),
+        ...permissionsFor(
+          ["DASHBOARD", "EMPLOYEE_MANAGEMENT", "ATTENDANCE", "POLICIES", "NOTIFICATIONS"],
+          ["VIEW"],
         ),
-        ...permissionsFor(["ATTENDANCE"], ["VIEW"]),
+        ...permissionsFor(
+          ["PAYROLL"],
+          ["VIEW", "CREATE", "EDIT", "PROCESS", "FINALIZE", "PUBLISH", "EXPORT"],
+        ),
+        ...permissionsFor(
+          ["PAYSLIPS"],
+          ["VIEW", "CREATE", "PUBLISH", "EXPORT"],
+        ),
+        ...permissionsFor(
+          ["EXPENSE_MANAGEMENT"],
+          ["VIEW", "EDIT", "APPROVE", "REJECT", "PROCESS", "EXPORT"],
+        ),
+        ...permissionsFor(["APPROVALS"], ["VIEW", "APPROVE", "REJECT"]),
+        ...permissionsFor(["REPORTS_ANALYTICS"], ["VIEW", "EXPORT"]),
+        ...permissionsFor(["SUPPORT"], ["VIEW", "CREATE"]),
       ],
       revision: 1,
     },
@@ -566,21 +592,17 @@ export const createMockSeed = (now = new Date()): MockState => {
       locked: false,
       permissions: [
         ...permissionsFor(
-          [
-            "DASHBOARD",
-            "EMPLOYEE_MANAGEMENT",
-            "ATTENDANCE",
-            "LEAVE_MANAGEMENT",
-            "APPROVALS",
-            "SHIFT_MANAGEMENT",
-            "REPORTS_ANALYTICS",
-          ],
-          ["VIEW", "APPROVE", "REJECT", "EXPORT"],
+          ["DASHBOARD", "EMPLOYEE_MANAGEMENT", "SHIFT_MANAGEMENT", "POLICIES", "NOTIFICATIONS"],
+          ["VIEW"],
         ),
+        ...permissionsFor(["ATTENDANCE"], ["VIEW", "APPROVE", "REJECT", "EXPORT"]),
+        ...permissionsFor(["LEAVE_MANAGEMENT", "APPROVALS"], ["VIEW", "APPROVE", "REJECT"]),
         ...permissionsFor(
           ["EXPENSE_MANAGEMENT"],
           ["VIEW", "APPROVE", "REJECT"],
         ),
+        ...permissionsFor(["REPORTS_ANALYTICS"], ["VIEW", "EXPORT"]),
+        ...permissionsFor(["SUPPORT"], ["VIEW", "CREATE"]),
       ],
       revision: 1,
     },
@@ -591,18 +613,17 @@ export const createMockSeed = (now = new Date()): MockState => {
       name: "Supervisor",
       kind: "TEMPLATE",
       locked: false,
-      permissions: permissionsFor(
-        [
-          "DASHBOARD",
-          "EMPLOYEE_MANAGEMENT",
-          "ATTENDANCE",
-          "LEAVE_MANAGEMENT",
-          "APPROVALS",
-          "SHIFT_MANAGEMENT",
-          "REPORTS_ANALYTICS",
-        ],
-        ["VIEW", "APPROVE", "REJECT"],
-      ),
+      permissions: [
+        ...permissionsFor(
+          ["DASHBOARD", "EMPLOYEE_MANAGEMENT", "SHIFT_MANAGEMENT", "REPORTS_ANALYTICS", "NOTIFICATIONS"],
+          ["VIEW"],
+        ),
+        ...permissionsFor(
+          ["ATTENDANCE", "LEAVE_MANAGEMENT", "APPROVALS"],
+          ["VIEW", "APPROVE", "REJECT"],
+        ),
+        ...permissionsFor(["SUPPORT"], ["VIEW", "CREATE"]),
+      ],
       revision: 1,
     },
     {
@@ -612,19 +633,18 @@ export const createMockSeed = (now = new Date()): MockState => {
       name: "Employee",
       kind: "TEMPLATE",
       locked: false,
-      permissions: permissionsFor(
-        [
-          "DASHBOARD",
-          "ATTENDANCE",
-          "LEAVE_MANAGEMENT",
-          "PAYSLIPS",
-          "EXPENSE_MANAGEMENT",
-          "DOCUMENTS",
-          "NOTIFICATIONS",
-          "SUPPORT",
-        ],
-        ["VIEW", "CREATE"],
-      ),
+      permissions: [
+        ...permissionsFor(
+          ["DASHBOARD", "SHIFT_MANAGEMENT", "DOCUMENTS", "NOTIFICATIONS"],
+          ["VIEW"],
+        ),
+        ...permissionsFor(
+          ["ATTENDANCE", "LEAVE_MANAGEMENT", "EXPENSE_MANAGEMENT"],
+          ["VIEW", "CREATE"],
+        ),
+        ...permissionsFor(["PAYSLIPS"], ["VIEW", "EXPORT"]),
+        ...permissionsFor(["SUPPORT"], ["VIEW", "CREATE"]),
+      ],
       revision: 1,
     },
     {
@@ -950,16 +970,6 @@ export const createMockSeed = (now = new Date()): MockState => {
       scopeType: "SELF",
       scopeId: "employee_5",
       isPrimary: true,
-    },
-    {
-      id: "assignment_manager_attendance",
-      _id: "assignment_manager_attendance",
-      companyId: "company_northstar",
-      userId: "user_manager",
-      roleDefinitionId: "role_attendance_coordinator",
-      scopeType: "BRANCH",
-      scopeId: "office_nashik",
-      isPrimary: false,
     },
   ];
 

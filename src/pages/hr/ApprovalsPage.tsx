@@ -10,6 +10,7 @@ import { extractError } from '../../utils/errorUtils';
 import { useApprovals } from '../../hooks/queries/useHrQueries';
 import { useUpdateApproval } from '../../hooks/mutations/useHrMutations';
 import LegacyDrawer from '../../components/ui/LegacyDrawer';
+import { useAccess } from '../../hooks/queries/useAccess';
 
 const TYPES = ['Leave', 'Expense', 'Attendance Corrections', 'Overtime', 'Shift Change Request'];
 const PRIORITY_COLOR: Record<string, { bg: string; color: string }> = {
@@ -29,6 +30,9 @@ const initials = (name?: string) => (name ?? 'User').split(' ').map((w) => w[0])
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
 export default function ApprovalsPage() {
+  const access = useAccess();
+  const canApprove = access.can('APPROVALS.APPROVE');
+  const canReject = access.can('APPROVALS.REJECT');
   const [urlParams, setUrlParams] = useSearchParams();
   const search = urlParams.get('search') ?? '';
   const statusFilter = urlParams.get('status') ?? 'ALL';
@@ -147,8 +151,8 @@ export default function ApprovalsPage() {
                       <td style={{ padding: '12px 18px' }}>
                         <div style={{ display: 'flex', gap: '6px' }}>
                           {a.status === 'Pending' && <>
-                            <button onClick={(e) => { e.stopPropagation(); void handleAction(a.id, 'Approved'); }} style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', backgroundColor: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#15803d' }}><CheckCircle2 size={13} /></button>
-                            <button onClick={(e) => { e.stopPropagation(); void handleAction(a.id, 'Rejected'); }} style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', backgroundColor: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#b91c1c' }}><XCircle size={13} /></button>
+                            {canApprove && <button aria-label={`Approve ${a.type}`} onClick={(e) => { e.stopPropagation(); void handleAction(a.id, 'Approved'); }} style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', backgroundColor: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#15803d' }}><CheckCircle2 size={13} /></button>}
+                            {canReject && <button aria-label={`Reject ${a.type}`} onClick={(e) => { e.stopPropagation(); void handleAction(a.id, 'Rejected'); }} style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', backgroundColor: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#b91c1c' }}><XCircle size={13} /></button>}
                           </>}
                         </div>
                       </td>
@@ -185,10 +189,10 @@ export default function ApprovalsPage() {
                 </div>
               ))}
             </div>
-            {viewItem.status === 'Pending' && (
+            {viewItem.status === 'Pending' && (canApprove || canReject) && (
               <div style={{ padding: '14px 22px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button onClick={() => void handleAction(viewItem.id, 'Rejected')} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 16px', border: '1.5px solid #fecaca', borderRadius: '8px', backgroundColor: 'white', color: '#b91c1c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}><XCircle size={13} /> Reject</button>
-                <button onClick={() => void handleAction(viewItem.id, 'Approved')} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 16px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}><CheckCircle2 size={13} /> Approve</button>
+                {canReject && <button onClick={() => void handleAction(viewItem.id, 'Rejected')} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 16px', border: '1.5px solid #fecaca', borderRadius: '8px', backgroundColor: 'white', color: '#b91c1c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}><XCircle size={13} /> Reject</button>}
+                {canApprove && <button onClick={() => void handleAction(viewItem.id, 'Approved')} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 16px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}><CheckCircle2 size={13} /> Approve</button>}
               </div>
             )}
           </div>

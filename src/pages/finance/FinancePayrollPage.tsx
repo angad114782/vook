@@ -6,6 +6,7 @@ import { extractError } from '../../utils/errorUtils';
 import { Check, Loader2, ChevronRight } from 'lucide-react';
 import { useFinanceEmployees } from '../../hooks/queries/useFinanceQueries';
 import { useFinanceRunPayroll } from '../../hooks/mutations/useFinanceMutations';
+import { useAccess } from '../../hooks/queries/useAccess';
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -52,6 +53,8 @@ function StepBar({ step }: { step: Step }) {
 interface EmpRow { emp: Employee; selected: boolean; daysPresent: number; leaves: number; ot: number }
 
 export default function FinancePayrollPage() {
+  const access = useAccess();
+  const canProcess = access.can('PAYROLL.PROCESS');
   const [step, setStep] = useState<Step>(1);
   const [rows, setRows] = useState<EmpRow[]>([]);
   const [typeFilter, setTypeFilter] = useState('All Types');
@@ -394,9 +397,9 @@ export default function FinancePayrollPage() {
               <button onClick={() => { setStep(3); setGenerated(false); }} style={{ padding: '9px 18px', border: '1.5px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', color: '#374151', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>← Back</button>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', alignSelf: 'center' }}>QUICK ACTIONS</p>
-                <button onClick={() => handleGenerate()} disabled={generating || generated} style={btnStyle(generating || generated)}>
+                {canProcess && <button onClick={() => handleGenerate()} disabled={generating || generated} style={btnStyle(generating || generated)}>
                   {generating ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Generating...</> : generated ? '✓ Payslips Generated' : 'Generate Payslips →'}
-                </button>
+                </button>}
               </div>
             </div>
           </>
