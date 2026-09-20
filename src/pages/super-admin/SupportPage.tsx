@@ -1,34 +1,33 @@
-import { ResponsiveTable } from "../../components/data/ResponsiveDataView";
-import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { supportApi, type SupportTicket } from "../../api/support";
-import { useSaSupport } from "../../hooks/queries/useSaQueries";
-import { extractError } from "../../utils/errorUtils";
-import { useDebouncedValue } from "../../hooks/useDebouncedValue";
-import TicketConversationModal from "../../components/support/TicketConversationModal";
-import LegacyDrawer from "../../components/ui/LegacyDrawer";
 import {
-  TicketCheck,
   AlertCircle,
-  Clock,
+  BarChart3,
+  BookOpen,
   CheckCircle2,
-  Search,
-  X,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Loader2,
-  Plus,
-  BookOpen,
+  Clock,
   FileText,
-  Users,
-  Shield,
-  BarChart3,
-  ChevronDown,
   HelpCircle,
   Layers,
-  Settings,
+  Loader2,
+  Plus,
+  Search,
+  Shield,
+  TicketCheck,
+  Users,
+  X,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { supportApi, type SupportTicket } from "../../api/support";
+import { ResponsiveTable } from "../../components/data/ResponsiveDataView";
+import TicketConversationModal from "../../components/support/TicketConversationModal";
+import LegacyDrawer from "../../components/ui/LegacyDrawer";
+import { useSaSupport } from "../../hooks/queries/useSaQueries";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
+import { extractError } from "../../utils/errorUtils";
 
 // ── badge configs ──────────────────────────────────────────────────────────────
 
