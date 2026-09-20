@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -8,6 +9,7 @@ import PaginationBar from '../../components/data/Pagination';
 import { extractError } from '../../utils/errorUtils';
 import { useApprovals } from '../../hooks/queries/useHrQueries';
 import { useUpdateApproval } from '../../hooks/mutations/useHrMutations';
+import LegacyDrawer from '../../components/ui/LegacyDrawer';
 
 const TYPES = ['Leave', 'Expense', 'Attendance Corrections', 'Overtime', 'Shift Change Request'];
 const PRIORITY_COLOR: Record<string, { bg: string; color: string }> = {
@@ -81,9 +83,9 @@ export default function ApprovalsPage() {
         <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage and monitor all approval requests</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+      <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
         {statCards.map((s) => (
-          <div key={s.label} style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div key={s.label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div><p style={{ fontSize: '12px', color: '#64748b', marginBottom: '6px' }}>{s.label}</p><p style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a' }}>{s.value}</p></div>
             <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><s.icon size={19} color={s.color} /></div>
           </div>
@@ -118,7 +120,7 @@ export default function ApprovalsPage() {
           <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /><span style={{ fontSize: '14px' }}>Loading...</span></div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc' }}>
                   {['Employee', 'Request Type', 'Details', 'Date', 'Priority', 'Action'].map((h) => (
@@ -154,7 +156,7 @@ export default function ApprovalsPage() {
                   );
                 })}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         )}
       </div>
@@ -169,7 +171,7 @@ export default function ApprovalsPage() {
 
       {/* Detail Modal */}
       {viewItem && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
+        <LegacyDrawer open onClose={() => setViewItem(null)} direction="right" className="legacy-detail-drawer">
           <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 22px', background: 'linear-gradient(135deg, #0d4a47, #0d7470)' }}>
               <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'white' }}>Approval Request</h3>
@@ -190,7 +192,7 @@ export default function ApprovalsPage() {
               </div>
             )}
           </div>
-        </div>
+        </LegacyDrawer>
       )}
     </div>
   );

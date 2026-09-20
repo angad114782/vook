@@ -6,6 +6,7 @@ import {
   type PlanData,
 } from "../../api/subscriptions";
 import { extractError } from "../../utils/errorUtils";
+import AppDrawer from "../ui/AppDrawer";
 
 type Props = {
   plan?: PlanData | null;
@@ -130,28 +131,17 @@ export default function PlanBuilderModal({ plan, onClose, onSave }: Props) {
   };
 
   return (
-    <div className="plan-builder-backdrop" role="presentation">
-      <section
-        className="plan-builder"
-        role="dialog"
-        aria-modal="true"
-        aria-label={plan ? `Edit ${plan.name}` : "Create plan"}
-      >
-        <header>
-          <div>
-            <span className="plan-builder__eyebrow">Commercial package</span>
-            <h2>{plan ? `Edit ${plan.name}` : "Create a plan"}</h2>
-            <p>Configure pricing, limits, modules, and plan highlights.</p>
-          </div>
-          <button
-            type="button"
-            className="icon-button plan-builder__close"
-            aria-label="Close plan builder"
-            onClick={onClose}
-          >
-            <X size={19} />
-          </button>
-        </header>
+    <AppDrawer
+      open
+      onOpenChange={(nextOpen) => { if (!nextOpen) onClose(); }}
+      title={<><span className="plan-builder__eyebrow">Commercial package</span><span>{plan ? `Edit ${plan.name}` : "Create a plan"}</span></>}
+      description="Configure pricing, limits, modules, and plan highlights."
+      placement="responsive"
+      size="xl"
+      closeLabel="Close plan builder"
+      className="plan-builder"
+      contentClassName="plan-builder__drawer-body"
+    >
         <form onSubmit={save}>
           <div className="plan-builder__body">
           {error && <div className="plan-builder__error" role="alert">{error}</div>}
@@ -390,7 +380,6 @@ export default function PlanBuilderModal({ plan, onClose, onSave }: Props) {
             </button>
           </footer>
         </form>
-      </section>
-    </div>
+    </AppDrawer>
   );
 }

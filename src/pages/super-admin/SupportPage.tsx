@@ -1,3 +1,4 @@
+import { ResponsiveTable } from "../../components/data/ResponsiveDataView";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -6,6 +7,7 @@ import { useSaSupport } from "../../hooks/queries/useSaQueries";
 import { extractError } from "../../utils/errorUtils";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import TicketConversationModal from "../../components/support/TicketConversationModal";
+import LegacyDrawer from "../../components/ui/LegacyDrawer";
 import {
   TicketCheck,
   AlertCircle,
@@ -190,17 +192,11 @@ function NewTicketModal({
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        backgroundColor: "rgba(0,0,0,0.4)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-        padding: "24px",
-      }}
+    <LegacyDrawer
+      open
+      onClose={onClose}
+      direction="right"
+      className="legacy-form-drawer"
     >
       <div
         style={{
@@ -462,7 +458,7 @@ function NewTicketModal({
           </button>
         </div>
       </div>
-    </div>
+    </LegacyDrawer>
   );
 }
 
@@ -472,7 +468,7 @@ function TicketsTab() {
   const qc = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>(
-    []
+    [],
   );
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -518,7 +514,7 @@ function TicketsTab() {
     void qc.invalidateQueries({ queryKey: ["sa", "activity"] });
     if (viewTicket?.id === id)
       setViewTicket((v) =>
-        v ? { ...v, status: status as SupportTicket["status"] } : null
+        v ? { ...v, status: status as SupportTicket["status"] } : null,
       );
   };
 
@@ -684,7 +680,10 @@ function TicketsTab() {
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <ResponsiveTable
+              mobileRowClick
+              style={{ width: "100%", borderCollapse: "collapse" }}
+            >
               <thead>
                 <tr style={{ backgroundColor: "#f8fafc" }}>
                   {[
@@ -847,7 +846,7 @@ function TicketsTab() {
                   );
                 })}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         )}
 
@@ -887,7 +886,7 @@ function TicketsTab() {
               </button>
               {Array.from(
                 { length: Math.min(pagination.totalPages, 5) },
-                (_, i) => i + 1
+                (_, i) => i + 1,
               ).map((p) => (
                 <button
                   key={p}
@@ -1124,27 +1123,11 @@ export default function SupportPage() {
             Manage support tickets — employee, payroll, policy or system issues
           </p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div
-            style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "9px",
-              border: "1px solid #e2e8f0",
-              backgroundColor: "white",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-            }}
-          >
-            <Settings size={15} color="#64748b" />
-          </div>
-        </div>
       </div>
 
       {/* Stats */}
       <div
+        className="responsive-stat-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
@@ -1154,6 +1137,7 @@ export default function SupportPage() {
         {statsRow.map((s) => (
           <div
             key={s.label}
+            className="responsive-stat-card"
             style={{
               backgroundColor: "white",
               borderRadius: "12px",
@@ -1200,7 +1184,6 @@ export default function SupportPage() {
 
       {/* Tickets + Knowledge Base */}
       <TicketsTab />
-
     </div>
   );
 }

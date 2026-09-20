@@ -4,6 +4,8 @@ import { ChevronDown, LogOut, Menu, PanelLeftClose, PanelLeftOpen, X } from 'luc
 import { useAuthStore } from '../../store/authStore';
 import { useAccess } from '../../hooks/queries/useAccess';
 import { routeVisible } from '../../config/routeAccess';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { Drawer, DrawerContent } from '../ui/drawer';
 import UserAvatar from './UserAvatar';
 
 export type SidebarIcon = ComponentType<{ size?: number; 'aria-hidden'?: boolean }>;
@@ -52,8 +54,9 @@ export default function RoleSidebar({
   const location = useLocation();
   const { user, logout } = useAuthStore();
   const access = useAccess();
-  const sidebarRef = useRef<HTMLElement>(null);
   const userMenuRef = useRef<HTMLDetailsElement>(null);
+  const mobileFocusRef = useRef<HTMLElement | null>(null);
+  const mobileViewport = useMediaQuery('(max-width: 1199px)');
   const storageKey = `vook-sidebar-collapsed-${portalKey}`;
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(storageKey) === 'true');
   const [openMenus, setOpenMenus] = useState<string[]>(() => activeParentKeys(groups, location.pathname));
@@ -62,21 +65,6 @@ export default function RoleSidebar({
     const parents = activeParentKeys(groups, location.pathname);
     if (parents.length) setOpenMenus((current) => [...new Set([...current, ...parents])]);
   }, [groups, location.pathname]);
-
-  useEffect(() => {
-    if (!mobileOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onMobileClose?.();
-    };
-    document.body.style.overflow = 'hidden';
-    document.addEventListener('keydown', closeOnEscape);
-    sidebarRef.current?.querySelector<HTMLButtonElement>('.ca-sidebar-mobile-close')?.focus();
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [mobileOpen, onMobileClose]);
 
   useEffect(() => {
     const closeUserMenuOnOutsidePointer = (event: PointerEvent) => {
@@ -99,6 +87,19 @@ export default function RoleSidebar({
     };
   }, []);
 
+  useEffect(() => {
+    if (!mobileViewport) return;
+    if (mobileOpen) {
+      mobileFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const frame = window.requestAnimationFrame(() => {
+        document.querySelector<HTMLElement>('.role-sidebar-drawer .ca-sidebar-mobile-close')?.focus();
+      });
+      return () => window.cancelAnimationFrame(frame);
+    }
+    mobileFocusRef.current?.focus();
+    mobileFocusRef.current = null;
+  }, [mobileOpen, mobileViewport]);
+
   const linkTo = (path: string) => preserveSearch && location.search
     ? { pathname: path, search: location.search }
     : path;
@@ -109,7 +110,7 @@ export default function RoleSidebar({
     return !current;
   });
   const toggleMenu = (key: string) => {
-    if (collapsed && window.innerWidth > 768) {
+    if (collapsed && window.innerWidth >= 1200) {
       setCollapsed(false);
       localStorage.setItem(storageKey, 'false');
       setOpenMenus((current) => [...new Set([...current, key])]);
@@ -119,9 +120,7 @@ export default function RoleSidebar({
   };
   const closeUserMenu = (event: React.MouseEvent<HTMLElement>) => event.currentTarget.closest('details')?.removeAttribute('open');
 
-  return <>
-    <button type="button" className={`ca-sidebar-backdrop${mobileOpen ? ' is-visible' : ''}`} aria-label="Close navigation" onClick={onMobileClose} />
-    <aside ref={sidebarRef} className={`ca-sidebar role-sidebar${collapsed ? ' is-collapsed' : ''}${mobileOpen ? ' is-mobile-open' : ''}`}>
+  const sidebar = <aside className={`ca-sidebar role-sidebar${collapsed ? ' is-collapsed' : ''}${mobileOpen ? ' is-mobile-open' : ''}`} role={mobileOpen ? 'dialog' : undefined} aria-modal={mobileOpen || undefined} aria-label={mobileOpen ? `${roleLabel} navigation` : undefined}>
       <div className="sidebar-brand"><div>V</div><span><strong>VOOK</strong><small>{workspaceLabel}</small></span><button type="button" className="ca-sidebar-mobile-close" onClick={onMobileClose} aria-label="Close navigation"><X size={18} aria-hidden /></button></div>
       <nav aria-label={`${roleLabel} navigation`}>
         {visible(dashboard) && <NavLink to={linkTo(dashboard.to)} onClick={onMobileClose} title={collapsed ? dashboard.label : undefined} data-tooltip={dashboard.label} className={({ isActive }) => `ca-nav-link ca-nav-link--dashboard${isActive ? ' is-active' : ''}`}><dashboard.Icon size={17} aria-hidden /><span>{dashboard.label}</span></NavLink>}
@@ -149,6 +148,11 @@ export default function RoleSidebar({
         <details ref={userMenuRef} className="ca-user-menu"><summary title={collapsed ? user?.name : undefined} data-tooltip={user?.name ?? 'Account'}><UserAvatar user={user} name={user?.name ?? roleLabel} size={30} className="ca-user-avatar" /><span className="ca-user-copy"><strong>{user?.name}</strong><small>{roleLabel}</small></span><ChevronDown className="ca-user-chevron" size={14} aria-hidden /></summary><div className="ca-user-menu__popover">{menuAccountLinks.map((item) => <NavLink key={item.to} to={linkTo(item.to)} onClick={(event) => { closeUserMenu(event); onMobileClose?.(); }}><item.Icon size={15} aria-hidden /> {item.label}</NavLink>)}<button onClick={async () => { await logout(); navigate('/login'); }}><LogOut size={15} aria-hidden /> Sign out</button></div></details>
       </div>
       <button type="button" className="ca-sidebar-rail" onClick={toggleCollapsed} aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'} title={collapsed ? 'Expand navigation' : 'Collapse navigation'}>{collapsed ? <PanelLeftOpen size={15} aria-hidden /> : <PanelLeftClose size={15} aria-hidden />}</button>
-    </aside>
-  </>;
+    </aside>;
+
+  return mobileViewport ? (
+    <Drawer open={mobileOpen} onOpenChange={(open) => { if (!open) onMobileClose?.(); }} direction="left" shouldScaleBackground={false}>
+      <DrawerContent className="role-sidebar-drawer">{sidebar}</DrawerContent>
+    </Drawer>
+  ) : sidebar;
 }

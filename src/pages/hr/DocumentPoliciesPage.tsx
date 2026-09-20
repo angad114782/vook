@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { hrApi, type Document } from '../../api/hr';
@@ -7,6 +8,7 @@ import PaginationBar from '../../components/data/Pagination';
 import { extractError } from '../../utils/errorUtils';
 import { useDocuments } from '../../hooks/queries/useHrQueries';
 import { useCreateDocument, useDeleteDocument } from '../../hooks/mutations/useHrMutations';
+import LegacyDrawer from '../../components/ui/LegacyDrawer';
 
 const CATEGORIES = ['Safety', 'HR Policy', 'Compliance', 'IT Policy', 'Finance'];
 const CAT_COLOR: Record<string, { bg: string; color: string }> = {
@@ -66,7 +68,7 @@ function CreateDocModal({ onClose }: { onClose: () => void }) {
   const loading = createDocument.isPending;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
+    <LegacyDrawer open onClose={onClose} direction="right" className="legacy-form-drawer">
       <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 22px', borderBottom: '1px solid #f1f5f9' }}>
           <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Create Policy</h3>
@@ -131,7 +133,7 @@ function CreateDocModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </div>
-    </div>
+    </LegacyDrawer>
   );
 }
 
@@ -212,7 +214,7 @@ export default function DocumentPoliciesPage() {
           <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /><span style={{ fontSize: '14px' }}>Loading...</span></div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc' }}>
                   {['Document Name', 'Category', 'Uploaded By', 'Upload Date', 'Visibility', 'Action'].map((h) => (
@@ -247,7 +249,7 @@ export default function DocumentPoliciesPage() {
                 })}
                 {docs.length === 0 && <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', fontSize: '13px', color: '#94a3b8' }}>No documents found</td></tr>}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         )}
       </div>

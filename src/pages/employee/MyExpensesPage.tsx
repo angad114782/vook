@@ -1,9 +1,11 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { employeeApi, type MyExpense } from '../../api/employee';
 import { Loader2, Plus, X, Receipt, CheckCircle2, Upload } from 'lucide-react';
 import { extractError } from '../../utils/errorUtils';
 import { useMyExpenses } from '../../hooks/queries/useEmployeeQueries';
+import LegacyDrawer from '../../components/ui/LegacyDrawer';
 
 const STATUS_META: Record<string, { bg: string; color: string }> = {
   Pending:  { bg: '#fef9c3', color: '#854d0e' },
@@ -92,13 +94,13 @@ export default function MyExpensesPage() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+      <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
         {[
           { label: 'Pending Approval', value: stats.pending,  icon: Receipt,      iconBg: '#fff7ed', iconColor: '#ea580c', valColor: '#ea580c' },
           { label: 'Approved',         value: stats.approved, icon: CheckCircle2, iconBg: '#f0fdf4', iconColor: '#16a34a', valColor: '#16a34a' },
           { label: 'Total Submitted',  value: expenses.length,icon: Receipt,      iconBg: '#eff6ff', iconColor: '#2563eb', valColor: '#0f172a' },
         ].map(({ label, value, icon: Icon, iconBg, iconColor, valColor }) => (
-          <div key={label} style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div key={label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <p style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>{label}</p>
               <p style={{ fontSize: '26px', fontWeight: 800, color: valColor, marginTop: '4px' }}>{value}</p>
@@ -118,7 +120,7 @@ export default function MyExpensesPage() {
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '50px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#0d7470" /></div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ backgroundColor: '#f8fafc' }}>
                 {['Category', 'Amount', 'Description', 'Date', 'Status', 'Receipt'].map((h) => (
@@ -158,13 +160,13 @@ export default function MyExpensesPage() {
                 <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', fontSize: '13px', color: '#94a3b8' }}>No expense claims yet</td></tr>
               )}
             </tbody>
-          </table>
+          </ResponsiveTable>
         )}
       </div>
 
       {/* Submit Expense Modal */}
       {showSubmit && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+        <LegacyDrawer open onClose={() => { setShowSubmit(false); setFormError(''); setReceiptFile(null); }} direction="right" className="legacy-form-drawer">
           <div style={{ backgroundColor: 'white', borderRadius: '14px', width: '420px', maxWidth: '94vw', padding: '28px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>Submit Expense Claim</h3>
@@ -244,7 +246,7 @@ export default function MyExpensesPage() {
               </button>
             </div>
           </div>
-        </div>
+        </LegacyDrawer>
       )}
     </div>
   );

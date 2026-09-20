@@ -11,6 +11,7 @@ export default function NotificationBell({ supportPath, inboxPath }: { supportPa
   const { groups, unread, markGroupRead, markAllRead } = useNotificationCenter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
   const visibleGroups = groups.slice(0, visibleNotificationLimit);
   const workspace = location.pathname.split('/').filter(Boolean)[0];
 
@@ -29,6 +30,22 @@ export default function NotificationBell({ supportPath, inboxPath }: { supportPa
     };
   }, []);
 
+  useEffect(() => {
+    if (!open || !panelRef.current) return;
+    const panel = panelRef.current;
+    const focusable = Array.from(panel.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'));
+    focusable[0]?.focus();
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab' || !focusable.length) return;
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    panel.addEventListener('keydown', trapFocus);
+    return () => panel.removeEventListener('keydown', trapFocus);
+  }, [open]);
+
   const openNotification = async (group: (typeof groups)[number]) => {
     setOpen(false);
     await markGroupRead(group);
@@ -43,9 +60,10 @@ export default function NotificationBell({ supportPath, inboxPath }: { supportPa
   };
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} className="notification-bell" style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen((current) => !current)}
+        className="notification-bell__trigger"
         style={{ ...trigger, ...(open ? triggerActive : {}) }}
         aria-label={unread ? unread + ' unread notifications' : 'Notifications'}
         aria-expanded={open}
@@ -56,7 +74,7 @@ export default function NotificationBell({ supportPath, inboxPath }: { supportPa
       </button>
 
       {open && (
-        <section style={panel} role="dialog" aria-label="Notifications">
+        <section ref={panelRef} className="notification-popover" style={panel} role="dialog" aria-label="Notifications">
           <div style={panelHeader}>
             <div>
               <p style={eyebrow}>INBOX</p>

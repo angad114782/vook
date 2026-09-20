@@ -11,14 +11,15 @@ import {
   Send,
   Tag,
   UserRound,
-  X,
 } from "lucide-react";
 import { type InfiniteData, useQueryClient } from "@tanstack/react-query";
 import { supportApi, type SupportCommentsResponse, type SupportTicket } from "../../api/support";
 import { useSupportComments } from "../../hooks/queries/useSupportQueries";
 import { useSocket } from "../../hooks/useSocket";
 import { useVirtualizedList } from "../../hooks/useVirtualizedList";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { qk } from "../../lib/queryKeys";
+import AppDrawer from "../ui/AppDrawer";
 
 type Comment = {
   id: string;
@@ -193,6 +194,8 @@ export default function TicketConversationModal({
   const queryClient = useQueryClient();
   const socket = useSocket(); // Shared socket — no new io() call
 
+  const mobileLayout = useMediaQuery("(max-width: 1199px)");
+
   const {
     data: commentsData,
     isLoading: loadingComments,
@@ -212,7 +215,9 @@ export default function TicketConversationModal({
   const [draft, setDraft] = useState("");
   const [typing, setTyping] = useState(false);
   const [sending, setSending] = useState(false);
-  const [detailsExpanded, setDetailsExpanded] = useState(true);
+  const [detailsExpanded, setDetailsExpanded] = useState(() => (
+    typeof window === "undefined" || window.matchMedia("(min-width: 1200px)").matches
+  ));
   const [threadBounds, setThreadBounds] = useState<{ top: number; left: number; width: number } | null>(null);
   // Rule 16: one cursor per participant — used for receipt display (✓ / ✓✓)
   const [readCursors, setReadCursors] = useState<Map<string, ReadCursor>>(
@@ -236,6 +241,9 @@ export default function TicketConversationModal({
   const closed = ticket.status === "CLOSED";
   const status = statusMeta[ticket.status]!;
   const priority = priorityMeta[ticket.priority]!;
+  useEffect(() => {
+    if (mobileLayout) setDetailsExpanded(false);
+  }, [mobileLayout]);
   const {
     virtualItems,
     totalSize,
@@ -682,50 +690,44 @@ export default function TicketConversationModal({
   );
 
   return (
-    <div onClick={onClose} style={overlay}>
+    <AppDrawer
+      open
+      onOpenChange={(open) => { if (!open) onClose(); }}
+      title={ticket.subject}
+      description={(
+        <span className="ticket-conversation-drawer__description">
+          <span className="ticket-conversation-drawer__context">
+            <span>{ticket.ticketNo}</span>
+            <span aria-hidden="true">·</span>
+            <span>{fmt(ticket.createdAt)}</span>
+          </span>
+          <span className="ticket-conversation-drawer__mobile-meta" aria-label="Ticket summary">
+            <span style={{ color: status.color }}>{status.label}</span>
+            <span style={{ color: priority.color }}>{ticket.priority}</span>
+            <span className="ticket-conversation-drawer__category">{ticket.category}</span>
+          </span>
+        </span>
+      )}
+      size="xl"
+      className="ticket-conversation-drawer"
+      contentClassName="ticket-conversation-drawer__body"
+    >
       <style>
         {
           "@keyframes supportSkeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }"
         }
       </style>
-      <section
-        onClick={(e) => e.stopPropagation()}
-        style={{ ...modal, ...(detailsExpanded ? {} : modalExpanded) }}
-      >
-        <header style={headerStyle}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={ticketIcon}>
-              <MessageSquare size={16} />
-            </div>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <h2 style={titleStyle}>{ticket.subject}</h2>
-                <span style={{ color: "rgba(255,255,255,.62)", fontSize: 10 }}>
-                  {ticket.ticketNo}
-                </span>
-              </div>
-              <p style={subTitle}>Opened {fmt(ticket.createdAt)}</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            style={closeBtn}
-            aria-label="Close conversation"
-          >
-            <X size={18} />
-          </button>
-        </header>
-
         <div
+          className={`ticket-conversation-layout ${detailsExpanded ? "is-details-expanded" : "is-details-collapsed"}`}
           style={{
             ...bodyGrid,
             gridTemplateColumns: detailsExpanded
               ? "minmax(0,1fr) 230px"
-              : "minmax(0,1fr)",
+              : "minmax(0,1fr) 46px",
           }}
         >
           {/* ── Conversation panel ── */}
-          <main style={conversationPanel}>
+          <main className="ticket-conversation-main" style={conversationPanel}>
             <div style={sectionHead}>
               <div>
                 <h3 style={sectionTitle}>Conversation</h3>
@@ -734,7 +736,7 @@ export default function TicketConversationModal({
               <MessageSquare size={17} color="#0d7470" />
             </div>
 
-            <div ref={threadRef} style={thread} onScroll={handleThreadScroll}>
+            <div className="ticket-conversation-thread" ref={threadRef} style={thread} onScroll={handleThreadScroll}>
               {loadingComments ? (
                 <>
                   <div
@@ -844,11 +846,11 @@ export default function TicketConversationModal({
             </div>
 
             {closed ? (
-              <div style={closedNotice}>
+              <div className="ticket-conversation-composer" style={closedNotice}>
                 This ticket is closed. Further messages cannot be sent.
               </div>
             ) : (
-              <div style={composer}>
+              <div className="ticket-conversation-composer" style={composer}>
                 <input
                   ref={composerRef}
                   value={draft}
@@ -877,22 +879,39 @@ export default function TicketConversationModal({
             )}
           </main>
 
+          {admin && (
+            <label className="ticket-conversation-mobile-status">
+              <span>Ticket status</span>
+              <select
+                value={ticket.status}
+                onChange={(e) => void changeStatus(e.target.value)}
+                style={statusSelect}
+              >
+                <option value="PENDING">Open</option>
+                <option value="IN_PROGRESS">In progress</option>
+                <option value="RESOLVED">Resolved</option>
+                <option value="CLOSED">Closed</option>
+              </select>
+            </label>
+          )}
+
           {/* ── Details sidebar ── */}
+          {!mobileLayout && (
           <aside style={detailsExpanded ? side : collapsedSide}>
             <button
               onClick={() => setDetailsExpanded((expanded) => !expanded)}
+              className="ticket-conversation-sidebar-toggle"
               style={sidebarToggle}
               aria-label={
-                detailsExpanded ? "Expand chat" : "Show ticket details"
+                detailsExpanded ? "Collapse ticket details" : "Show ticket details"
               }
-              title={detailsExpanded ? "Expand chat" : "Show ticket details"}
+              title={detailsExpanded ? "Collapse ticket details" : "Show ticket details"}
             >
               {detailsExpanded ? (
                 <PanelRightClose size={15} />
               ) : (
                 <PanelRightOpen size={15} />
               )}
-              {detailsExpanded && <span>Expand chat</span>}
             </button>
             {detailsExpanded && (
               <>
@@ -986,6 +1005,7 @@ export default function TicketConversationModal({
               </>
             )}
           </aside>
+          )}
         </div>
         {activeDate && threadBounds && createPortal(
           <span
@@ -1003,72 +1023,11 @@ export default function TicketConversationModal({
           </span>,
           document.body,
         )}
-      </section>
-    </div>
+    </AppDrawer>
   );
 }
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
-const overlay: React.CSSProperties = {
-  position: "fixed",
-  inset: 0,
-  zIndex: 1000,
-  padding: 18,
-  display: "grid",
-  placeItems: "center",
-  background: "rgba(15,23,42,.52)",
-};
-const modal: React.CSSProperties = {
-  width: "min(920px, 100%)",
-  height: "min(680px, 92vh)",
-  display: "flex",
-  flexDirection: "column",
-  overflow: "hidden",
-  borderRadius: 12,
-  background: "#fff",
-  boxShadow: "0 24px 70px rgba(15,23,42,.24)",
-};
-const modalExpanded: React.CSSProperties = { width: "min(1180px, 100%)" };
-const headerStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  padding: "11px 15px",
-  color: "white",
-  background: "linear-gradient(135deg,#0d4a47,#0d7470)",
-};
-const ticketIcon: React.CSSProperties = {
-  width: 32,
-  height: 32,
-  display: "grid",
-  placeItems: "center",
-  borderRadius: 9,
-  background: "rgba(255,255,255,.15)",
-};
-const titleStyle: React.CSSProperties = {
-  maxWidth: 560,
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-  margin: 0,
-  color: "white",
-  fontSize: 14,
-  fontWeight: 700,
-};
-const subTitle: React.CSSProperties = {
-  margin: "3px 0 0",
-  color: "rgba(255,255,255,.62)",
-  fontSize: 10,
-};
-const closeBtn: React.CSSProperties = {
-  display: "grid",
-  placeItems: "center",
-  padding: 6,
-  border: 0,
-  color: "rgba(255,255,255,.8)",
-  background: "transparent",
-  cursor: "pointer",
-};
 const bodyGrid: React.CSSProperties = {
   display: "grid",
   gridTemplateColumns: "minmax(0,1fr) 230px",
@@ -1242,11 +1201,13 @@ const closedNotice: React.CSSProperties = {
   textAlign: "center",
 };
 const side: React.CSSProperties = {
+  position: "relative",
   overflowY: "auto",
   padding: "12px 13px",
   background: "#fbfdfe",
 };
 const collapsedSide: React.CSSProperties = {
+  position: "relative",
   display: "flex",
   justifyContent: "flex-start",
   alignItems: "center",
@@ -1255,23 +1216,25 @@ const collapsedSide: React.CSSProperties = {
   borderLeft: "1px solid #e2e8f0",
 };
 const sidebarToggle: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 6,
-  width: "100%",
+  position: "absolute",
+  top: 8,
+  right: 8,
+  zIndex: 2,
+  display: "grid",
+  placeItems: "center",
+  width: 30,
+  height: 30,
   minHeight: 30,
-  padding: "6px 7px",
+  padding: 0,
   border: "1px solid #dbe5e8",
-  borderRadius: 7,
+  borderRadius: 8,
   color: "#0d7470",
   background: "white",
   cursor: "pointer",
-  fontSize: 10,
-  fontWeight: 700,
 };
 const sideTitle: React.CSSProperties = {
   marginBottom: 9,
+  paddingRight: 36,
   color: "#0f172a",
   fontSize: 12,
   fontWeight: 750,

@@ -249,41 +249,173 @@ export const createMockSeed = (now = new Date()): MockState => {
     },
   ];
 
-  const moduleDefinitions: Array<[string, string, string, string, string[], boolean?]> = [
+  const moduleDefinitions: Array<
+    [string, string, string, string, string[], boolean?]
+  > = [
     ["module_dashboard", "DASHBOARD", "Dashboard", "Core", ["VIEW"], true],
-    ["module_support", "SUPPORT", "Support", "Core", ["VIEW", "CREATE", "EDIT"], true],
-    ["module_subscription", "SUBSCRIPTION_BILLING", "Subscription & Billing", "Core", ["VIEW"], true],
-    ["module_company_settings", "COMPANY_SETTINGS", "Company Settings", "Core", ["VIEW", "EDIT", "CONFIGURE"], true],
-    ["module_org", "ORGANIZATION", "Organization", "Organization", ["VIEW", "CREATE", "EDIT", "DELETE", "EXPORT"]],
-    ["module_employees", "EMPLOYEE_MANAGEMENT", "Employee Management", "Workforce", ["VIEW", "CREATE", "EDIT", "DELETE", "EXPORT", "OVERRIDE"]],
-    ["module_attendance", "ATTENDANCE", "Attendance", "Workforce", ["VIEW", "CREATE", "EDIT", "APPROVE", "REJECT", "EXPORT", "OVERRIDE"]],
-    ["module_shift", "SHIFT_MANAGEMENT", "Shift Management", "Workforce", ["VIEW", "CREATE", "EDIT", "DELETE", "CONFIGURE"]],
-    ["module_leave", "LEAVE_MANAGEMENT", "Leave Management", "Workforce", ["VIEW", "CREATE", "EDIT", "APPROVE", "REJECT", "EXPORT", "CONFIGURE"]],
-    ["module_approvals", "APPROVALS", "Approvals", "Operations", ["VIEW", "APPROVE", "REJECT", "OVERRIDE", "CONFIGURE"]],
-    ["module_payroll", "PAYROLL", "Payroll", "Finance", ["VIEW", "CREATE", "EDIT", "PROCESS", "APPROVE", "FINALIZE", "PUBLISH", "EXPORT", "OVERRIDE"]],
-    ["module_payslips", "PAYSLIPS", "Payslips", "Finance", ["VIEW", "CREATE", "PUBLISH", "EXPORT"]],
-    ["module_expense", "EXPENSE_MANAGEMENT", "Expense Management", "Finance", ["VIEW", "CREATE", "EDIT", "APPROVE", "REJECT", "EXPORT", "PROCESS"]],
-    ["module_policies", "POLICIES", "Policies", "Governance", ["VIEW", "CREATE", "EDIT", "DELETE", "CONFIGURE"]],
-    ["module_documents", "DOCUMENTS", "Documents", "Governance", ["VIEW", "CREATE", "EDIT", "DELETE", "EXPORT"]],
-    ["module_reports", "REPORTS_ANALYTICS", "Reports & Analytics", "Analytics", ["VIEW", "EXPORT"]],
-    ["module_notifications", "NOTIFICATIONS", "Notifications", "Communication", ["VIEW", "CREATE", "EDIT", "CONFIGURE"]],
-    ["module_roles", "ROLES_PERMISSIONS", "Roles & Permissions", "Governance", ["VIEW", "CREATE", "EDIT", "DELETE", "CONFIGURE"], true],
-    ["module_integrations", "ATTENDANCE_INTEGRATIONS", "Attendance Integrations", "Integrations", ["VIEW", "CREATE", "EDIT", "DELETE", "CONFIGURE"]],
-    ["module_api", "API_WEBHOOKS", "API & Webhooks", "Integrations", ["VIEW", "CREATE", "EDIT", "DELETE", "CONFIGURE"]],
+    [
+      "module_support",
+      "SUPPORT",
+      "Support",
+      "Core",
+      ["VIEW", "CREATE", "EDIT"],
+      true,
+    ],
+    [
+      "module_subscription",
+      "SUBSCRIPTION_BILLING",
+      "Subscription & Billing",
+      "Core",
+      ["VIEW"],
+      true,
+    ],
+    [
+      "module_company_settings",
+      "COMPANY_SETTINGS",
+      "Company Settings",
+      "Core",
+      ["VIEW", "EDIT", "CONFIGURE"],
+      true,
+    ],
+    [
+      "module_org",
+      "ORGANIZATION",
+      "Organization",
+      "Organization",
+      ["VIEW", "CREATE", "EDIT", "DELETE", "EXPORT"],
+    ],
+    [
+      "module_employees",
+      "EMPLOYEE_MANAGEMENT",
+      "Employee Management",
+      "Workforce",
+      ["VIEW", "CREATE", "EDIT", "DELETE", "EXPORT", "OVERRIDE"],
+    ],
+    [
+      "module_attendance",
+      "ATTENDANCE",
+      "Attendance",
+      "Workforce",
+      ["VIEW", "CREATE", "EDIT", "APPROVE", "REJECT", "EXPORT", "OVERRIDE"],
+    ],
+    [
+      "module_shift",
+      "SHIFT_MANAGEMENT",
+      "Shift Management",
+      "Workforce",
+      ["VIEW", "CREATE", "EDIT", "DELETE", "CONFIGURE"],
+    ],
+    [
+      "module_leave",
+      "LEAVE_MANAGEMENT",
+      "Leave Management",
+      "Workforce",
+      ["VIEW", "CREATE", "EDIT", "APPROVE", "REJECT", "EXPORT", "CONFIGURE"],
+    ],
+    [
+      "module_approvals",
+      "APPROVALS",
+      "Approvals",
+      "Operations",
+      ["VIEW", "APPROVE", "REJECT", "OVERRIDE", "CONFIGURE"],
+    ],
+    [
+      "module_payroll",
+      "PAYROLL",
+      "Payroll",
+      "Finance",
+      [
+        "VIEW",
+        "CREATE",
+        "EDIT",
+        "PROCESS",
+        "APPROVE",
+        "FINALIZE",
+        "PUBLISH",
+        "EXPORT",
+        "OVERRIDE",
+      ],
+    ],
+    [
+      "module_payslips",
+      "PAYSLIPS",
+      "Payslips",
+      "Finance",
+      ["VIEW", "CREATE", "PUBLISH", "EXPORT"],
+    ],
+    [
+      "module_expense",
+      "EXPENSE_MANAGEMENT",
+      "Expense Management",
+      "Finance",
+      ["VIEW", "CREATE", "EDIT", "APPROVE", "REJECT", "EXPORT", "PROCESS"],
+    ],
+    [
+      "module_policies",
+      "POLICIES",
+      "Policies",
+      "Governance",
+      ["VIEW", "CREATE", "EDIT", "DELETE", "CONFIGURE"],
+    ],
+    [
+      "module_documents",
+      "DOCUMENTS",
+      "Documents",
+      "Governance",
+      ["VIEW", "CREATE", "EDIT", "DELETE", "EXPORT"],
+    ],
+    [
+      "module_reports",
+      "REPORTS_ANALYTICS",
+      "Reports & Analytics",
+      "Analytics",
+      ["VIEW", "EXPORT"],
+    ],
+    [
+      "module_notifications",
+      "NOTIFICATIONS",
+      "Notifications",
+      "Communication",
+      ["VIEW", "CREATE", "EDIT", "CONFIGURE"],
+    ],
+    [
+      "module_roles",
+      "ROLES_PERMISSIONS",
+      "Roles & Permissions",
+      "Governance",
+      ["VIEW", "CREATE", "EDIT", "DELETE", "CONFIGURE"],
+      true,
+    ],
+    [
+      "module_integrations",
+      "ATTENDANCE_INTEGRATIONS",
+      "Attendance Integrations",
+      "Integrations",
+      ["VIEW", "CREATE", "EDIT", "DELETE", "CONFIGURE"],
+    ],
+    [
+      "module_api",
+      "API_WEBHOOKS",
+      "API & Webhooks",
+      "Integrations",
+      ["VIEW", "CREATE", "EDIT", "DELETE", "CONFIGURE"],
+    ],
   ];
-  const modules = moduleDefinitions.map(([id, key, name, category, actions, isCore], index) => ({
-    id,
-    key,
-    name,
-    description: `${name} controls and operational workspace`,
-    category,
-    routeKey: key.toLowerCase(),
-    status: "ACTIVE",
-    actions,
-    isCore: Boolean(isCore),
-    planSelectable: !isCore,
-    sortOrder: index + 1,
-  }));
+  const modules = moduleDefinitions.map(
+    ([id, key, name, category, actions, isCore], index) => ({
+      id,
+      key,
+      name,
+      description: `${name} controls and operational workspace`,
+      category,
+      routeKey: key.toLowerCase(),
+      status: "ACTIVE",
+      actions,
+      isCore: Boolean(isCore),
+      planSelectable: !isCore,
+      sortOrder: index + 1,
+    }),
+  );
 
   const plan = (
     id: string,
@@ -293,48 +425,53 @@ export const createMockSeed = (now = new Date()): MockState => {
     maxUsers: number,
     moduleCount: number,
   ) => {
-    const coreIds = modules.filter((item) => item.isCore).map((item) => item.id);
-    const optionalIds = modules.filter((item) => !item.isCore).slice(0, Math.max(0, moduleCount - coreIds.length)).map((item) => item.id);
+    const coreIds = modules
+      .filter((item) => item.isCore)
+      .map((item) => item.id);
+    const optionalIds = modules
+      .filter((item) => !item.isCore)
+      .slice(0, Math.max(0, moduleCount - coreIds.length))
+      .map((item) => item.id);
     const planModuleIds = [...coreIds, ...optionalIds];
-    return ({
-    id,
-    name,
-    type,
-    status: "PUBLISHED",
-    price: monthly,
-    annualPrice: monthly * 10,
-    maxUsers,
-    maxBranches: type === "ENTERPRISE" ? 50 : type === "PRO" ? 10 : 2,
-    storageGB: type === "ENTERPRISE" ? 100 : type === "PRO" ? 25 : 5,
-    trialEnabled: true,
-    defaultTrialDays: 5,
-    moduleIds: planModuleIds,
-    features: [
-      `Up to ${maxUsers} employees`,
-      `${moduleCount} operational modules`,
-      "Email support",
-    ],
-    currentVersionId: {
-      id: `${id}_v1`,
-      version: 1,
+    return {
+      id,
       name,
       type,
-      currency: "INR",
-      pricing: { monthly, annual: monthly * 10 },
-      trial: { enabled: true, days: 5 },
+      status: "PUBLISHED",
+      price: monthly,
+      annualPrice: monthly * 10,
+      maxUsers,
+      maxBranches: type === "ENTERPRISE" ? 50 : type === "PRO" ? 10 : 2,
+      storageGB: type === "ENTERPRISE" ? 100 : type === "PRO" ? 25 : 5,
+      trialEnabled: true,
+      defaultTrialDays: 5,
       moduleIds: planModuleIds,
-      limits: {
-        employees: maxUsers,
-        branches: type === "ENTERPRISE" ? 50 : 10,
-        storageGB: type === "ENTERPRISE" ? 100 : 25,
+      features: [
+        `Up to ${maxUsers} employees`,
+        `${moduleCount} operational modules`,
+        "Email support",
+      ],
+      currentVersionId: {
+        id: `${id}_v1`,
+        version: 1,
+        name,
+        type,
+        currency: "INR",
+        pricing: { monthly, annual: monthly * 10 },
+        trial: { enabled: true, days: 5 },
+        moduleIds: planModuleIds,
+        limits: {
+          employees: maxUsers,
+          branches: type === "ENTERPRISE" ? 50 : 10,
+          storageGB: type === "ENTERPRISE" ? 100 : 25,
+        },
+        features: [`Up to ${maxUsers} employees`],
+        publishedAt: daysFrom(now, -120),
       },
-      features: [`Up to ${maxUsers} employees`],
-      publishedAt: daysFrom(now, -120),
-    },
-    draftRevision: 1,
-    versionCount: 1,
-    activeSubscriptionCount: type === "PRO" ? 2 : 1,
-    });
+      draftRevision: 1,
+      versionCount: 1,
+      activeSubscriptionCount: type === "PRO" ? 2 : 1,
+    };
   };
   const plans = [
     plan("plan_basic", "Starter", "BASIC", 2999, 50, 10),
@@ -380,7 +517,18 @@ export const createMockSeed = (now = new Date()): MockState => {
       kind: "TEMPLATE",
       locked: false,
       permissions: [
-        ...permissionsFor(["DASHBOARD", "ORGANIZATION", "EMPLOYEE_MANAGEMENT", "ATTENDANCE", "SHIFT_MANAGEMENT", "LEAVE_MANAGEMENT", "APPROVALS", "POLICIES", "DOCUMENTS", "REPORTS_ANALYTICS"]),
+        ...permissionsFor([
+          "DASHBOARD",
+          "ORGANIZATION",
+          "EMPLOYEE_MANAGEMENT",
+          "ATTENDANCE",
+          "SHIFT_MANAGEMENT",
+          "LEAVE_MANAGEMENT",
+          "APPROVALS",
+          "POLICIES",
+          "DOCUMENTS",
+          "REPORTS_ANALYTICS",
+        ]),
         ...permissionsFor(["PAYROLL"], ["VIEW"]),
       ],
       revision: 1,
@@ -393,7 +541,18 @@ export const createMockSeed = (now = new Date()): MockState => {
       kind: "TEMPLATE",
       locked: false,
       permissions: [
-        ...permissionsFor(["DASHBOARD", "PAYROLL", "PAYSLIPS", "EXPENSE_MANAGEMENT", "APPROVALS", "REPORTS_ANALYTICS"]).filter((permission) => !permission.endsWith(".FINALIZE") && !permission.endsWith(".PUBLISH")),
+        ...permissionsFor([
+          "DASHBOARD",
+          "PAYROLL",
+          "PAYSLIPS",
+          "EXPENSE_MANAGEMENT",
+          "APPROVALS",
+          "REPORTS_ANALYTICS",
+        ]).filter(
+          (permission) =>
+            !permission.endsWith(".FINALIZE") &&
+            !permission.endsWith(".PUBLISH"),
+        ),
         ...permissionsFor(["ATTENDANCE"], ["VIEW"]),
       ],
       revision: 1,
@@ -406,8 +565,22 @@ export const createMockSeed = (now = new Date()): MockState => {
       kind: "TEMPLATE",
       locked: false,
       permissions: [
-        ...permissionsFor(["DASHBOARD", "EMPLOYEE_MANAGEMENT", "ATTENDANCE", "LEAVE_MANAGEMENT", "APPROVALS", "SHIFT_MANAGEMENT", "REPORTS_ANALYTICS"], ["VIEW", "APPROVE", "REJECT", "EXPORT"]),
-        ...permissionsFor(["EXPENSE_MANAGEMENT"], ["VIEW", "APPROVE", "REJECT"]),
+        ...permissionsFor(
+          [
+            "DASHBOARD",
+            "EMPLOYEE_MANAGEMENT",
+            "ATTENDANCE",
+            "LEAVE_MANAGEMENT",
+            "APPROVALS",
+            "SHIFT_MANAGEMENT",
+            "REPORTS_ANALYTICS",
+          ],
+          ["VIEW", "APPROVE", "REJECT", "EXPORT"],
+        ),
+        ...permissionsFor(
+          ["EXPENSE_MANAGEMENT"],
+          ["VIEW", "APPROVE", "REJECT"],
+        ),
       ],
       revision: 1,
     },
@@ -418,7 +591,18 @@ export const createMockSeed = (now = new Date()): MockState => {
       name: "Supervisor",
       kind: "TEMPLATE",
       locked: false,
-      permissions: permissionsFor(["DASHBOARD", "EMPLOYEE_MANAGEMENT", "ATTENDANCE", "LEAVE_MANAGEMENT", "APPROVALS", "SHIFT_MANAGEMENT", "REPORTS_ANALYTICS"], ["VIEW", "APPROVE", "REJECT"]),
+      permissions: permissionsFor(
+        [
+          "DASHBOARD",
+          "EMPLOYEE_MANAGEMENT",
+          "ATTENDANCE",
+          "LEAVE_MANAGEMENT",
+          "APPROVALS",
+          "SHIFT_MANAGEMENT",
+          "REPORTS_ANALYTICS",
+        ],
+        ["VIEW", "APPROVE", "REJECT"],
+      ),
       revision: 1,
     },
     {
@@ -428,7 +612,19 @@ export const createMockSeed = (now = new Date()): MockState => {
       name: "Employee",
       kind: "TEMPLATE",
       locked: false,
-      permissions: permissionsFor(["DASHBOARD", "ATTENDANCE", "LEAVE_MANAGEMENT", "PAYSLIPS", "EXPENSE_MANAGEMENT", "DOCUMENTS", "NOTIFICATIONS", "SUPPORT"], ["VIEW", "CREATE"]),
+      permissions: permissionsFor(
+        [
+          "DASHBOARD",
+          "ATTENDANCE",
+          "LEAVE_MANAGEMENT",
+          "PAYSLIPS",
+          "EXPENSE_MANAGEMENT",
+          "DOCUMENTS",
+          "NOTIFICATIONS",
+          "SUPPORT",
+        ],
+        ["VIEW", "CREATE"],
+      ),
       revision: 1,
     },
     {
@@ -438,7 +634,10 @@ export const createMockSeed = (now = new Date()): MockState => {
       name: "Attendance coordinator",
       kind: "CUSTOM",
       locked: false,
-      permissions: permissionsFor(["DASHBOARD", "ATTENDANCE"], ["VIEW", "EDIT", "APPROVE", "REJECT", "EXPORT"]),
+      permissions: permissionsFor(
+        ["DASHBOARD", "ATTENDANCE"],
+        ["VIEW", "EDIT", "APPROVE", "REJECT", "EXPORT"],
+      ),
       revision: 1,
     },
   ];
@@ -561,7 +760,13 @@ export const createMockSeed = (now = new Date()): MockState => {
       companyId: "company_northstar",
       branchId: index === 3 ? "office_nashik" : "office_pune",
       departmentId:
-        index === 1 ? "dept_fin" : index === 2 || index === 3 ? "dept_ops" : index === 0 ? "dept_hr" : "dept_eng",
+        index === 1
+          ? "dept_fin"
+          : index === 2 || index === 3
+            ? "dept_ops"
+            : index === 0
+              ? "dept_hr"
+              : "dept_eng",
       department:
         index === 1
           ? "Finance"
@@ -650,19 +855,112 @@ export const createMockSeed = (now = new Date()): MockState => {
     },
   ];
   const reportingLines = [
-    { id: "line_manager_supervisor", companyId: "company_northstar", managerEmployeeId: "employee_3", reportEmployeeId: "employee_4", relationship: "MANAGER" },
-    { id: "line_supervisor_employee", companyId: "company_northstar", managerEmployeeId: "employee_4", reportEmployeeId: "employee_5", relationship: "SUPERVISOR" },
+    {
+      id: "line_manager_supervisor",
+      companyId: "company_northstar",
+      managerEmployeeId: "employee_3",
+      reportEmployeeId: "employee_4",
+      relationship: "MANAGER",
+    },
+    {
+      id: "line_supervisor_employee",
+      companyId: "company_northstar",
+      managerEmployeeId: "employee_4",
+      reportEmployeeId: "employee_5",
+      relationship: "SUPERVISOR",
+    },
   ];
   const roleAssignments = [
-    { id: "assignment_company", _id: "assignment_company", companyId: "company_northstar", userId: "user_company", roleDefinitionId: "role_company_admin", scopeType: "COMPANY", scopeId: "company_northstar", isPrimary: true },
-    { id: "assignment_hr", _id: "assignment_hr", companyId: "company_northstar", userId: "user_hr", roleDefinitionId: "role_hr", scopeType: "COMPANY", scopeId: "company_northstar", isPrimary: true },
-    { id: "assignment_finance", _id: "assignment_finance", companyId: "company_northstar", userId: "user_finance", roleDefinitionId: "role_finance", scopeType: "COMPANY", scopeId: "company_northstar", isPrimary: true },
-    { id: "assignment_manager", _id: "assignment_manager", companyId: "company_northstar", userId: "user_manager", roleDefinitionId: "role_manager", scopeType: "DEPARTMENT", scopeId: "dept_ops", isPrimary: true },
-    { id: "assignment_supervisor", _id: "assignment_supervisor", companyId: "company_northstar", userId: "user_supervisor", roleDefinitionId: "role_supervisor", scopeType: "TEAM", scopeId: "team_ops_alpha", isPrimary: true },
-    { id: "assignment_supervisor_engineering", _id: "assignment_supervisor_engineering", companyId: "company_northstar", userId: "user_supervisor", roleDefinitionId: "role_supervisor", scopeType: "TEAM", scopeId: "team_engineering_platform", isPrimary: false },
-    { id: "assignment_manager_engineering", _id: "assignment_manager_engineering", companyId: "company_northstar", userId: "user_manager", roleDefinitionId: "role_manager", scopeType: "DEPARTMENT", scopeId: "dept_eng", isPrimary: false },
-    { id: "assignment_employee", _id: "assignment_employee", companyId: "company_northstar", userId: "user_employee", roleDefinitionId: "role_employee", scopeType: "SELF", scopeId: "employee_5", isPrimary: true },
-    { id: "assignment_manager_attendance", _id: "assignment_manager_attendance", companyId: "company_northstar", userId: "user_manager", roleDefinitionId: "role_attendance_coordinator", scopeType: "BRANCH", scopeId: "office_nashik", isPrimary: false },
+    {
+      id: "assignment_company",
+      _id: "assignment_company",
+      companyId: "company_northstar",
+      userId: "user_company",
+      roleDefinitionId: "role_company_admin",
+      scopeType: "COMPANY",
+      scopeId: "company_northstar",
+      isPrimary: true,
+    },
+    {
+      id: "assignment_hr",
+      _id: "assignment_hr",
+      companyId: "company_northstar",
+      userId: "user_hr",
+      roleDefinitionId: "role_hr",
+      scopeType: "COMPANY",
+      scopeId: "company_northstar",
+      isPrimary: true,
+    },
+    {
+      id: "assignment_finance",
+      _id: "assignment_finance",
+      companyId: "company_northstar",
+      userId: "user_finance",
+      roleDefinitionId: "role_finance",
+      scopeType: "COMPANY",
+      scopeId: "company_northstar",
+      isPrimary: true,
+    },
+    {
+      id: "assignment_manager",
+      _id: "assignment_manager",
+      companyId: "company_northstar",
+      userId: "user_manager",
+      roleDefinitionId: "role_manager",
+      scopeType: "DEPARTMENT",
+      scopeId: "dept_ops",
+      isPrimary: true,
+    },
+    {
+      id: "assignment_supervisor",
+      _id: "assignment_supervisor",
+      companyId: "company_northstar",
+      userId: "user_supervisor",
+      roleDefinitionId: "role_supervisor",
+      scopeType: "TEAM",
+      scopeId: "team_ops_alpha",
+      isPrimary: true,
+    },
+    {
+      id: "assignment_supervisor_engineering",
+      _id: "assignment_supervisor_engineering",
+      companyId: "company_northstar",
+      userId: "user_supervisor",
+      roleDefinitionId: "role_supervisor",
+      scopeType: "TEAM",
+      scopeId: "team_engineering_platform",
+      isPrimary: false,
+    },
+    {
+      id: "assignment_manager_engineering",
+      _id: "assignment_manager_engineering",
+      companyId: "company_northstar",
+      userId: "user_manager",
+      roleDefinitionId: "role_manager",
+      scopeType: "DEPARTMENT",
+      scopeId: "dept_eng",
+      isPrimary: false,
+    },
+    {
+      id: "assignment_employee",
+      _id: "assignment_employee",
+      companyId: "company_northstar",
+      userId: "user_employee",
+      roleDefinitionId: "role_employee",
+      scopeType: "SELF",
+      scopeId: "employee_5",
+      isPrimary: true,
+    },
+    {
+      id: "assignment_manager_attendance",
+      _id: "assignment_manager_attendance",
+      companyId: "company_northstar",
+      userId: "user_manager",
+      roleDefinitionId: "role_attendance_coordinator",
+      scopeType: "BRANCH",
+      scopeId: "office_nashik",
+      isPrimary: false,
+    },
   ];
 
   const attendance = employees.flatMap((employee, employeeIndex) =>
@@ -690,8 +988,36 @@ export const createMockSeed = (now = new Date()): MockState => {
     record.status === "Absent"
       ? []
       : [
-          { id: `${record.id}_in`, companyId: record.companyId, employeeId: record.employeeId, attendanceId: record.id, type: "CHECK_IN", occurredAt: `${record.date}T${record.checkIn}:00.000Z`, source: record.source, verification: { gps: "VERIFIED", geofence: "INSIDE", device: "OPTIONAL", ip: "OPTIONAL" } },
-          { id: `${record.id}_out`, companyId: record.companyId, employeeId: record.employeeId, attendanceId: record.id, type: "CHECK_OUT", occurredAt: `${record.date}T${record.checkOut}:00.000Z`, source: record.source, verification: { gps: "VERIFIED", geofence: "INSIDE", device: "OPTIONAL", ip: "OPTIONAL" } },
+          {
+            id: `${record.id}_in`,
+            companyId: record.companyId,
+            employeeId: record.employeeId,
+            attendanceId: record.id,
+            type: "CHECK_IN",
+            occurredAt: `${record.date}T${record.checkIn}:00.000Z`,
+            source: record.source,
+            verification: {
+              gps: "VERIFIED",
+              geofence: "INSIDE",
+              device: "OPTIONAL",
+              ip: "OPTIONAL",
+            },
+          },
+          {
+            id: `${record.id}_out`,
+            companyId: record.companyId,
+            employeeId: record.employeeId,
+            attendanceId: record.id,
+            type: "CHECK_OUT",
+            occurredAt: `${record.date}T${record.checkOut}:00.000Z`,
+            source: record.source,
+            verification: {
+              gps: "VERIFIED",
+              geofence: "INSIDE",
+              device: "OPTIONAL",
+              ip: "OPTIONAL",
+            },
+          },
         ],
   );
   const leaves = [
@@ -910,6 +1236,46 @@ export const createMockSeed = (now = new Date()): MockState => {
         role: "COMPANY_ADMIN",
       },
     },
+    {
+      id: "comment_3",
+      ticketId: "ticket_2",
+      body: "The trial limit is 50 users for the Starter plan.",
+      isInternal: false,
+      createdAt: daysFrom(now, -4),
+      authorId: { id: "user_super", name: "Aarav Mehta", role: "SUPER_ADMIN" },
+    },
+    {
+      id: "comment_4",
+      ticketId: "ticket_2",
+      body: "Thanks for the clarification.",
+      isInternal: false,
+      createdAt: daysFrom(now, -4),
+      authorId: {
+        id: "user_super",
+        name: "Nisha Kapoor",
+        role: "COMPANY_ADMIN",
+      },
+    },
+    {
+      id: "comment_5",
+      ticketId: "ticket_1",
+      body: "The sync issue has been resolved. Please verify.",
+      isInternal: false,
+      createdAt: daysFrom(now, -1),
+      authorId: { id: "user_super", name: "Aarav Mehta", role: "SUPER_ADMIN" },
+    },
+    {
+      id: "comment_6",
+      ticketId: "ticket_1",
+      body: "Confirmed. The attendance records are now complete.",
+      isInternal: false,
+      createdAt: daysFrom(now, -1),
+      authorId: {
+        id: "user_company",
+        name: "Nisha Kapoor",
+        role: "COMPANY_ADMIN",
+      },
+    },
   ];
   const notifications = [
     {
@@ -934,38 +1300,43 @@ export const createMockSeed = (now = new Date()): MockState => {
     },
   ];
   const subscriptions = companies.map((company, index) => {
-    const assignedPlan = plans.find((item) => item.type === company.plan) ?? plans[0];
-    const assignedVersion = assignedPlan.currentVersionId as Record<string, unknown>;
+    const assignedPlan =
+      plans.find((item) => item.type === company.plan) ?? plans[0];
+    const assignedVersion = assignedPlan.currentVersionId as Record<
+      string,
+      unknown
+    >;
     return {
-    id: `subscription_${index + 1}`,
-    companyId: company.id,
-    planId: assignedPlan.id,
-    planVersionId: assignedVersion.id,
-    plan: company.plan,
-    billingCycle: index % 2 ? "Monthly" : "Annual",
-    amount:
-      company.plan === "ENTERPRISE"
-        ? 199990
-        : company.plan === "PRO"
-          ? 7999
-          : 2999,
-    startDate: daysFrom(now, -90),
-    endDate: company.planExpiry,
-    status:
-      company.status === "SUSPENDED"
-        ? "SUSPENDED"
-        : company.status === "GRACE_PERIOD"
-          ? "PAST_DUE"
-          : company.status === "EXPIRED"
-            ? "CANCELLED"
-        : company.status === "TRIAL"
-          ? "TRIAL"
-          : "ACTIVE",
-    trialEndsAt: company.status === "TRIAL" ? company.planExpiry : undefined,
-    currentPeriodEnd: company.planExpiry,
-    graceEndsAt: company.status === "SUSPENDED" ? daysFrom(now, 3) : undefined,
-    isActive: company.status !== "SUSPENDED",
-  };
+      id: `subscription_${index + 1}`,
+      companyId: company.id,
+      planId: assignedPlan.id,
+      planVersionId: assignedVersion.id,
+      plan: company.plan,
+      billingCycle: index % 2 ? "Monthly" : "Annual",
+      amount:
+        company.plan === "ENTERPRISE"
+          ? 199990
+          : company.plan === "PRO"
+            ? 7999
+            : 2999,
+      startDate: daysFrom(now, -90),
+      endDate: company.planExpiry,
+      status:
+        company.status === "SUSPENDED"
+          ? "SUSPENDED"
+          : company.status === "GRACE_PERIOD"
+            ? "PAST_DUE"
+            : company.status === "EXPIRED"
+              ? "CANCELLED"
+              : company.status === "TRIAL"
+                ? "TRIAL"
+                : "ACTIVE",
+      trialEndsAt: company.status === "TRIAL" ? company.planExpiry : undefined,
+      currentPeriodEnd: company.planExpiry,
+      graceEndsAt:
+        company.status === "SUSPENDED" ? daysFrom(now, 3) : undefined,
+      isActive: company.status !== "SUSPENDED",
+    };
   });
   const entitlementOverrides = [
     {
@@ -1082,13 +1453,59 @@ export const createMockSeed = (now = new Date()): MockState => {
       },
     ],
     invoices: [
-      { id: "invoice_1", companyId: "company_northstar", subscriptionId: "subscription_1", number: "INV-2026-0042", amountMinor: 1999900, currency: "INR", status: "PAID", issuedAt: daysFrom(now, -30), paidAt: daysFrom(now, -30) },
-      { id: "invoice_2", companyId: "company_greenfield", subscriptionId: "subscription_3", number: "INV-2026-0048", amountMinor: 799900, currency: "INR", status: "PENDING", issuedAt: daysFrom(now, -4), paidAt: null },
+      {
+        id: "invoice_1",
+        companyId: "company_northstar",
+        subscriptionId: "subscription_1",
+        number: "INV-2026-0042",
+        amountMinor: 1999900,
+        currency: "INR",
+        status: "PAID",
+        issuedAt: daysFrom(now, -30),
+        paidAt: daysFrom(now, -30),
+      },
+      {
+        id: "invoice_2",
+        companyId: "company_greenfield",
+        subscriptionId: "subscription_3",
+        number: "INV-2026-0048",
+        amountMinor: 799900,
+        currency: "INR",
+        status: "PENDING",
+        issuedAt: daysFrom(now, -4),
+        paidAt: null,
+      },
     ],
     registrations: [],
     audit: [
-      { id: "audit_1", companyId: "company_northstar", actorId: "user_company", action: "ROLE_PERMISSION_UPDATED", entityType: "ROLE_DEFINITION", entityId: "role_hr", oldValue: { revision: 0 }, newValue: { revision: 1 }, ip: "127.0.0.1", device: "Chrome on Windows", requestId: "seed_request_1", createdAt: daysFrom(now, -3) },
-      { id: "audit_2", companyId: "company_northstar", actorId: "user_finance", action: "PAYROLL_REVIEWED", entityType: "PAYROLL_RUN", entityId: "payroll_run_current", oldValue: { status: "CALCULATED" }, newValue: { status: "UNDER_REVIEW" }, ip: "127.0.0.1", device: "Chrome on Windows", requestId: "seed_request_2", createdAt: daysFrom(now, -2) },
+      {
+        id: "audit_1",
+        companyId: "company_northstar",
+        actorId: "user_company",
+        action: "ROLE_PERMISSION_UPDATED",
+        entityType: "ROLE_DEFINITION",
+        entityId: "role_hr",
+        oldValue: { revision: 0 },
+        newValue: { revision: 1 },
+        ip: "127.0.0.1",
+        device: "Chrome on Windows",
+        requestId: "seed_request_1",
+        createdAt: daysFrom(now, -3),
+      },
+      {
+        id: "audit_2",
+        companyId: "company_northstar",
+        actorId: "user_finance",
+        action: "PAYROLL_REVIEWED",
+        entityType: "PAYROLL_RUN",
+        entityId: "payroll_run_current",
+        oldValue: { status: "CALCULATED" },
+        newValue: { status: "UNDER_REVIEW" },
+        ip: "127.0.0.1",
+        device: "Chrome on Windows",
+        requestId: "seed_request_2",
+        createdAt: daysFrom(now, -2),
+      },
     ],
     integrations: [
       {
@@ -1098,8 +1515,14 @@ export const createMockSeed = (now = new Date()): MockState => {
         category: "PAYMENTS",
         available: true,
         status: "ACTIVE",
-        publicFields: [{ key: "keyId", label: "Key ID", required: true }, { key: "environment", label: "Environment", required: true }],
-        secretFields: [{ key: "keySecret", label: "Key secret", required: true }, { key: "webhookSecret", label: "Webhook secret", required: true }],
+        publicFields: [
+          { key: "keyId", label: "Key ID", required: true },
+          { key: "environment", label: "Environment", required: true },
+        ],
+        secretFields: [
+          { key: "keySecret", label: "Key secret", required: true },
+          { key: "webhookSecret", label: "Webhook secret", required: true },
+        ],
         publicConfig: { keyId: "rzp_test_demo", environment: "sandbox" },
         secretConfigured: true,
         pendingConfiguration: false,
@@ -1112,8 +1535,13 @@ export const createMockSeed = (now = new Date()): MockState => {
         category: "PAYMENTS",
         available: true,
         status: "DRAFT",
-        publicFields: [{ key: "merchantKey", label: "Merchant key", required: true }, { key: "environment", label: "Environment", required: true }],
-        secretFields: [{ key: "merchantSalt", label: "Merchant salt", required: true }],
+        publicFields: [
+          { key: "merchantKey", label: "Merchant key", required: true },
+          { key: "environment", label: "Environment", required: true },
+        ],
+        secretFields: [
+          { key: "merchantSalt", label: "Merchant salt", required: true },
+        ],
         publicConfig: { environment: "sandbox" },
         secretConfigured: false,
         pendingConfiguration: true,
@@ -1126,8 +1554,15 @@ export const createMockSeed = (now = new Date()): MockState => {
         category: "MESSAGING",
         available: true,
         status: "DRAFT",
-        publicFields: [{ key: "host", label: "SMTP host", required: true }, { key: "port", label: "Port", required: true }, { key: "fromAddress", label: "From address", required: true }],
-        secretFields: [{ key: "username", label: "Username", required: true }, { key: "password", label: "Password", required: true }],
+        publicFields: [
+          { key: "host", label: "SMTP host", required: true },
+          { key: "port", label: "Port", required: true },
+          { key: "fromAddress", label: "From address", required: true },
+        ],
+        secretFields: [
+          { key: "username", label: "Username", required: true },
+          { key: "password", label: "Password", required: true },
+        ],
         publicConfig: { port: 587, fromAddress: "notifications@vook.example" },
         secretConfigured: false,
         pendingConfiguration: true,
@@ -1140,8 +1575,21 @@ export const createMockSeed = (now = new Date()): MockState => {
         category: "WHATSAPP",
         available: true,
         status: "NOT_CONFIGURED",
-        publicFields: [{ key: "phoneNumberId", label: "Phone Number ID", required: true }, { key: "businessAccountId", label: "WhatsApp Business Account ID", required: false }],
-        secretFields: [{ key: "accessToken", label: "Permanent access token", required: true }],
+        publicFields: [
+          { key: "phoneNumberId", label: "Phone Number ID", required: true },
+          {
+            key: "businessAccountId",
+            label: "WhatsApp Business Account ID",
+            required: false,
+          },
+        ],
+        secretFields: [
+          {
+            key: "accessToken",
+            label: "Permanent access token",
+            required: true,
+          },
+        ],
         publicConfig: {},
         secretConfigured: false,
         pendingConfiguration: false,
@@ -1149,8 +1597,32 @@ export const createMockSeed = (now = new Date()): MockState => {
       },
     ],
     attendanceIntegrations: [
-      { id: "attendance_connection_mobile", scope: "GLOBAL", providerKey: "MOBILE_GEOLOCATION", displayName: "Employee mobile GPS", connectionMode: "MOBILE", status: "ACTIVE", publicConfig: {}, deviceSerials: [], secretConfigured: false, lastTestedAt: daysFrom(now, -5), createdAt: daysFrom(now, -20) },
-      { id: "attendance_connection_biostar", scope: "GLOBAL", providerKey: "SUPREMA_BIOSTAR", displayName: "Main fingerprint and face terminal", connectionMode: "LOCAL_BRIDGE", status: "ACTIVE", publicConfig: { bridgeId: "vook-main-bridge" }, deviceSerials: ["SUP-FA-41082", "SUP-FA-41083"], secretConfigured: true, lastTestedAt: daysFrom(now, -2), createdAt: daysFrom(now, -18) },
+      {
+        id: "attendance_connection_mobile",
+        scope: "GLOBAL",
+        providerKey: "MOBILE_GEOLOCATION",
+        displayName: "Employee mobile GPS",
+        connectionMode: "MOBILE",
+        status: "ACTIVE",
+        publicConfig: {},
+        deviceSerials: [],
+        secretConfigured: false,
+        lastTestedAt: daysFrom(now, -5),
+        createdAt: daysFrom(now, -20),
+      },
+      {
+        id: "attendance_connection_biostar",
+        scope: "GLOBAL",
+        providerKey: "SUPREMA_BIOSTAR",
+        displayName: "Main fingerprint and face terminal",
+        connectionMode: "LOCAL_BRIDGE",
+        status: "ACTIVE",
+        publicConfig: { bridgeId: "vook-main-bridge" },
+        deviceSerials: ["SUP-FA-41082", "SUP-FA-41083"],
+        secretConfigured: true,
+        lastTestedAt: daysFrom(now, -2),
+        createdAt: daysFrom(now, -18),
+      },
     ],
     workflows: [
       {
@@ -1203,9 +1675,21 @@ export const createMockSeed = (now = new Date()): MockState => {
     onboarding: {
       status: "IN_PROGRESS",
       steps: [
-        { key: "company-profile", status: "COMPLETED", completedAt: daysFrom(now, -10) },
-        { key: "first-branch", status: "COMPLETED", completedAt: daysFrom(now, -9) },
-        { key: "organization", status: "COMPLETED", completedAt: daysFrom(now, -8) },
+        {
+          key: "company-profile",
+          status: "COMPLETED",
+          completedAt: daysFrom(now, -10),
+        },
+        {
+          key: "first-branch",
+          status: "COMPLETED",
+          completedAt: daysFrom(now, -9),
+        },
+        {
+          key: "organization",
+          status: "COMPLETED",
+          completedAt: daysFrom(now, -8),
+        },
         { key: "roles", status: "IN_PROGRESS" },
         { key: "shifts-holidays", status: "NOT_STARTED" },
         { key: "attendance-policy", status: "NOT_STARTED" },
@@ -1222,9 +1706,21 @@ export const createMockSeed = (now = new Date()): MockState => {
         companyId: "company_northstar",
         status: "IN_PROGRESS",
         steps: [
-          { key: "company-profile", status: "COMPLETED", completedAt: daysFrom(now, -10) },
-          { key: "first-branch", status: "COMPLETED", completedAt: daysFrom(now, -9) },
-          { key: "organization", status: "COMPLETED", completedAt: daysFrom(now, -8) },
+          {
+            key: "company-profile",
+            status: "COMPLETED",
+            completedAt: daysFrom(now, -10),
+          },
+          {
+            key: "first-branch",
+            status: "COMPLETED",
+            completedAt: daysFrom(now, -9),
+          },
+          {
+            key: "organization",
+            status: "COMPLETED",
+            completedAt: daysFrom(now, -8),
+          },
           { key: "roles", status: "IN_PROGRESS" },
           { key: "shifts-holidays", status: "NOT_STARTED" },
           { key: "attendance-policy", status: "NOT_STARTED" },
@@ -1254,7 +1750,14 @@ export const createMockSeed = (now = new Date()): MockState => {
       overtimeAfterMinutes: 30,
       breakMinutes: 60,
       weeklyOffs: [0, 6],
-      verification: { gpsRequired: true, geofenceRequired: true, deviceRequired: false, ipRequired: false, selfieRequired: false, biometricEnabled: false },
+      verification: {
+        gpsRequired: true,
+        geofenceRequired: true,
+        deviceRequired: false,
+        ipRequired: false,
+        selfieRequired: false,
+        biometricEnabled: false,
+      },
     },
   };
 };

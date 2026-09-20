@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -10,6 +11,7 @@ import { useCaDepartments } from '../../hooks/queries/useCaQueries';
 import { useCreateEmployee } from '../../hooks/mutations/useHrMutations';
 import { useProvisionEmployeeAccount } from '../../hooks/mutations/useCaMutations';
 import { organizationApi } from '../../api/organization';
+import LegacyDrawer from '../../components/ui/LegacyDrawer';
 
 interface AddEmpForm {
   name: string; dept: string; designation: string; email: string; type: string; joined: string; createAccess: boolean; role: string;
@@ -146,14 +148,14 @@ export default function CAWorkforcePage() {
       ) : tab === 'overview' ? (
         <>
           {/* Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+          <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
             {[
               { label: 'Total Employees', value: stats.total,       color: '#0d7470' },
               { label: 'Active',          value: stats.active,      color: '#2563eb' },
               { label: 'Inactive',        value: stats.inactive,    color: '#d97706' },
               { label: 'Departments',     value: stats.departments, color: '#6366f1' },
             ].map(({ label, value, color }) => (
-              <div key={label} style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 16px' }}>
+              <div key={label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 16px' }}>
                 <p style={{ fontSize: '28px', fontWeight: 800, color, lineHeight: 1 }}>{value}</p>
                 <p style={{ fontSize: '11px', fontWeight: 600, color: '#374151', marginTop: '4px' }}>{label}</p>
               </div>
@@ -209,7 +211,7 @@ export default function CAWorkforcePage() {
             {loading ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#0d7470" /></div>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f8fafc' }}>
                     {['ID', 'Name', 'Department', 'Designation', 'Type', 'Access', 'Status'].map((h) => (
@@ -242,7 +244,7 @@ export default function CAWorkforcePage() {
                     <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center', fontSize: '13px', color: '#94a3b8' }}>No employees found</td></tr>
                   )}
                 </tbody>
-              </table>
+              </ResponsiveTable>
             )}
           </div>
 
@@ -252,9 +254,8 @@ export default function CAWorkforcePage() {
 
       {/* Add Employee Slide-in Panel */}
       {showAdd && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 100 }}>
-          <div onClick={() => setShowAdd(false)} style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.3)' }} />
-          <div style={{ position: 'absolute', right: 0, top: 0, height: '100%', width: '380px', backgroundColor: 'white', boxShadow: '-4px 0 24px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column' }}>
+        <LegacyDrawer open onClose={() => { setShowAdd(false); setAddError(''); setForm(EMPTY_FORM); }} direction="right" className="legacy-form-drawer">
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '18px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Add Employee</h2>
@@ -311,12 +312,12 @@ export default function CAWorkforcePage() {
               </button>
             </div>
           </div>
-        </div>
+        </LegacyDrawer>
       )}
 
       {/* Invitation confirmation */}
       {credentials && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '24px' }}>
+        <LegacyDrawer open onClose={() => setCredentials(null)} direction="right" className="legacy-detail-drawer">
           <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.18)', overflow: 'hidden' }}>
             <div style={{ padding: '24px 24px 0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
@@ -342,7 +343,7 @@ export default function CAWorkforcePage() {
               <button onClick={() => setCredentials(null)} style={{ width: '100%', padding: '11px', backgroundColor: '#0d7470', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Done</button>
             </div>
           </div>
-        </div>
+        </LegacyDrawer>
       )}
     </div>
   );

@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -8,6 +9,7 @@ import { extractError } from '../../utils/errorUtils';
 import { useEmployees } from '../../hooks/queries/useHrQueries';
 import { useCreateEmployee, useUpdateEmployee } from '../../hooks/mutations/useHrMutations';
 import PaginationBar from '../../components/data/Pagination';
+import LegacyDrawer from '../../components/ui/LegacyDrawer';
 
 const DEPARTMENTS = ['Engineering', 'Sales', 'Marketing', 'HR', 'Design', 'Finance'];
 const SHIFTS = ['Morning', 'Evening', 'Night'];
@@ -62,7 +64,7 @@ function EmployeeModal({ emp, onClose }: { emp?: Employee; onClose: () => void }
   const labelStyle: React.CSSProperties = { fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '4px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.3px' };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', zIndex: 1000 }}>
+    <LegacyDrawer open onClose={onClose} direction="right" className="legacy-form-drawer">
       <div style={{ backgroundColor: 'white', width: '480px', height: '100vh', overflowY: 'auto', boxShadow: '-8px 0 32px rgba(0,0,0,0.12)' }}>
         {/* Header */}
         <div style={{ padding: '20px 24px', background: 'linear-gradient(135deg, #0d4a47, #0d7470)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -148,7 +150,7 @@ function EmployeeModal({ emp, onClose }: { emp?: Employee; onClose: () => void }
           </button>
         </div>
       </div>
-    </div>
+    </LegacyDrawer>
   );
 }
 
@@ -195,8 +197,8 @@ export default function EmployeesPage() {
       </div>
 
       {/* Department tabs */}
-      <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+      <div className="employee-list-surface" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        <div className="employee-list-surface__filters" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
           {['ALL', ...DEPARTMENTS].map((d) => (
             <button key={d} onClick={() => handleDeptChange(d)} style={{ padding: '5px 14px', borderRadius: '20px', border: '1px solid transparent', backgroundColor: deptFilter === d ? '#0d7470' : '#f1f5f9', color: deptFilter === d ? 'white' : '#475569', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
               {d === 'ALL' ? 'All' : d}
@@ -216,8 +218,8 @@ export default function EmployeesPage() {
             <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /><span style={{ fontSize: '14px' }}>Loading...</span>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="employee-list-surface__table" style={{ overflowX: 'auto' }}>
+            <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc' }}>
                   {['Employee Name', 'Role', 'Joining Date', 'Contact Information', 'Status', ''].map((h) => (
@@ -255,10 +257,10 @@ export default function EmployeesPage() {
                   );
                 })}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         )}
-        <div style={{ padding: '12px 18px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="employee-list-surface__summary" style={{ padding: '12px 18px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '13px', color: '#64748b' }}>Total: <strong>{stats.total}</strong> employees • Active: <strong>{stats.active}</strong></span>
         </div>
       </div>

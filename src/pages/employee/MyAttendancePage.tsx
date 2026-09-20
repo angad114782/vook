@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { type AttendanceRecord, type TodayAttendance } from '../../api/employee';
 import { Loader2, LogIn, LogOut } from 'lucide-react';
@@ -99,7 +100,7 @@ export default function MyAttendancePage() {
       </div>
 
       {/* Stats cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
+      <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
         {[
           { label: 'Working Days', value: stats.workingDays, color: '#374151',  bg: '#f8fafc' },
           { label: 'Present',      value: stats.present,     color: '#15803d', bg: '#f0fdf4' },
@@ -107,7 +108,7 @@ export default function MyAttendancePage() {
           { label: 'Absent',       value: stats.absent,      color: '#b91c1c', bg: '#fef2f2' },
           { label: 'Hours Logged', value: `${stats.totalHours}h`, color: '#1d4ed8', bg: '#eff6ff' },
         ].map(({ label, value, color, bg }) => (
-          <div key={label} style={{ backgroundColor: bg, borderRadius: '10px', padding: '14px 16px', textAlign: 'center' }}>
+          <div key={label} className="responsive-stat-card" style={{ backgroundColor: bg, borderRadius: '10px', padding: '14px 16px', textAlign: 'center' }}>
             <p style={{ fontSize: '22px', fontWeight: 800, color }}>{value}</p>
             <p style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>{label}</p>
           </div>
@@ -140,7 +141,7 @@ export default function MyAttendancePage() {
           <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#0d7470" /></div>
         ) : view === 'table' ? (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc' }}>
                   {['Date', 'Day', 'Status', 'Check In', 'Check Out', 'Hours', 'OT'].map((h) => (
@@ -169,7 +170,7 @@ export default function MyAttendancePage() {
                   );
                 })}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         ) : (
           <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>

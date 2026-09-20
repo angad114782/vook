@@ -1,8 +1,10 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import type { MyPayslip } from '../../api/employee';
 import { Download, Loader2, X } from 'lucide-react';
 import { useMyPayslips } from '../../hooks/queries/useEmployeeQueries';
 import { employeeApi } from '../../api/employee';
+import LegacyDrawer from '../../components/ui/LegacyDrawer';
 
 const STATUS_META: Record<string, { bg: string; color: string }> = {
   Paid:       { bg: '#dcfce7', color: '#15803d' },
@@ -35,18 +37,18 @@ export default function MyPayslipsPage() {
       </div>
 
       {/* Summary cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
-        <div style={{ backgroundColor: '#0d4a47', borderRadius: '12px', padding: '18px 20px', color: 'white' }}>
+      <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+        <div className="responsive-stat-card" style={{ backgroundColor: '#0d4a47', borderRadius: '12px', padding: '18px 20px', color: 'white' }}>
           <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Latest Net Pay</p>
           <p style={{ fontSize: '26px', fontWeight: 800, marginTop: '6px' }}>{latestPaid ? fmtPay(latestPaid.netPay) : '—'}</p>
           <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', marginTop: '4px' }}>{latestPaid?.period ?? 'No paid payslip'}</p>
         </div>
-        <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 20px' }}>
+        <div className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 20px' }}>
           <p style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Total Earned YTD</p>
           <p style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', marginTop: '6px' }}>{fmtPay(totalYTD)}</p>
           <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{payslips.filter(finalized).length} finalized payslip(s)</p>
         </div>
-        <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 20px' }}>
+        <div className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 20px' }}>
           <p style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Total Payslips</p>
           <p style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', marginTop: '6px' }}>{payslips.length}</p>
           <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{payslips.filter(finalized).length} finalized</p>
@@ -83,7 +85,7 @@ export default function MyPayslipsPage() {
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '50px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#0d7470" /></div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ backgroundColor: '#f8fafc' }}>
                 {['Payslip ID', 'Period', 'Net Pay', 'Status', ''].map((h) => (
@@ -110,12 +112,12 @@ export default function MyPayslipsPage() {
                 <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', fontSize: '13px', color: '#94a3b8' }}>No payslips found</td></tr>
               )}
             </tbody>
-          </table>
+          </ResponsiveTable>
         )}
       </div>
 
       {viewPayslip && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LegacyDrawer open onClose={() => setViewPayslip(null)} direction="right" className="legacy-detail-drawer">
           <div style={{ backgroundColor: 'white', borderRadius: '14px', width: '420px', maxWidth: '95vw', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
             <div style={{ padding: '20px 22px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a' }}>Payslip Detail</span>
@@ -146,7 +148,7 @@ export default function MyPayslipsPage() {
               ))}
             </div>
           </div>
-        </div>
+        </LegacyDrawer>
       )}
     </div>
   );

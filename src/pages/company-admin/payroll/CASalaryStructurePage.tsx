@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { Search, Edit2, X, Loader2 } from 'lucide-react';
 import { type SalaryRow } from '../../../api/hr';
@@ -7,6 +8,7 @@ import { useHrSalary } from '../../../hooks/queries/useHrQueries';
 import { hrApi } from '../../../api/hr';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import LegacyDrawer from '../../../components/ui/LegacyDrawer';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const fmtCtc = (n: number | null) => n ? `INR ${n.toLocaleString('en-IN')}` : 'Not configured';
@@ -102,7 +104,7 @@ export default function CASalaryStructurePage() {
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#2563eb" /></div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ backgroundColor: '#f8fafc' }}>
                 {['EMPLOYEE', 'ROLE', 'TYPE', 'ANNUAL CTC', 'LAST REVISED', 'ACTIONS'].map((h) => (
@@ -136,7 +138,7 @@ export default function CASalaryStructurePage() {
                 <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', fontSize: '13px', color: '#94a3b8' }}>No records found</td></tr>
               )}
             </tbody>
-          </table>
+          </ResponsiveTable>
         )}
       </div>
 
@@ -157,8 +159,7 @@ export default function CASalaryStructurePage() {
 
       {/* Edit CTC Modal */}
       {editEmp && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div onClick={() => setEditEmp(null)} style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.3)' }} />
+        <LegacyDrawer open onClose={() => setEditEmp(null)} direction="right" className="legacy-form-drawer">
           <div style={{ position: 'relative', backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '24px', width: '360px', boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Edit Salary — {editEmp.name}</h2>
@@ -187,7 +188,7 @@ export default function CASalaryStructurePage() {
               <button onClick={() => void saveSalary()} disabled={saving} style={{ flex: 1, padding: '9px', border: 'none', borderRadius: '8px', backgroundColor: saving ? '#94a3b8' : '#2563eb', color: 'white', fontSize: '12px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif' }}>{saving ? 'Saving…' : 'Save Changes'}</button>
             </div>
           </div>
-        </div>
+        </LegacyDrawer>
       )}
     </div>
   );

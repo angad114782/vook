@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { type CALog } from '../../api/companyAdmin';
 import { Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
@@ -49,7 +50,7 @@ export default function CAActivityPage() {
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#6366f1" /></div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ backgroundColor: '#f8fafc' }}>
                 {['Action', 'Module', 'User', 'Role', 'Status', 'Time'].map((h) => (
@@ -80,7 +81,7 @@ export default function CAActivityPage() {
               })}
               {logs.length === 0 && <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', fontSize: '13px', color: '#94a3b8' }}>No activity logs found</td></tr>}
             </tbody>
-          </table>
+          </ResponsiveTable>
         )}
       </div>
 

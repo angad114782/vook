@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { companiesApi, type Company } from '../../api/companies';
@@ -7,9 +8,11 @@ import { getPlanBadge } from '../../utils/planColors';
 import { useSaCompanies, useSaPlans } from '../../hooks/queries/useSaQueries';
 import { useDeleteCompany } from '../../hooks/mutations/useSaMutations';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
+import AppDialog from '../../components/ui/AppDialog';
+import AppDrawer from '../../components/ui/AppDrawer';
 import {
   Building2, TrendingUp, Clock, AlertTriangle, Search,
-  Pencil, Trash2, X, Loader2, ChevronLeft, ChevronRight,
+  Pencil, Trash2, Loader2, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 
 // Section.
@@ -90,16 +93,8 @@ function CompanyModal({ company, onClose, onSave }: ModalProps) {
   const labelStyle: React.CSSProperties = { display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '5px' };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
-      <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #f1f5f9' }}>
-          <div>
-            <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>Edit Company</h2>
-            <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>Update company contact information</p>
-          </div>
-          <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}><X size={20} /></button>
-        </div>
-        <form onSubmit={handleSubmit} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <AppDrawer open onOpenChange={(open) => { if (!open) onClose(); }} title="Edit company" description="Update company contact information." placement="responsive" size="md" contentClassName="company-drawer__body">
+        <form onSubmit={handleSubmit} className="company-drawer__form">
           {error && <div role="alert" style={{ padding: '10px 14px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontSize: '13px' }}>{error}</div>}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <div><label style={labelStyle}>Company Name *</label><input required style={inputStyle} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></div>
@@ -117,8 +112,7 @@ function CompanyModal({ company, onClose, onSave }: ModalProps) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </AppDrawer>
   );
 }
 
@@ -135,23 +129,12 @@ function ViewModal({ company, plans, onClose, onEdit }: { company: Company; plan
   );
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
-      <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
-        <div style={{ padding: '24px', background: 'linear-gradient(135deg, #0d4a47, #0d7470)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: av.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: av.color, fontWeight: 800, fontSize: '16px' }}>
-              {initials(company.name)}
-            </div>
-            <div>
-          <h2 style={{ color: 'white', fontSize: '16px', fontWeight: 700 }}>{company.name}</h2>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', marginTop: '2px' }}>{company.companyCode}</p>
-              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>{company.industry ?? '—'}</p>
-            </div>
+    <AppDrawer open onOpenChange={(open) => { if (!open) onClose(); }} title={company.name} description={`${company.companyCode} · ${company.industry ?? 'Company details'}`} placement="responsive" size="sm" contentClassName="company-drawer__body">
+        <div style={{ padding: '4px 0 8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '11px', backgroundColor: av.bg, display: 'grid', placeItems: 'center', color: av.color, fontWeight: 800, fontSize: '14px' }}>{initials(company.name)}</div>
+            <div><strong style={{ color: '#0f172a', fontSize: '14px' }}>{company.name}</strong><p style={{ color: '#64748b', fontSize: '12px', marginTop: '2px' }}>{company.industry ?? '—'}</p></div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.7)' }}><X size={20} /></button>
-        </div>
-
-        <div style={{ padding: '20px 24px' }}>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
             <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, backgroundColor: pm?.bg, color: pm?.color, border: `1px solid ${pm?.border}` }}>{pm?.label}</span>
             <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, backgroundColor: sm?.bg, color: sm?.color }}>{sm?.label}</span>
@@ -165,12 +148,11 @@ function ViewModal({ company, plans, onClose, onEdit }: { company: Company; plan
           {row('Created On', fmtDate(company.createdAt))}
         </div>
 
-        <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+        <div className="company-drawer__footer">
           <button onClick={onClose} style={{ padding: '8px 18px', border: '1.5px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: '#374151', fontFamily: 'Inter, sans-serif' }}>Close</button>
           <button onClick={onEdit} style={{ padding: '8px 18px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Edit Company</button>
         </div>
-      </div>
-    </div>
+    </AppDrawer>
   );
 }
 
@@ -233,9 +215,9 @@ export default function CompaniesPage() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+      <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
         {statsRow.map((s) => (
-          <div key={s.label} style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div key={s.label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '6px' }}>{s.label}</p>
               <p style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a' }}>{s.value}</p>
@@ -291,7 +273,7 @@ export default function CompaniesPage() {
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <ResponsiveTable mobileRowClick style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc' }}>
                   {['Company', 'Plan', 'Users', 'Status', 'Expiry', 'Created On', 'Actions'].map((h) => (
@@ -342,7 +324,7 @@ export default function CompaniesPage() {
                   );
                 })}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         )}
 
@@ -386,21 +368,17 @@ export default function CompaniesPage() {
 
       {/* Delete Confirm */}
       {deleteConfirm && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '14px', padding: '28px', maxWidth: '380px', width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
-            <div style={{ width: '44px', height: '44px', borderRadius: '12px', backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-              <Trash2 size={20} color="#dc2626" />
+        <AppDialog className="action-confirm-dialog" open onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }} title="Archive company?" description="The company will be hidden from lists and its subscription deactivated. Data is preserved." footer={<>
+          <button onClick={() => setDeleteConfirm(null)} className="admin-button admin-button--secondary">Cancel</button>
+          <button onClick={handleDelete} className="admin-button admin-button--danger">Archive</button>
+        </>}>
+            <div className="action-confirm-dialog__icon" aria-hidden="true">
+              <Trash2 size={20} />
             </div>
-            <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>Archive Company?</h3>
-            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '20px' }}>
+            <p className="action-confirm-dialog__message">
               Are you sure you want to archive <strong>{deleteConfirm.name}</strong>? The company will be hidden from all lists and its subscription deactivated. Data is preserved and not permanently deleted.
             </p>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button onClick={() => setDeleteConfirm(null)} style={{ padding: '8px 18px', border: '1.5px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: '#374151', fontFamily: 'Inter, sans-serif' }}>Cancel</button>
-              <button onClick={handleDelete} style={{ padding: '8px 18px', backgroundColor: '#dc2626', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Archive</button>
-            </div>
-          </div>
-        </div>
+        </AppDialog>
       )}
     </div>
   );

@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState, useMemo } from 'react';
 import { Plus, AlertTriangle, Loader2, X } from 'lucide-react';
 import type { Employee, ShiftAssignment, ShiftPlan, ShiftShortage } from '../../api/hr';
@@ -5,6 +6,7 @@ import { useSupShifts, useSupWorkforce } from '../../hooks/queries/useSupQueries
 import { useCreateShift } from '../../hooks/mutations/useHrMutations';
 import { extractError } from '../../utils/errorUtils';
 import { toast } from 'sonner';
+import LegacyDrawer from '../../components/ui/LegacyDrawer';
 
 type ShiftTab = 'Shift Assignment' | 'Workforce Planning' | 'Shortage Alerts';
 const SHIFT_TABS: ShiftTab[] = ['Shift Assignment', 'Workforce Planning', 'Shortage Alerts'];
@@ -129,14 +131,14 @@ export default function ShiftManagementPage() {
           </div>
 
           {/* Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+          <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
             {[
               { label: 'Total Workers', value: String(stats.totalWorkers), sub: 'Assigned on selected date', badge: '' },
               { label: 'Morning Shift', value: String(stats.morningShift), sub: '06:00 - 14:00', badge: 'green' },
               { label: 'Evening Shift', value: String(stats.eveningShift), sub: '14:00 - 22:00', badge: 'yellow' },
               { label: 'Night Shift', value: String(stats.nightShift), sub: '22:00 - 06:00', badge: 'blue' },
             ].map(({ label, value, sub, badge }) => (
-              <div key={label} style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
+              <div key={label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>{label}</p>
                   {badge && <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: badge === 'green' ? '#16a34a' : badge === 'yellow' ? '#f59e0b' : '#3b82f6' }} />}
@@ -192,7 +194,7 @@ export default function ShiftManagementPage() {
           </div>
 
           <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc' }}>
                   {['Department', 'Machine', 'Shift', 'Required', 'Action'].map((h) => (
@@ -211,21 +213,21 @@ export default function ShiftManagementPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         </>
       )}
 
       {tab === 'Shortage Alerts' && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+          <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
             {[
               { label: 'Total Plans', value: String(plans.length), color: '#374151', sub: 'Active planning rows' },
               { label: 'Understaffed', value: String(shortages.length), color: '#dc2626', sub: 'Need workers' },
               { label: 'Fully Staffed', value: String(plans.filter((p) => p.shortage === 0).length), color: '#16a34a', sub: 'Requirement met' },
               { label: 'Critical', value: String(shortages.filter((s) => s.severity === 'critical').length), color: '#7c3aed', sub: 'High shortage' },
             ].map(({ label, value, color, sub }) => (
-              <div key={label} style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
+              <div key={label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
                 <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>{label}</p>
                 <p style={{ fontSize: '22px', fontWeight: 800, color, marginTop: '4px' }}>{value}</p>
                 {sub && <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{sub}</p>}
@@ -283,7 +285,7 @@ export default function ShiftManagementPage() {
       )}
 
       {showAssign && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, backgroundColor: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LegacyDrawer open onClose={() => setShowAssign(false)} direction="right" className="legacy-form-drawer">
           <div style={{ width: '420px', backgroundColor: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 18px 40px rgba(0,0,0,0.14)' }}>
             <div style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
@@ -322,7 +324,7 @@ export default function ShiftManagementPage() {
               </button>
             </div>
           </div>
-        </div>
+        </LegacyDrawer>
       )}
     </div>
   );

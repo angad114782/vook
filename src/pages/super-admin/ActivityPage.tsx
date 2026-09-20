@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState, useEffect } from 'react';
 import { activityApi, type ActivityLog } from '../../api/activity';
 import { useSaActivity } from '../../hooks/queries/useSaQueries';
@@ -8,6 +9,7 @@ import {
   Loader2,
   LogIn, Clock,
 } from 'lucide-react';
+import LegacyDrawer from '../../components/ui/LegacyDrawer';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -70,7 +72,7 @@ function LogModal({ log, onClose }: { log: ActivityLog; onClose: () => void }) {
   );
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
+    <LegacyDrawer open onClose={onClose} direction="right" className="legacy-detail-drawer">
       <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', background: 'linear-gradient(135deg, #0d4a47, #0d7470)' }}>
@@ -113,7 +115,7 @@ function LogModal({ log, onClose }: { log: ActivityLog; onClose: () => void }) {
           <button onClick={onClose} style={{ padding: '8px 20px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Close</button>
         </div>
       </div>
-    </div>
+    </LegacyDrawer>
   );
 }
 
@@ -196,9 +198,9 @@ export default function ActivityPage() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+      <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
         {statsRow.map((s) => (
-          <div key={s.label} style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div key={s.label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '6px' }}>{s.label}</p>
               <p style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a' }}>{s.value}</p>
@@ -255,7 +257,7 @@ export default function ActivityPage() {
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc' }}>
                   {['Time', 'User', 'Role', 'Company', 'Action', 'Status'].map((h) => (
@@ -323,7 +325,7 @@ export default function ActivityPage() {
                   );
                 })}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         )}
 

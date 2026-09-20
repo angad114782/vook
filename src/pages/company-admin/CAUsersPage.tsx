@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { type CAUser } from '../../api/companyAdmin';
@@ -7,6 +8,7 @@ import PaginationBar from '../../components/data/Pagination';
 import { extractError } from '../../utils/errorUtils';
 import { useCaUsers } from '../../hooks/queries/useCaQueries';
 import { useCreateCaUser, useUpdateCaUser } from '../../hooks/mutations/useCaMutations';
+import LegacyDrawer from '../../components/ui/LegacyDrawer';
 
 const ROLES = ['HR', 'MANAGER', 'SUPERVISOR', 'FINANCE', 'COMPANY_ADMIN'];
 
@@ -136,7 +138,7 @@ export default function CAUsersPage() {
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#6366f1" /></div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ backgroundColor: '#f8fafc' }}>
                 {['Account', 'Role', 'Linked employee', 'Last sign-in', 'Status', 'Actions'].map((h) => (
@@ -192,7 +194,7 @@ export default function CAUsersPage() {
               })}
               {users.length === 0 && <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', fontSize: '13px', color: '#94a3b8' }}>No users found</td></tr>}
             </tbody>
-          </table>
+          </ResponsiveTable>
         )}
       </div>
 
@@ -200,7 +202,7 @@ export default function CAUsersPage() {
 
       {/* Add User Modal */}
       {showAdd && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+        <LegacyDrawer open onClose={() => { setShowAdd(false); setFormError(''); }} direction="right" className="legacy-form-drawer">
           <div style={{ backgroundColor: 'white', borderRadius: '14px', width: '440px', maxWidth: '94vw', padding: '28px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>Add New User</h3>
@@ -225,12 +227,12 @@ export default function CAUsersPage() {
               </button>
             </div>
           </div>
-        </div>
+        </LegacyDrawer>
       )}
 
       {/* Edit User Modal */}
       {editModalUser && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+        <LegacyDrawer open onClose={() => setEditModalUser(null)} direction="right" className="legacy-form-drawer">
           <div style={{ backgroundColor: 'white', borderRadius: '14px', width: '460px', maxWidth: '94vw', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #f1f5f9' }}>
@@ -290,12 +292,12 @@ export default function CAUsersPage() {
               </button>
             </div>
           </div>
-        </div>
+        </LegacyDrawer>
       )}
 
       {/* Invitation confirmation */}
       {credentials && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '24px' }}>
+        <LegacyDrawer open onClose={() => setCredentials(null)} direction="right" className="legacy-detail-drawer">
           <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.18)', overflow: 'hidden' }}>
             <div style={{ padding: '24px 24px 0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
@@ -321,7 +323,7 @@ export default function CAUsersPage() {
               <button onClick={() => setCredentials(null)} style={{ width: '100%', padding: '11px', backgroundColor: '#6366f1', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Done</button>
             </div>
           </div>
-        </div>
+        </LegacyDrawer>
       )}
     </div>
   );

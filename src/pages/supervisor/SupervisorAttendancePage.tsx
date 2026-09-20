@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState, useMemo } from 'react';
 import type { AttendanceRecord } from '../../api/hr';
 import type { Pagination } from '../../api/hr';
@@ -87,14 +88,14 @@ export default function SupervisorAttendancePage() {
             <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /></div>
           ) : (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+              <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
                 {[
                   { label: 'Present Today', value: s.presentToday,  color: '#16a34a' },
                   { label: 'Absent Today',  value: s.absent,        color: '#dc2626' },
                   { label: 'Late Arrivals', value: s.lateArrivals,  color: '#ea580c' },
                   { label: 'On Leave',      value: s.onLeave ?? 0,  color: '#7c3aed' },
                 ].map(({ label, value, color }) => (
-                  <div key={label} style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 20px' }}>
+                  <div key={label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 20px' }}>
                     <p style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>{label}</p>
                     <p style={{ fontSize: '28px', fontWeight: 800, color, marginTop: '6px', lineHeight: 1 }}>{value}</p>
                   </div>
@@ -156,7 +157,7 @@ export default function SupervisorAttendancePage() {
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f8fafc' }}>
                     {['Date', 'Employee', 'Department', 'Check In', 'Check Out', 'Status'].map((h) => (
@@ -185,7 +186,7 @@ export default function SupervisorAttendancePage() {
                     );
                   })}
                 </tbody>
-              </table>
+              </ResponsiveTable>
             </div>
           )}
           <PaginationBar page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} limit={20} onPageChange={(p) => setPage(p)} />

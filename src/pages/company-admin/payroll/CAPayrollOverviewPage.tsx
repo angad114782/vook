@@ -82,14 +82,14 @@ export default function CAPayrollOverviewPage() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: '70px' }}><Loader2 size={24} style={{ animation: 'spin 1s linear infinite' }} color="#2563eb" /></div>
       ) : (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
+          <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
             {[
               { label: 'TOTAL PAYROLL COST', value: fmtMoney(payrollReport?.summary.totalGross ?? 0), sub: `${salaryRows.length} salary rows`, subColor: '#2563eb' },
               { label: 'NET SALARY PAYABLE', value: fmtMoney(payrollReport?.summary.totalNet ?? 0), sub: `${processed} paid payslips`, subColor: '#2563eb' },
               { label: 'TOTAL DEDUCTIONS', value: fmtMoney(payrollReport?.summary.totalDeductions ?? 0), sub: 'PF, tax, leave deductions', subColor: '#dc2626' },
               { label: 'PAYSLIPS GENERATED', value: String(payrollReport?.summary.count ?? 0), sub: `${pending} pending review`, subColor: '#d97706' },
             ].map(({ label, value, sub, subColor }) => (
-              <div key={label} style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px' }}>
+              <div key={label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px' }}>
                 <p style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', lineHeight: 1.4 }}>{label}</p>
                 <p style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', marginTop: '10px', lineHeight: 1 }}>{value}</p>
                 <p style={{ fontSize: '11px', color: subColor, marginTop: '7px', fontWeight: 500 }}>{sub}</p>

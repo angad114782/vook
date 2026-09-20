@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState, useEffect, useCallback } from 'react';
 import { modulesApi, type AppModule, type PermissionItem } from '../../api/modules';
 import { toast } from 'sonner';
@@ -235,7 +236,7 @@ function ModuleCatalogueTab() {
           <Loader2 size={20} color="#94a3b8" style={{ animation: 'spin 1s linear infinite' }} />
         </div>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ backgroundColor: '#f8fafc' }}>
               {['Module', 'Description', 'Category / route', 'Actions', 'Status'].map((h) => (
@@ -266,7 +267,7 @@ function ModuleCatalogueTab() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </ResponsiveTable>
       )}
 
     </div>

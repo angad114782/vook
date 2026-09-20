@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { Search, Download, Loader2, X, CheckCircle2, RefreshCw, AlertTriangle } from 'lucide-react';
 import { type Payslip } from '../../../api/hr';
@@ -7,6 +8,7 @@ import { useHrPayslips } from '../../../hooks/queries/useHrQueries';
 import { hrApi } from '../../../api/hr';
 import { useQueryClient } from '@tanstack/react-query';
 import { extractError } from '../../../utils/errorUtils';
+import LegacyDrawer from '../../../components/ui/LegacyDrawer';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const YEARS  = ['2024','2025','2026'];
@@ -136,7 +138,7 @@ export default function CAPayslipsPage() {
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#2563eb" /></div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ backgroundColor: '#f8fafc' }}>
                 {['PAYSLIP ID', 'EMPLOYEE', 'PERIOD', 'NET PAY', 'STATUS', 'ACTIONS'].map((h) => (
@@ -177,7 +179,7 @@ export default function CAPayslipsPage() {
                 <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', fontSize: '13px', color: '#94a3b8' }}>No payslips found</td></tr>
               )}
             </tbody>
-          </table>
+          </ResponsiveTable>
         )}
       </div>
 
@@ -197,7 +199,7 @@ export default function CAPayslipsPage() {
       </div>
 
       {viewPayslip && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LegacyDrawer open onClose={() => setViewPayslip(null)} direction="right" className="legacy-detail-drawer">
           <div style={{ backgroundColor: 'white', borderRadius: '14px', width: '420px', maxWidth: '95vw', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
             <div style={{ padding: '20px 22px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a' }}>Payslip Detail</span>
@@ -230,7 +232,7 @@ export default function CAPayslipsPage() {
             </div>
             {viewPayslip.grossSalary === 0 && viewPayslip.totalDeductions === 0 && viewPayslip.netPay === 0 && <div style={{ padding: '0 22px 20px' }}><button onClick={() => void recalculate(viewPayslip)} disabled={recalculatingId === viewPayslip.id} style={{ width: '100%', padding: '10px', border: 'none', borderRadius: '8px', background: '#2563eb', color: 'white', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>{recalculatingId === viewPayslip.id ? 'Recalculating...' : 'Fix and recalculate payslip'}</button></div>}
           </div>
-        </div>
+        </LegacyDrawer>
       )}
     </div>
   );

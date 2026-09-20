@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { Download, BarChart2, Clock, Users, CreditCard, X, Loader2 } from 'lucide-react';
 import {
@@ -6,6 +7,7 @@ import {
   useCaPayrollReport,
   useCaAttendanceReport,
 } from '../../hooks/queries/useCaQueries';
+import LegacyDrawer from '../../components/ui/LegacyDrawer';
 
 type ReportType = 'workforce' | 'payroll' | 'leave' | 'attendance';
 
@@ -188,7 +190,7 @@ export default function CAReportsPage() {
               <button onClick={() => setPreviewData(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={16} /></button>
             </div>
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ backgroundColor: '#f8fafc' }}>
                 {previewData.headers.map((h) => (
@@ -205,14 +207,13 @@ export default function CAReportsPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </ResponsiveTable>
         </div>
       )}
 
       {/* Generate modal */}
       {showModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div onClick={() => setShowModal(false)} style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.3)' }} />
+        <LegacyDrawer open onClose={() => setShowModal(false)} direction="right" className="legacy-form-drawer">
           <div style={{ position: 'relative', backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '24px', width: '400px', boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
               <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Generate Report</h2>
@@ -260,7 +261,7 @@ export default function CAReportsPage() {
               </button>
             </div>
           </div>
-        </div>
+        </LegacyDrawer>
       )}
     </div>
   );

@@ -811,34 +811,40 @@ function WhatsAppSettings({
                     <small>{rule?.category ?? "HRMS event"}</small>
                   </span>
                 </label>
-                <input
-                  className="admin-input"
-                  aria-label={`Template name for ${rule?.title ?? template.ruleId}`}
-                  value={template.name}
-                  disabled={!settings.whatsapp.enabled || !template.enabled}
-                  onChange={(event) =>
-                    updateTemplate(template.id, {
-                      name: event.target.value
-                        .toLowerCase()
-                        .replace(/[^a-z0-9_]/g, "_"),
-                    })
-                  }
-                />
-                <select
-                  className="admin-input"
-                  aria-label={`Template language for ${rule?.title ?? template.ruleId}`}
-                  value={template.language}
-                  disabled={!settings.whatsapp.enabled || !template.enabled}
-                  onChange={(event) =>
-                    updateTemplate(template.id, {
-                      language: event.target.value,
-                    })
-                  }
-                >
-                  <option value="en">English</option>
-                  <option value="en_US">English (US)</option>
-                  <option value="hi">Hindi</option>
-                </select>
+                <label className="notification-settings__template-field">
+                  <span>Template name</span>
+                  <input
+                    className="admin-input"
+                    aria-label={`Template name for ${rule?.title ?? template.ruleId}`}
+                    value={template.name}
+                    disabled={!settings.whatsapp.enabled || !template.enabled}
+                    onChange={(event) =>
+                      updateTemplate(template.id, {
+                        name: event.target.value
+                          .toLowerCase()
+                          .replace(/[^a-z0-9_]/g, "_"),
+                      })
+                    }
+                  />
+                </label>
+                <label className="notification-settings__template-field">
+                  <span>Language</span>
+                  <select
+                    className="admin-input"
+                    aria-label={`Template language for ${rule?.title ?? template.ruleId}`}
+                    value={template.language}
+                    disabled={!settings.whatsapp.enabled || !template.enabled}
+                    onChange={(event) =>
+                      updateTemplate(template.id, {
+                        language: event.target.value,
+                      })
+                    }
+                  >
+                    <option value="en">English</option>
+                    <option value="en_US">English (US)</option>
+                    <option value="hi">Hindi</option>
+                  </select>
+                </label>
                 <span
                   className="notification-settings__template-status"
                   data-status={template.status}

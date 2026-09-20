@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { subscriptionsApi, type Subscription, type PlanData } from '../../api/subscriptions';
@@ -8,9 +9,11 @@ import { getPlanBadge } from '../../utils/planColors';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { toast } from 'sonner';
 import PlanBuilderModal from '../../components/subscriptions/PlanBuilderModal';
+import AppDialog from '../../components/ui/AppDialog';
+import AppDrawer from '../../components/ui/AppDrawer';
 import {
   IndianRupee, Users, Clock, AlertTriangle,
-  Search, Check, X, Loader2, ChevronLeft, ChevronRight,
+  Search, Check, Loader2, ChevronLeft, ChevronRight,
   Pencil, Trash2, Ban, CalendarX,
 } from 'lucide-react';
 
@@ -51,13 +54,11 @@ function DeletePlanConfirmModal({ plan, onClose, onSave }: { plan: PlanData; onC
   const fmtD = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
-      <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #f1f5f9' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>Deactivate Plan</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
-        </div>
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+    <AppDialog className="action-confirm-dialog" open onOpenChange={(open) => { if (!open) onClose(); }} title="Deactivate plan" description={`Deactivate ${plan.name} for future assignments.`} footer={<>
+      <button onClick={onClose} className="admin-button admin-button--secondary">{blocked ? 'Close' : 'Cancel'}</button>
+      {!blocked && <button onClick={handleConfirm} disabled={deleting} className="admin-button admin-button--danger">{deleting && <Loader2 size={14} className="spin" />} Deactivate</button>}
+    </>}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           {blocked ? (
             <div style={{ padding: '16px', backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px' }}>
               <p style={{ fontSize: '13px', fontWeight: 700, color: '#92400e', marginBottom: '6px' }}>Cannot deactivate yet</p>
@@ -71,20 +72,8 @@ function DeletePlanConfirmModal({ plan, onClose, onSave }: { plan: PlanData; onC
               Are you sure you want to deactivate the <strong>{plan.name}</strong> plan? It will no longer be visible or assignable to companies.
             </p>
           )}
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            <button onClick={onClose} style={{ padding: '9px 20px', border: '1.5px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: '#374151', fontFamily: 'Inter, sans-serif' }}>
-              {blocked ? 'Close' : 'Cancel'}
-            </button>
-            {!blocked && (
-              <button onClick={handleConfirm} disabled={deleting} style={{ padding: '9px 24px', backgroundColor: deleting ? '#fca5a5' : '#dc2626', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: deleting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'Inter, sans-serif' }}>
-                {deleting && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />}
-                Deactivate
-              </button>
-            )}
-          </div>
         </div>
-      </div>
-    </div>
+    </AppDialog>
   );
 }
 
@@ -120,14 +109,13 @@ function SubscriptionSupportModal({ subscription, action, onClose, onSave }: {
 
   const fieldStyle: React.CSSProperties = { width: '100%', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#0f172a', backgroundColor: 'white' };
 
-  return <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
-    <form onSubmit={submit} style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '440px', padding: '24px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-      <div><h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>{isCancellation ? 'Schedule cancellation' : 'Suspend subscription access'}</h2><p style={{ margin: '5px 0 0', color: '#64748b', fontSize: '12px' }}>{subscription.company.name} · {isCancellation ? 'Access remains until the current period ends.' : 'Access is suspended immediately.'}</p></div>
+  return <AppDrawer open onOpenChange={(open) => { if (!open) onClose(); }} title={isCancellation ? 'Schedule cancellation' : 'Suspend subscription access'} description={`${subscription.company.name} · ${isCancellation ? 'Access remains until the current period ends.' : 'Access is suspended immediately.'}`} placement="responsive" size="sm" contentClassName="subscription-support-drawer__body">
+    <form onSubmit={submit} className="subscription-support-drawer__form">
       {error && <div role="alert" style={{ padding: '10px 12px', border: '1px solid #fecaca', borderRadius: '8px', background: '#fef2f2', color: '#b91c1c', fontSize: '12px' }}>{error}</div>}
       <label className="admin-label">Reason<textarea required rows={3} value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Describe the customer support decision" style={{ ...fieldStyle, marginTop: '5px', resize: 'vertical' }} /></label>
       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}><button type="button" onClick={onClose} style={{ padding: '9px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', background: 'white', color: '#374151', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>Cancel</button><button type="submit" disabled={saving} style={{ padding: '9px 16px', border: 0, borderRadius: '8px', background: isCancellation ? '#a16207' : '#b91c1c', color: 'white', fontSize: '12px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? 'Saving…' : isCancellation ? 'Schedule cancellation' : 'Suspend access'}</button></div>
     </form>
-  </div>;
+  </AppDrawer>;
 }
 
 export default function SubscriptionsPage() {
@@ -196,7 +184,7 @@ export default function SubscriptionsPage() {
   const selectStyle: React.CSSProperties = { padding: '8px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', color: '#374151', backgroundColor: 'white', cursor: 'pointer', outline: 'none', fontFamily: 'Inter, sans-serif' };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="subscriptions-page" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -212,9 +200,9 @@ export default function SubscriptionsPage() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+      <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
         {statsRow.map((s) => (
-          <div key={s.label} style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div key={s.label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '6px' }}>{s.label}</p>
               <p style={{ fontSize: s.label === 'Monthly Revenue' ? '18px' : '26px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.3px' }}>{s.value}</p>
@@ -227,10 +215,10 @@ export default function SubscriptionsPage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9' }}>
+      <div className="subscriptions-tabs-card" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        <div className="subscriptions-tabs" role="tablist" aria-label="Plan and subscription views" style={{ display: 'flex', borderBottom: '1px solid #f1f5f9' }}>
           {(['overview', 'plans'] as const).map((t) => (
-            <button key={t} onClick={() => setTab(t)} style={{
+            <button key={t} type="button" role="tab" aria-selected={tab === t} className="subscriptions-tab" onClick={() => setTab(t)} style={{
               padding: '14px 24px', fontSize: '13px', fontWeight: 600,
               border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
               backgroundColor: tab === t ? '#0d7470' : 'transparent',
@@ -247,7 +235,7 @@ export default function SubscriptionsPage() {
         {tab === 'overview' && (
           <>
             {/* Filters */}
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="subscriptions-overview-filters" style={{ padding: '14px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
               <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
                 <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                 <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Search by company name..." style={{ width: '100%', paddingLeft: '36px', paddingRight: '12px', paddingTop: '8px', paddingBottom: '8px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#374151', backgroundColor: '#f8fafc' }} />
@@ -284,7 +272,7 @@ export default function SubscriptionsPage() {
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#f8fafc' }}>
                       {['Company', 'Plan', 'Billing Cycle', 'Start Date', 'Expiry', 'Status', 'Actions'].map((h) => (
@@ -335,13 +323,13 @@ export default function SubscriptionsPage() {
                       );
                     })}
                   </tbody>
-                </table>
+                </ResponsiveTable>
               </div>
             )}
 
             {/* Pagination */}
             {pagination.totalPages > 1 && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderTop: '1px solid #f1f5f9' }}>
+              <div className="subscriptions-overview-pagination" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderTop: '1px solid #f1f5f9' }}>
                 <span style={{ fontSize: '13px', color: '#64748b' }}>Showing {(page - 1) * 8 + 1}–{Math.min(page * 8, pagination.total)} of {pagination.total}</span>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <button disabled={page === 1} onClick={() => setPage((p) => p - 1)} style={{ width: '32px', height: '32px', border: '1px solid #e2e8f0', borderRadius: '7px', backgroundColor: page === 1 ? '#f8fafc' : 'white', cursor: page === 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: page === 1 ? '#cbd5e1' : '#374151' }}><ChevronLeft size={15} /></button>
@@ -357,25 +345,25 @@ export default function SubscriptionsPage() {
 
         {/* Tab 2: Plans */}
         {tab === 'plans' && (
-          <div style={{ padding: '24px' }}>
+          <div className="subscriptions-plans-panel" style={{ padding: '24px' }}>
             <h2 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Available Plans</h2>
             <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '20px' }}>Customers choose and purchase these plans during online signup or from their company workspace.</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+            <div className="subscriptions-plan-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
               {plans.map((p, idx) => {
                 const highlight = idx === Math.floor(plans.length / 2);
                 const pb = getPlanBadge(p.type, plans);
                 return (
-                  <div key={p.type} style={{
+                  <div key={p.type} className="subscriptions-plan-card" style={{
                     border: `2px solid ${highlight ? '#0d7470' : '#e2e8f0'}`,
                     borderRadius: '14px', padding: '24px', position: 'relative',
                     backgroundColor: highlight ? '#f0fafa' : 'white',
                   }}>
                     {highlight && (
-                      <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#0d7470', color: 'white', fontSize: '11px', fontWeight: 700, padding: '3px 12px', borderRadius: '20px' }}>
+                      <div className="subscriptions-plan-card__popular" style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#0d7470', color: 'white', fontSize: '11px', fontWeight: 700, padding: '3px 12px', borderRadius: '20px' }}>
                         POPULAR
                       </div>
                     )}
-                    <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '4px' }}>
+                    <div className="subscriptions-plan-card__actions" style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '4px' }}>
                       {(p.status === 'DRAFT' || p.hasUnpublishedChanges) && <button
                         onClick={() => void publishPlan(p)}
                         title="Publish immutable version"
@@ -393,7 +381,7 @@ export default function SubscriptionsPage() {
                         style={{ width: '28px', height: '28px', border: '1px solid #fecaca', borderRadius: '7px', backgroundColor: '#fff5f5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#dc2626' }}
                       ><Trash2 size={13} /></button>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', marginBottom: '4px' }}>
+                    <div className="subscriptions-plan-card__price" style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', marginBottom: '4px' }}>
                       <span style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a' }}>₹{p.price.toLocaleString('en-IN')}</span>
                       <span style={{ fontSize: '13px', color: '#64748b', marginBottom: '4px' }}>/mo</span>
                     </div>
@@ -403,9 +391,9 @@ export default function SubscriptionsPage() {
                     <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>
                       User Limit: <strong>{p.maxUsers >= 999999 ? 'Unlimited' : p.maxUsers}</strong>
                     </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+                    <div className="subscriptions-plan-card__features" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
                       {p.features.map((f) => (
-                        <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div key={f} className="subscriptions-plan-card__feature" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <Check size={10} color="#15803d" />
                           </div>

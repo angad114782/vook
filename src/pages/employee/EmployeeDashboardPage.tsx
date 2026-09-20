@@ -105,22 +105,22 @@ export default function EmployeeDashboardPage() {
       </div>
 
       {/* Stats row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+      <div className="dashboard-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
         {[
           { label: 'Days Present',   value: String(attStats.present + attStats.late), sub: `${attendancePct}% this month`, icon: CalendarCheck, iconBg: '#f0fdf4', iconColor: '#16a34a' },
           { label: 'Leave Balance',  value: String(leaveBalance.reduce((s, b) => s + b.remaining, 0)), sub: 'Days remaining', icon: Plane, iconBg: '#eff6ff', iconColor: '#2563eb' },
           { label: 'Hours Logged',   value: String(attStats.totalHours) + 'h', sub: 'This month',   icon: Clock,         iconBg: '#fff7ed', iconColor: '#ea580c' },
           { label: 'Pending Claims', value: String(pendingExpenses), sub: 'Awaiting approval', icon: Receipt,       iconBg: '#fef9c3', iconColor: '#854d0e' },
         ].map(({ label, value, sub, icon: Icon, iconBg, iconColor }) => (
-          <div key={label} style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 18px' }}>
+          <div key={label} className="dashboard-stat-card" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 18px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-              <p style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{label}</p>
-              <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <p className="dashboard-stat-label" style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{label}</p>
+              <div className="dashboard-stat-icon" style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Icon size={15} color={iconColor} />
               </div>
             </div>
-            <p style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>{value}</p>
-            <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '5px' }}>{sub}</p>
+            <p className="dashboard-stat-value" style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>{value}</p>
+            <p className="dashboard-stat-sub" style={{ fontSize: '11px', color: '#94a3b8', marginTop: '5px' }}>{sub}</p>
           </div>
         ))}
       </div>

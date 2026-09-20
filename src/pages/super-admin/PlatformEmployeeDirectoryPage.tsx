@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download, Loader2, Search, ShieldCheck, Users } from 'lucide-react';
@@ -118,7 +119,7 @@ export default function PlatformEmployeeDirectoryPage() {
     </section>
 
     <section className="admin-card platform-employee-table">
-      <table className="org-table">
+      <ResponsiveTable className="org-table">
         <thead><tr><th>Employee</th><th>Contact</th><th>Company</th><th>Department</th><th>Designation</th><th>Employment</th><th>Status</th><th>Joined</th></tr></thead>
         <tbody>{query.data?.employees.map((employee) => <tr key={employee.id}>
           <td><strong>{employee.name}</strong><small>{employee.employeeId}</small></td>
@@ -130,7 +131,7 @@ export default function PlatformEmployeeDirectoryPage() {
           <td><span className={`admin-status ${employee.status === 'ACTIVE' ? 'success' : 'neutral'}`}>{employee.status.replaceAll('_', ' ')}</span></td>
           <td>{employee.joiningDate ? new Date(employee.joiningDate).toLocaleDateString('en-IN') : '—'}</td>
         </tr>)}</tbody>
-      </table>
+      </ResponsiveTable>
       {query.isLoading && <div className="empty-state"><Loader2 size={22} className="spin" /><strong>Loading employees…</strong></div>}
       {!query.isLoading && !query.data?.employees.length && <div className="empty-state"><Users size={24} /><strong>No matching employees</strong></div>}
     </section>

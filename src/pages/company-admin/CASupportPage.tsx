@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { CalendarDays, ChevronRight, LifeBuoy, Loader2, MessageSquare, Plus, X } from 'lucide-react';
+import { CalendarDays, ChevronRight, LifeBuoy, Loader2, MessageSquare, Plus } from 'lucide-react';
 import { supportApi, type SupportTicket } from '../../api/support';
 import TicketConversationModal from '../../components/support/TicketConversationModal';
 import type { AppNotification } from '../../api/notifications';
+import AppDrawer from '../../components/ui/AppDrawer';
 
 const statusName: Record<string, string> = { PENDING: 'Open', IN_PROGRESS: 'In progress', RESOLVED: 'Resolved', CLOSED: 'Closed' };
 const categories = ['General', 'Payroll', 'Attendance', 'Account', 'Bug report'];
@@ -69,7 +70,16 @@ export default function CASupportPage() {
 }
 
 function NewTicketModal({ form, setForm, loading, onClose, onSubmit }: { form: { category: string; subject: string; description: string; priority: string }; setForm: (value: { category: string; subject: string; description: string; priority: string }) => void; loading: boolean; onClose: () => void; onSubmit: () => void }) {
-  return <div onClick={onClose} style={overlay}><div onClick={(event) => event.stopPropagation()} style={newModal}><button onClick={onClose} style={close}><X size={17} /></button><div style={{ padding: '0 22px 22px', display: 'flex', flexDirection: 'column', gap: 10 }}><h2 style={{ margin: 0, fontSize: 16 }}>Submit support ticket</h2><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} style={input}>{categories.map((category) => <option key={category}>{category}</option>)}</select><input placeholder="Subject" value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value })} style={input} /><textarea placeholder="Describe the issue" rows={5} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} style={input} /><button style={{ ...primary, opacity: loading ? .6 : 1 }} disabled={loading} onClick={onSubmit}>{loading ? <Loader2 size={14} /> : 'Submit ticket'}</button></div></div></div>;
+  return (
+    <AppDrawer open onOpenChange={(open) => { if (!open) onClose(); }} title="Submit support ticket" description="Tell us what you need help with." size="md">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} style={input}>{categories.map((category) => <option key={category}>{category}</option>)}</select>
+        <input placeholder="Subject" value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value })} style={input} />
+        <textarea placeholder="Describe the issue" rows={5} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} style={input} />
+        <button style={{ ...primary, opacity: loading ? .6 : 1 }} disabled={loading} onClick={onSubmit}>{loading ? <Loader2 size={14} /> : 'Submit ticket'}</button>
+      </div>
+    </AppDrawer>
+  );
 }
 
 const card: React.CSSProperties = { overflow: 'hidden', border: '1px solid #e2e8f0', borderRadius: 12, background: 'white' };
@@ -88,7 +98,4 @@ const statusDot: React.CSSProperties = { width: 5, height: 5, borderRadius: '50%
 const emptyState: React.CSSProperties = { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, padding: '54px 20px', color: '#475569', fontSize: 13 };
 const emptyIcon: React.CSSProperties = { display: 'grid', placeItems: 'center', width: 42, height: 42, marginBottom: 3, borderRadius: 12, color: '#0d7470', background: '#e6fffa' };
 const primary: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '9px 13px', border: 0, borderRadius: 8, background: '#0d7470', color: 'white', fontWeight: 700, cursor: 'pointer' };
-const overlay: React.CSSProperties = { position: 'fixed', inset: 0, zIndex: 1000, display: 'grid', placeItems: 'center', padding: 16, background: 'rgba(15,23,42,.48)' };
-const newModal: React.CSSProperties = { width: 'min(480px,100%)', overflow: 'hidden', borderRadius: 14, background: 'white', boxShadow: '0 20px 60px rgba(15,23,42,.2)' };
-const close: React.CSSProperties = { display: 'grid', placeItems: 'center', marginLeft: 'auto', padding: '12px 14px 4px', border: 0, background: 'transparent', color: '#64748b', cursor: 'pointer' };
 const input: React.CSSProperties = { width: '100%', boxSizing: 'border-box', padding: 9, border: '1px solid #cbd5e1', borderRadius: 8, fontSize: 13, fontFamily: 'inherit' };

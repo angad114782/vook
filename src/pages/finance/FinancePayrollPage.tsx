@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { type Employee } from '../../api/hr';
@@ -179,7 +180,7 @@ export default function FinancePayrollPage() {
               <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#2563eb" /></div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#f8fafc' }}>
                       <th style={{ padding: '10px 14px', textAlign: 'left', width: '32px' }}>
@@ -216,7 +217,7 @@ export default function FinancePayrollPage() {
                       );
                     })}
                   </tbody>
-                </table>
+                </ResponsiveTable>
               </div>
             )}
 
@@ -244,7 +245,7 @@ export default function FinancePayrollPage() {
           <>
             <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '14px' }}>Review Attendance</h3>
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f8fafc' }}>
                     {['Employee', 'Days Present', 'Leaves', 'Overtime Days', 'Issues'].map((h) => (
@@ -277,7 +278,7 @@ export default function FinancePayrollPage() {
                     <td style={{ padding: '10px 14px', fontSize: '12px', fontWeight: 700, color: '#ea580c' }}>{selected.filter((r) => r.leaves > 2).length} pending</td>
                   </tr>
                 </tfoot>
-              </table>
+              </ResponsiveTable>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
               <button onClick={() => setStep(1)} style={{ padding: '9px 18px', border: '1.5px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', color: '#374151', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>← Back</button>
@@ -291,7 +292,7 @@ export default function FinancePayrollPage() {
           <>
             <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '14px' }}>Salary Calculation</h3>
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f8fafc' }}>
                     {['Employee', 'Basic Salary', 'Allowances', 'Deductions', 'Net Salary', 'Details'].map((h) => (
@@ -317,7 +318,7 @@ export default function FinancePayrollPage() {
                     );
                   })}
                 </tbody>
-              </table>
+              </ResponsiveTable>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
               <button onClick={() => setStep(2)} style={{ padding: '9px 18px', border: '1.5px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', color: '#374151', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>← Back</button>
@@ -331,7 +332,7 @@ export default function FinancePayrollPage() {
           <>
             <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '14px' }}>Payroll Summary</h3>
             <div style={{ overflowX: 'auto', marginBottom: '16px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f8fafc' }}>
                     {['Employee', 'Net Salary'].map((h) => (
@@ -359,7 +360,7 @@ export default function FinancePayrollPage() {
                     );
                   })}
                 </tbody>
-              </table>
+              </ResponsiveTable>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>

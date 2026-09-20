@@ -5,6 +5,7 @@ import { Eye, EyeOff, Loader2, CheckCircle2 } from 'lucide-react';
 import { isMockMode } from '../../config/runtime';
 import type { DemoAccount } from '../../api/demo';
 import { useDemoAccounts, useResetDemoData } from '../../hooks/queries/useDemo';
+import './LoginPage.css';
 
 const features = [
   'Employee Management',
@@ -69,9 +70,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100%', overflow: 'hidden' }}>
+    <main className="login-page" style={{ display: 'flex', height: '100vh', width: '100%', overflow: 'hidden' }}>
       {/* ── Left Panel ── */}
       <div
+        className="login-hero"
         style={{
           width: '45%',
           minWidth: '45%',
@@ -84,10 +86,10 @@ export default function LoginPage() {
           height: '100%',
         }}
       >
-        <div style={{ width: '100%', maxWidth: '380px' }}>
+        <div className="login-hero__content" style={{ width: '100%', maxWidth: '380px' }}>
           {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '40px' }}>
-            <div style={{
+          <div className="login-brand" style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '40px' }}>
+            <div className="login-brand__mark" style={{
               width: '48px', height: '48px',
               backgroundColor: 'rgba(255,255,255,0.15)',
               borderRadius: '12px',
@@ -101,15 +103,15 @@ export default function LoginPage() {
           </div>
 
           {/* Headline */}
-          <h1 style={{ color: 'white', fontSize: '32px', fontWeight: 800, lineHeight: 1.2, marginBottom: '12px', letterSpacing: '-0.5px' }}>
+          <h1 className="login-hero__title" style={{ color: 'white', fontSize: '32px', fontWeight: 800, lineHeight: 1.2, marginBottom: '12px', letterSpacing: '-0.5px' }}>
             Manage your<br />workforce smarter
           </h1>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '15px', lineHeight: 1.6, marginBottom: '40px' }}>
+          <p className="login-hero__copy" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '15px', lineHeight: 1.6, marginBottom: '40px' }}>
             All-in-one platform for HR, attendance, payroll, and workforce planning.
           </p>
 
           {/* Features */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="login-features" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {features.map((f) => (
               <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <CheckCircle2 size={18} color="#4ade80" />
@@ -121,7 +123,7 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right Panel ── */}
-      <div style={{
+      <div className="login-workspace" style={{
         flex: 1,
         backgroundColor: '#f8fafc',
         display: 'flex',
@@ -129,16 +131,16 @@ export default function LoginPage() {
         justifyContent: 'center',
         padding: '32px',
       }}>
-        <div style={{ width: '100%', maxWidth: '420px' }}>
+        <div className="login-workspace__content" style={{ width: '100%', maxWidth: '420px' }}>
           {/* Card */}
-          <div style={{
+          <div className="login-card" style={{
             backgroundColor: 'white',
             borderRadius: '16px',
             border: '1px solid #e2e8f0',
             padding: '40px',
             boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
           }}>
-            <div style={{ marginBottom: '28px' }}>
+            <div className="login-card__header" style={{ marginBottom: '28px' }}>
               <h2 style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
                 Welcome back
               </h2>
@@ -148,12 +150,12 @@ export default function LoginPage() {
             </div>
 
             {isMockMode && (
-              <section aria-label="Demo accounts" style={{ marginBottom: 20, padding: 12, borderRadius: 10, background: '#f0fdfa', border: '1px solid #99f6e4' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 8 }}>
+              <section className="login-demo" aria-label="Demo accounts" style={{ marginBottom: 20, padding: 12, borderRadius: 10, background: '#f0fdfa', border: '1px solid #99f6e4' }}>
+                <div className="login-demo__header" style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 8 }}>
                   <strong style={{ fontSize: 12, color: '#115e59' }}>Demo mode · choose a role</strong>
                   <button type="button" disabled={resetDemo.isPending} onClick={() => void resetDemo.mutateAsync().then(() => { localStorage.removeItem('vook-auth-display'); window.location.reload(); })} style={{ border: 0, padding: 0, background: 'transparent', color: '#0f766e', fontSize: 11, cursor: resetDemo.isPending ? 'wait' : 'pointer', textDecoration: 'underline' }}>{resetDemo.isPending ? 'Resetting…' : 'Reset data'}</button>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 6 }}>
+                <div className="login-demo__accounts" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 6 }}>
                   {demoAccounts.map((account) => <button key={account.role} type="button" disabled={isLoading} onClick={() => void selectDemoAccount(account)} title={account.email} style={{ border: '1px solid #99f6e4', borderRadius: 7, background: 'white', color: '#134e4a', padding: '7px 8px', fontSize: 11, fontWeight: 700, cursor: 'pointer', textAlign: 'left' }}>{account.role.replaceAll('_', ' ')}</button>)}
                 </div>
                 {demoAccountsQuery.isError && <small style={{ display: 'block', marginTop: 8, color: '#b91c1c' }}>Demo accounts could not be loaded. Reset the page and try again.</small>}
@@ -162,7 +164,7 @@ export default function LoginPage() {
             )}
 
             {error && (
-              <div style={{
+              <div className="login-error" role="alert" style={{
                 marginBottom: '20px',
                 padding: '12px 14px',
                 backgroundColor: '#fef2f2',
@@ -175,14 +177,18 @@ export default function LoginPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit}>
+            <form className="login-form" onSubmit={handleSubmit} aria-busy={isLoading}>
               {/* Email */}
               <div style={{ marginBottom: '18px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                <label htmlFor="login-email" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
                   Email Address
                 </label>
                 <input
+                  id="login-email"
+                  name="email"
                   type="email"
+                  inputMode="email"
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@workmgmt.com"
@@ -206,12 +212,15 @@ export default function LoginPage() {
 
               {/* Password */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                <label htmlFor="login-password" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
                   Password
                 </label>
-                <div style={{ position: 'relative' }}>
+                <div className="login-password-field" style={{ position: 'relative' }}>
                   <input
+                    id="login-password"
+                    name="password"
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
@@ -232,8 +241,11 @@ export default function LoginPage() {
                     onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
                   />
                   <button
+                    className="login-password-toggle"
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
                     style={{
                       position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
                       background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '2px',
@@ -251,6 +263,7 @@ export default function LoginPage() {
                   </label>
                   <input
                     id="login-otp"
+                    name="otp"
                     inputMode="numeric"
                     autoComplete="one-time-code"
                     value={otp}
@@ -266,7 +279,7 @@ export default function LoginPage() {
               )}
 
               {/* Remember + Forgot */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <div className="login-form__options" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                   <input type="checkbox" style={{ accentColor: '#0d7470', width: '14px', height: '14px' }} />
                   <span style={{ fontSize: '13px', color: '#64748b' }}>Remember me</span>
@@ -278,6 +291,7 @@ export default function LoginPage() {
 
               {/* Submit */}
               <button
+                className="login-submit"
                 type="submit"
                 disabled={isLoading}
                 style={{
@@ -301,14 +315,14 @@ export default function LoginPage() {
                 {isLoading ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Signing in...</> : 'Sign In'}
               </button>
             </form>
-            <p style={{ textAlign: 'center', marginTop: 18, fontSize: 13, color: '#64748b' }}>New company? <Link to="/register" style={{ color: '#0d7470', fontWeight: 700 }}>Create an account</Link></p>
+            <p className="login-signup" style={{ textAlign: 'center', marginTop: 18, fontSize: 13, color: '#64748b' }}>New company? <Link to="/register" style={{ color: '#0d7470', fontWeight: 700 }}>Create an account</Link></p>
           </div>
 
-          <p style={{ textAlign: 'center', fontSize: '12px', color: '#94a3b8', marginTop: '20px' }}>
+          <p className="login-copyright" style={{ textAlign: 'center', fontSize: '12px', color: '#94a3b8', marginTop: '20px' }}>
             © 2026 Work Management. All rights reserved.
           </p>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

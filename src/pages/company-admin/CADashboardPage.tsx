@@ -86,15 +86,15 @@ export default function CADashboardPage() {
       </div>
       {dashData?.onboarding && dashData.onboarding.status !== 'COMPLETED' && <div className="admin-card" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 14, borderLeft: '4px solid #0d7470' }}><div style={{ flex: 1 }}><strong style={{ fontSize: 13 }}>Finish company setup</strong><p style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>{dashData.onboarding.steps.filter((step) => ['COMPLETED', 'SKIPPED'].includes(step.status)).length} of {dashData.onboarding.steps.length} steps complete. Policies, roles, and invitations can be finished at any time.</p></div><button className="admin-button" onClick={() => navigate('/company-admin/onboarding')}>Continue setup</button></div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+      <div className="dashboard-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
         {STATS.map(({ label, value, color, bg, sub }) => (
-          <div key={label} style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 16px' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+          <div key={label} className="dashboard-stat-card" style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 16px' }}>
+            <div className="dashboard-stat-icon" style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
               <div style={{ width: '14px', height: '14px', borderRadius: '50%', backgroundColor: color, opacity: 0.7 }} />
             </div>
-            <p style={{ fontSize: '26px', fontWeight: 800, color, lineHeight: 1 }}>{value}</p>
-            <p style={{ fontSize: '11px', fontWeight: 600, color: '#374151', marginTop: '4px' }}>{label}</p>
-            <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{sub}</p>
+            <p className="dashboard-stat-value" style={{ fontSize: '26px', fontWeight: 800, color, lineHeight: 1 }}>{value}</p>
+            <p className="dashboard-stat-label" style={{ fontSize: '11px', fontWeight: 600, color: '#374151', marginTop: '4px' }}>{label}</p>
+            <p className="dashboard-stat-sub" style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{sub}</p>
           </div>
         ))}
       </div>

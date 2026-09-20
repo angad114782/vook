@@ -36,6 +36,8 @@ export default function Pagination({
   const btn = (label: string | number, active: boolean, disabled: boolean, onClick: () => void) => (
     <button
       key={String(label)}
+      aria-label={typeof label === 'number' ? `Page ${label}` : label === '‹' ? 'Previous page' : label === '›' ? 'Next page' : undefined}
+      aria-current={active ? 'page' : undefined}
       onClick={onClick}
       disabled={disabled}
       style={{
@@ -55,11 +57,11 @@ export default function Pagination({
   );
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', flexWrap: 'wrap', gap: 8 }}>
-      <span style={{ fontSize: 13, color: '#64748b' }}>
+    <nav className="responsive-pagination" aria-label="Pagination">
+      <span className="responsive-pagination__summary">
         Showing {from}–{to} of {total} results
       </span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+      <div className="responsive-pagination__controls">
         {onLimitChange && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 13, color: '#64748b' }}>Rows:</span>
@@ -80,6 +82,6 @@ export default function Pagination({
         )}
         {btn('›', false, page >= totalPages, () => onPageChange(page + 1))}
       </div>
-    </div>
+    </nav>
   );
 }

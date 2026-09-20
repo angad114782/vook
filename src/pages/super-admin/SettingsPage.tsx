@@ -16,6 +16,7 @@ import {
 import { accountApi } from "../../api/account";
 import { platformApi } from "../../api/platform";
 import NotificationSettingsTab from "./NotificationSettingsTab";
+import LegacyDrawer from "../../components/ui/LegacyDrawer";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -81,6 +82,7 @@ function Toast({
 }) {
   return (
     <div
+      className="system-settings__toast"
       style={{
         position: "fixed",
         bottom: "28px",
@@ -157,6 +159,7 @@ function SectionCard({
 }) {
   return (
     <div
+      className="system-settings__section-card"
       style={{
         backgroundColor: "white",
         borderRadius: "12px",
@@ -164,7 +167,10 @@ function SectionCard({
         overflow: "hidden",
       }}
     >
-      <div style={{ padding: "18px 22px", borderBottom: "1px solid #f1f5f9" }}>
+      <div
+        className="system-settings__section-header"
+        style={{ padding: "18px 22px", borderBottom: "1px solid #f1f5f9" }}
+      >
         <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a" }}>
           {title}
         </h3>
@@ -172,7 +178,9 @@ function SectionCard({
           {subtitle}
         </p>
       </div>
-      <div style={{ padding: "22px" }}>{children}</div>
+      <div className="system-settings__section-body" style={{ padding: "22px" }}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -190,6 +198,7 @@ function ToggleRow({
 }) {
   return (
     <div
+      className="system-settings__toggle-row"
       style={{
         display: "flex",
         alignItems: "flex-start",
@@ -404,18 +413,7 @@ function ChangePasswordModal({
   );
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        backgroundColor: "rgba(0,0,0,0.4)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-        padding: "24px",
-      }}
-    >
+    <LegacyDrawer open onClose={onClose} direction="right" className="legacy-form-drawer">
       <div
         style={{
           backgroundColor: "white",
@@ -560,7 +558,7 @@ function ChangePasswordModal({
           </button>
         </div>
       </div>
-    </div>
+    </LegacyDrawer>
   );
 }
 
@@ -866,7 +864,10 @@ export default function SettingsPage() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+    <div
+      className="system-settings__page"
+      style={{ display: "flex", flexDirection: "column", gap: "20px" }}
+    >
       {/* Header */}
       <div>
         <h1 style={{ fontSize: "20px", fontWeight: 700, color: "#0f172a" }}>
@@ -879,6 +880,9 @@ export default function SettingsPage() {
 
       {/* Tab bar */}
       <div
+        className="system-settings__tabs"
+        role="tablist"
+        aria-label="System settings"
         style={{
           display: "flex",
           backgroundColor: "white",
@@ -892,6 +896,10 @@ export default function SettingsPage() {
         {TABS.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
+            className="system-settings__tab"
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
             onClick={() => setTab(key)}
             style={{
               display: "flex",

@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { type AttendanceRecord } from '../../api/hr';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
@@ -74,9 +75,9 @@ export default function CAAttendancePage() {
             </div>
           ) : (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+              <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
                 {STAT_CARDS.map(({ label, value, sub, color }) => (
-                  <div key={label} style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 16px' }}>
+                  <div key={label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 16px' }}>
                     <p style={{ fontSize: '28px', fontWeight: 800, color, lineHeight: 1 }}>{value.toLocaleString()}</p>
                     <p style={{ fontSize: '11px', fontWeight: 600, color: '#374151', marginTop: '4px' }}>{label}</p>
                     <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{sub}</p>
@@ -128,7 +129,7 @@ export default function CAAttendancePage() {
               <p style={{ fontSize: '13px', color: '#94a3b8' }}>No department data available for today</p>
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc' }}>
                   {['Department', 'Total', 'Present', 'Absent', 'Rate'].map((h) => (
@@ -157,7 +158,7 @@ export default function CAAttendancePage() {
                   );
                 })}
               </tbody>
-            </table>
+            </ResponsiveTable>
           )}
         </div>
       )}
@@ -188,7 +189,7 @@ export default function CAAttendancePage() {
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f8fafc' }}>
                     {['Date', 'Employee', 'Department', 'Check In', 'Check Out', 'Status', 'Source'].map((h) => (
@@ -218,7 +219,7 @@ export default function CAAttendancePage() {
                     );
                   })}
                 </tbody>
-              </table>
+              </ResponsiveTable>
             </div>
           )}
           <PaginationBar page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} limit={20} onPageChange={(p) => setPage(p)} />

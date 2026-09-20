@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useQuery } from '@tanstack/react-query';
 import { FileClock, ShieldCheck } from 'lucide-react';
 import { auditApi } from '../../api/integrations';
@@ -26,7 +27,7 @@ export default function AuditPage() {
           <div className="empty-state"><FileClock size={26} /><strong>No audit events</strong><p>Sensitive platform actions will appear here.</p></div>
         ) : (
           <div className="admin-table-scroll">
-            <table className="org-table">
+            <ResponsiveTable className="org-table">
               <thead><tr><th>Event</th><th>Actor</th><th>Company</th><th>Reason</th><th>Time</th></tr></thead>
               <tbody>{logs.map((log: any) => (
                 <tr key={log.id}>
@@ -37,7 +38,7 @@ export default function AuditPage() {
                   <td>{new Date(log.createdAt).toLocaleString('en-IN')}</td>
                 </tr>
               ))}</tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         )}
       </section>

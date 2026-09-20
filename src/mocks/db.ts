@@ -26,7 +26,8 @@ export async function getMockState(): Promise<MockState> {
   if (stored?.schemaVersion === MOCK_SCHEMA_VERSION) {
     // Provider definitions are platform catalog data, not user-created records.
     // Add newly shipped providers without wiping saved demo configuration.
-    const seededIntegrations = createMockSeed().integrations;
+    const seededState = createMockSeed();
+    const seededIntegrations = seededState.integrations;
     const storedProviderKeys = new Set(
       stored.integrations.map((item) => String(item.providerKey ?? item.key).toUpperCase()),
     );
@@ -53,6 +54,25 @@ export async function getMockState(): Promise<MockState> {
       stored.integrations.push(...structuredClone(missingIntegrations));
       catalogChanged = true;
     }
+
+    // Seed additions should appear for existing demo sessions too. Keep
+    // user-created comments intact while backfilling only new fixture rows.
+    const storedComments = stored.comments ?? [];
+    const storedCommentIds = new Set(storedComments.map((item) => String(item.id)));
+    const missingComments = seededState.comments.filter(
+      (item) => !storedCommentIds.has(String(item.id)),
+    );
+    if (missingComments.length) {
+      storedComments.push(...structuredClone(missingComments));
+      storedComments.sort(
+        (left, right) =>
+          new Date(String(left.createdAt ?? '')).getTime() -
+          new Date(String(right.createdAt ?? '')).getTime(),
+      );
+      stored.comments = storedComments;
+      catalogChanged = true;
+    }
+
     if (catalogChanged) {
       await db.put('state', stored, STATE_KEY);
     }

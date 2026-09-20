@@ -309,3 +309,36 @@
   height: 28px;
   z-index: 2;
 }
+
+@media (max-width: 767px) {
+  /* Keep the visual track compact while retaining a comfortable tap area. */
+  .profile-switch {
+    position: relative;
+    width: 48px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    flex-basis: 48px !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+
+  .profile-switch::before {
+    content: "";
+    position: absolute;
+    top: 11px;
+    left: 6px;
+    width: 35px;
+    height: 21px;
+    border-radius: 99px;
+    background: #dce6e3;
+  }
+
+  .profile-switch.is-on::before { background: #2c8c7d; }
+
+  .profile-switch span {
+    z-index: 1;
+    top: 14px;
+    left: 9px;
+  }
+}

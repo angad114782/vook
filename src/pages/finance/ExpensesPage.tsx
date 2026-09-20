@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { type Expense } from '../../api/finance';
@@ -7,6 +8,7 @@ import PaginationBar from '../../components/data/Pagination';
 import { extractError } from '../../utils/errorUtils';
 import { useFinanceExpenses } from '../../hooks/queries/useFinanceQueries';
 import { useFinanceUpdateExpense } from '../../hooks/mutations/useFinanceMutations';
+import LegacyDrawer from '../../components/ui/LegacyDrawer';
 
 type Tab = 'All Request' | 'Pending Requests' | 'Approved Requests' | 'Completed Requests';
 const TABS: Tab[] = ['All Request', 'Pending Requests', 'Approved Requests', 'Completed Requests'];
@@ -65,13 +67,13 @@ export default function ExpensesPage() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+      <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
         {[
           { label: 'Pending Requests',  value: stats.pending,  color: '#ea580c', iconBg: '#fff7ed' },
           { label: 'Approved',          value: stats.approved, color: '#16a34a', iconBg: '#f0fdf4' },
           { label: 'Rejected Requests', value: stats.rejected, color: '#dc2626', iconBg: '#fef2f2' },
         ].map(({ label, value, color, iconBg }) => (
-          <div key={label} style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div key={label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <p style={{ fontSize: '11px', fontWeight: 600, color: '#64748b' }}>{label}</p>
               <p style={{ fontSize: '26px', fontWeight: 800, color, marginTop: '4px' }}>{value}</p>
@@ -108,7 +110,7 @@ export default function ExpensesPage() {
           <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /></div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc' }}>
                   {['Employee', 'Category', 'Amount', 'Date', 'Action'].map((h) => (
@@ -150,7 +152,7 @@ export default function ExpensesPage() {
                   <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', fontSize: '13px', color: '#94a3b8' }}>No expense claims found</td></tr>
                 )}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         )}
       </div>
@@ -158,7 +160,7 @@ export default function ExpensesPage() {
       <PaginationBar page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} limit={limit} onPageChange={(p) => setPage(p)} />
 
       {viewExpense && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LegacyDrawer open onClose={() => setViewExpense(null)} direction="right" className="legacy-detail-drawer">
           <div style={{ backgroundColor: 'white', borderRadius: '14px', width: '420px', maxWidth: '95vw', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
             <div style={{ padding: '20px 22px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a' }}>Expense Detail</span>
@@ -192,7 +194,7 @@ export default function ExpensesPage() {
               </div>
             )}
           </div>
-        </div>
+        </LegacyDrawer>
       )}
     </div>
   );

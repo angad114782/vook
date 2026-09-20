@@ -59,10 +59,10 @@ export default function ManagerReportsPage() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} color="#0d7470" /></div>
       ) : tab === 'Attendance Report' && attendance ? (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
-            <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Total Records</p><p style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>{attendance.totalRecords}</p></div>
-            <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Employees Covered</p><p style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>{attendance.totalEmployees}</p></div>
-            <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Period</p><p style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>{attendance.period.month}/{attendance.period.year}</p></div>
+          <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+            <div className="responsive-stat-card" style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Total Records</p><p style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>{attendance.totalRecords}</p></div>
+            <div className="responsive-stat-card" style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Employees Covered</p><p style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>{attendance.totalEmployees}</p></div>
+            <div className="responsive-stat-card" style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Period</p><p style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>{attendance.period.month}/{attendance.period.year}</p></div>
           </div>
           <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '18px' }}>
             {Object.entries(attendance.byStatus).map(([label, value]) => (
@@ -75,10 +75,10 @@ export default function ManagerReportsPage() {
         </>
       ) : tab === 'Workforce Report' && workforce ? (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
-            <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Total Employees</p><p style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>{workforce.summary.total}</p></div>
-            <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Active</p><p style={{ fontSize: '24px', fontWeight: 800, color: '#16a34a' }}>{workforce.summary.active}</p></div>
-            <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Inactive</p><p style={{ fontSize: '24px', fontWeight: 800, color: '#dc2626' }}>{workforce.summary.inactive}</p></div>
+          <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+            <div className="responsive-stat-card" style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Total Employees</p><p style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>{workforce.summary.total}</p></div>
+            <div className="responsive-stat-card" style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Active</p><p style={{ fontSize: '24px', fontWeight: 800, color: '#16a34a' }}>{workforce.summary.active}</p></div>
+            <div className="responsive-stat-card" style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Inactive</p><p style={{ fontSize: '24px', fontWeight: 800, color: '#dc2626' }}>{workforce.summary.inactive}</p></div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '16px' }}>
             <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '18px' }}>
@@ -103,11 +103,11 @@ export default function ManagerReportsPage() {
         </>
       ) : payroll ? (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
-            <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Payslips</p><p style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>{payroll.summary.count}</p></div>
-            <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Gross</p><p style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>{fmtMoney(payroll.summary.totalGross)}</p></div>
-            <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Deductions</p><p style={{ fontSize: '20px', fontWeight: 800, color: '#dc2626' }}>{fmtMoney(payroll.summary.totalDeductions)}</p></div>
-            <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Net</p><p style={{ fontSize: '20px', fontWeight: 800, color: '#16a34a' }}>{fmtMoney(payroll.summary.totalNet)}</p></div>
+          <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+            <div className="responsive-stat-card" style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Payslips</p><p style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>{payroll.summary.count}</p></div>
+            <div className="responsive-stat-card" style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Gross</p><p style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>{fmtMoney(payroll.summary.totalGross)}</p></div>
+            <div className="responsive-stat-card" style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Deductions</p><p style={{ fontSize: '20px', fontWeight: 800, color: '#dc2626' }}>{fmtMoney(payroll.summary.totalDeductions)}</p></div>
+            <div className="responsive-stat-card" style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}><p style={{ fontSize: '11px', color: '#64748b' }}>Net</p><p style={{ fontSize: '20px', fontWeight: 800, color: '#16a34a' }}>{fmtMoney(payroll.summary.totalNet)}</p></div>
           </div>
           <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '18px' }}>
             <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '12px' }}>Recent Payslips</h3>

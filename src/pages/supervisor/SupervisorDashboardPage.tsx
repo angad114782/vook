@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, UserCheck, UserX, ClipboardList, X, ChevronDown, Send, Loader2 } from 'lucide-react';
 import { useSupAttendanceSummary, useSupApprovals } from '../../hooks/queries/useSupQueries';
+import LegacyDrawer from '../../components/ui/LegacyDrawer';
 
 interface DashData {
   totalWorkforce: number;
@@ -24,7 +25,7 @@ function HelpModal({ onClose }: { onClose: () => void }) {
   const inputStyle: React.CSSProperties = { width: '100%', padding: '8px 10px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#0f172a', backgroundColor: 'white' };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
+    <LegacyDrawer open onClose={onClose} direction="right" className="legacy-detail-drawer">
       <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '440px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 22px', borderBottom: '1px solid #f1f5f9' }}>
           <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Help & Support</h3>
@@ -71,7 +72,7 @@ function HelpModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </div>
-    </div>
+    </LegacyDrawer>
   );
 }
 
@@ -121,16 +122,16 @@ export default function SupervisorDashboardPage() {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+      <div className="dashboard-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
         {STAT_CARDS.map(({ label, value, icon: Icon, iconBg, iconColor }) => (
-          <div key={label} style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 20px' }}>
+          <div key={label} className="dashboard-stat-card" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <p style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>{label}</p>
-              <div style={{ width: '34px', height: '34px', borderRadius: '9px', backgroundColor: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <p className="dashboard-stat-label" style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>{label}</p>
+              <div className="dashboard-stat-icon" style={{ width: '34px', height: '34px', borderRadius: '9px', backgroundColor: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Icon size={16} color={iconColor} />
               </div>
             </div>
-            <p style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>{value}</p>
+            <p className="dashboard-stat-value" style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>{value}</p>
           </div>
         ))}
       </div>

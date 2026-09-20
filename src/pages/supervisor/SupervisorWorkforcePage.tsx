@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState, useRef, useMemo } from 'react';
 import { Search, Plus, Eye, Edit2, Loader2, X, ChevronDown } from 'lucide-react';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
@@ -6,6 +7,7 @@ import { useSupWorkforce, useSupAttendance } from '../../hooks/queries/useSupQue
 import { useCreateEmployee } from '../../hooks/mutations/useHrMutations';
 import { extractError } from '../../utils/errorUtils';
 import { toast } from 'sonner';
+import LegacyDrawer from '../../components/ui/LegacyDrawer';
 
 const DEPT_TABS = [
   { key: 'ALL',         label: 'All'         },
@@ -61,7 +63,7 @@ function AddEmployeePanel({ onClose }: { onClose: () => void }) {
   const saving = createEmployee.isPending;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', justifyContent: 'flex-end', zIndex: 1000 }}>
+    <LegacyDrawer open onClose={onClose} direction="right" className="legacy-form-drawer">
       <div style={{ backgroundColor: 'white', width: '460px', height: '100%', boxShadow: '-4px 0 24px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #f1f5f9', position: 'sticky', top: 0, backgroundColor: 'white', zIndex: 1 }}>
           <div>
@@ -144,7 +146,7 @@ function AddEmployeePanel({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </div>
-    </div>
+    </LegacyDrawer>
   );
 }
 
@@ -212,13 +214,13 @@ export default function SupervisorWorkforcePage() {
       </div>
 
       {/* Stats row */}
-      <div style={{ display: 'flex', gap: '14px' }}>
+      <div className="responsive-stat-grid" style={{ display: 'flex', gap: '14px' }}>
         {[
           { label: 'Total Workers', value: stats.total    },
           { label: 'Active',        value: stats.active   },
           { label: 'Inactive',      value: stats.inactive },
         ].map(({ label, value }) => (
-          <div key={label} style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 20px', minWidth: '100px' }}>
+          <div key={label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 20px', minWidth: '100px' }}>
             <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>{label}</p>
             <p style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>{value}</p>
           </div>
@@ -243,7 +245,7 @@ export default function SupervisorWorkforcePage() {
           <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /><span style={{ fontSize: '14px' }}>Loading...</span></div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc' }}>
                   {['Employee', 'Type', 'Department', 'Shift', 'Contact Information', 'Status', 'Actions'].map((h) => (
@@ -294,7 +296,7 @@ export default function SupervisorWorkforcePage() {
                   <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center', fontSize: '13px', color: '#94a3b8' }}>No employees found</td></tr>
                 )}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         )}
       </div>

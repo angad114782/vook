@@ -1,4 +1,5 @@
 import { RefreshCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import GlobalSearch from '../search/GlobalSearch';
 import { useNotificationCenter } from '../../hooks/useNotificationCenter';
@@ -6,38 +7,37 @@ import NotificationBell from '../notifications/NotificationBell';
 import { SidebarMobileTrigger } from './RoleSidebar';
 import UserAvatar from './UserAvatar';
 
-export default function TopBar({ onOpenNavigation }: { onOpenNavigation?: () => void }) {
+interface TopBarProps {
+  onOpenNavigation?: () => void;
+  roleLabel?: string;
+  profilePath?: string;
+  contextLabel?: string;
+  supportPath?: string;
+  inboxPath?: string;
+}
+
+export default function TopBar({ onOpenNavigation, roleLabel = 'Super Admin', profilePath = '/profile', contextLabel, supportPath = '/support', inboxPath = '/notifications' }: TopBarProps) {
   const { user } = useAuthStore();
   const { refresh } = useNotificationCenter();
+  const navigate = useNavigate();
 
   return (
-    <header className="app-topbar" style={header}>
+    <header className="app-topbar">
       <div className="app-topbar__leading">{onOpenNavigation && <SidebarMobileTrigger onClick={onOpenNavigation} />}<GlobalSearch /></div>
       <div className="app-topbar__actions">
-        <button className="app-topbar__action" onClick={() => void refresh()} style={icon} aria-label="Refresh notifications">
+        {contextLabel && <span className="app-topbar__context">{contextLabel}</span>}
+        <button className="app-topbar__action" onClick={() => void refresh()} aria-label="Refresh notifications">
           <RefreshCw size={15} />
         </button>
-        <NotificationBell supportPath="/support" inboxPath="/notifications" />
-        <div className="app-topbar__profile" style={profile}>
+        <NotificationBell supportPath={supportPath} inboxPath={inboxPath} />
+        <button type="button" className="app-topbar__profile" onClick={() => navigate(profilePath)} aria-label={`Open ${roleLabel} profile`}>
           <UserAvatar user={user} size={32} style={{ borderRadius: '50%' }} />
           <div className="app-topbar__profile-copy">
-            <p style={profileName}>{user?.name}</p>
-            <p style={profileRole}>Super Admin</p>
+            <p>{user?.name}</p>
+            <span>{roleLabel}</span>
           </div>
-        </div>
+        </button>
       </div>
     </header>
   );
 }
-
-const header: React.CSSProperties = {
-  height: 60, background: '#fff', borderBottom: '1px solid #e2e8f0', display: 'flex',
-  alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0,
-};
-const icon: React.CSSProperties = {
-  width: 32, height: 32, border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff',
-  cursor: 'pointer', display: 'grid', placeItems: 'center', color: '#64748b',
-};
-const profile: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 12, borderLeft: '1px solid #e2e8f0' };
-const profileName: React.CSSProperties = { margin: 0, color: '#0f172a', fontSize: 13, fontWeight: 600 };
-const profileRole: React.CSSProperties = { margin: '2px 0 0', color: '#94a3b8', fontSize: 11 };

@@ -61,16 +61,16 @@ export default function HRDashboardPage() {
         <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Overview of today's attendance and workforce status.</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+      <div className="dashboard-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
         {statCards.map((s) => (
-          <div key={s.label} style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 20px' }}>
+          <div key={s.label} className="dashboard-stat-card" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="dashboard-stat-icon" style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <s.icon size={18} color={s.color} />
               </div>
             </div>
-            <p style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', marginBottom: '2px' }}>{s.value}</p>
-            <p style={{ fontSize: '12px', color: '#64748b' }}>{s.label}</p>
+            <p className="dashboard-stat-value" style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', marginBottom: '2px' }}>{s.value}</p>
+            <p className="dashboard-stat-label" style={{ fontSize: '12px', color: '#64748b' }}>{s.label}</p>
           </div>
         ))}
       </div>

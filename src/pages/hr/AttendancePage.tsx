@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -8,6 +9,7 @@ import { Users, UserCheck, UserX, Clock, Loader2, X, Plus, Search } from 'lucide
 import { extractError } from '../../utils/errorUtils';
 import { useHrAttendance, useAttendanceRecords, useEmployees } from '../../hooks/queries/useHrQueries';
 import { useCreateAttendance } from '../../hooks/mutations/useHrMutations';
+import LegacyDrawer from '../../components/ui/LegacyDrawer';
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Present: { bg: '#f0fdf4', color: '#15803d' },
@@ -56,7 +58,7 @@ function AddRecordModal({ onClose }: { onClose: () => void }) {
   const inp: React.CSSProperties = { width: '100%', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#0f172a', backgroundColor: 'white', boxSizing: 'border-box' };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
+    <LegacyDrawer open onClose={onClose} direction="right" className="legacy-form-drawer">
       <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #f1f5f9' }}>
           <div>
@@ -126,7 +128,7 @@ function AddRecordModal({ onClose }: { onClose: () => void }) {
           </div>
         </form>
       </div>
-    </div>
+    </LegacyDrawer>
   );
 }
 
@@ -200,9 +202,9 @@ export default function AttendancePage() {
             </div>
           ) : (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+              <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
                 {statCards.map((sc) => (
-                  <div key={sc.label} style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 20px' }}>
+                  <div key={sc.label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                       <div>
                         <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>{sc.label}</p>
@@ -274,7 +276,7 @@ export default function AttendancePage() {
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f8fafc' }}>
                     {['Date', 'Employee', 'Department', 'Check In', 'Check Out', 'Status', 'Source'].map((h) => (
@@ -304,7 +306,7 @@ export default function AttendancePage() {
                     );
                   })}
                 </tbody>
-              </table>
+              </ResponsiveTable>
             </div>
           )}
 

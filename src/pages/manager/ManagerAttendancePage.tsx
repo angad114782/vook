@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { type AttendanceRecord } from '../../api/hr';
 import { Loader2, Search } from 'lucide-react';
@@ -79,9 +80,9 @@ export default function ManagerAttendancePage() {
 
       {tab === 'overview' ? (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+          <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
             {STAT_CARDS.map(({ label, value, sub, color }) => (
-              <div key={label} style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 20px' }}>
+              <div key={label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <p style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>{label}</p>
                   <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: color }} />
@@ -137,7 +138,7 @@ export default function ManagerAttendancePage() {
             {recordsLoading ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: '50px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#0d7470" /></div>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f8fafc' }}>
                     {['Date', 'Employee', 'Department', 'Check In', 'Check Out', 'Status'].map((h) => (
@@ -158,7 +159,7 @@ export default function ManagerAttendancePage() {
                   ))}
                   {records.length === 0 && <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', fontSize: '13px', color: '#94a3b8' }}>No attendance records found</td></tr>}
                 </tbody>
-              </table>
+              </ResponsiveTable>
             )}
           </div>
           <PaginationBar page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} limit={pagination.limit} onPageChange={(p) => setPage(p)} />

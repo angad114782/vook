@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState, useMemo } from 'react';
 import { type Employee } from '../../api/hr';
 import { Search, Loader2, X } from 'lucide-react';
@@ -5,6 +6,7 @@ import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import PaginationBar from '../../components/data/Pagination';
 import { useMgrWorkforce } from '../../hooks/queries/useMgrQueries';
 import { useAttendanceRecords } from '../../hooks/queries/useHrQueries';
+import LegacyDrawer from '../../components/ui/LegacyDrawer';
 
 const DEPT_TABS = [
   { key: 'ALL',         label: 'All'         },
@@ -82,14 +84,14 @@ export default function WorkforcePage() {
       </div>
 
       {/* Stats row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+      <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
         {[
           { label: 'Total Workers',   value: stats.total       },
           { label: 'Active',          value: stats.active      },
           { label: 'Inactive',        value: stats.inactive    },
           { label: 'Departments',     value: stats.departments },
         ].map(({ label, value }) => (
-          <div key={label} style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
+          <div key={label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
             <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>{label}</p>
             <p style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>{value}</p>
           </div>
@@ -124,7 +126,7 @@ export default function WorkforcePage() {
           <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /><span style={{ fontSize: '14px' }}>Loading...</span></div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc' }}>
                   {['Employee', 'Type', 'Department', 'Shift', 'Contact Info', 'Status'].map((h) => (
@@ -166,7 +168,7 @@ export default function WorkforcePage() {
                   );
                 })}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         )}
       </div>
@@ -177,7 +179,7 @@ export default function WorkforcePage() {
         const av = getAv(viewEmployee.user.name);
         const present = presentIds.has(viewEmployee.id);
         return (
-          <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <LegacyDrawer open onClose={() => setViewEmployee(null)} direction="right" className="legacy-detail-drawer">
             <div style={{ backgroundColor: 'white', borderRadius: '14px', width: '420px', maxWidth: '95vw', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
               <div style={{ padding: '20px 22px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -204,7 +206,7 @@ export default function WorkforcePage() {
                 ))}
               </div>
             </div>
-          </div>
+          </LegacyDrawer>
         );
       })()}
     </div>

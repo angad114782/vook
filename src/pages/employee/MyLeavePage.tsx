@@ -1,9 +1,11 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { type MyLeave, type LeaveBalance } from '../../api/employee';
 import { Loader2, Plus, X } from 'lucide-react';
 import { extractError } from '../../utils/errorUtils';
 import { useMyLeaves } from '../../hooks/queries/useEmployeeQueries';
 import { useApplyLeave } from '../../hooks/mutations/useEmployeeMutations';
+import LegacyDrawer from '../../components/ui/LegacyDrawer';
 
 const STATUS_META: Record<string, { bg: string; color: string }> = {
   Pending:  { bg: '#fef9c3', color: '#854d0e' },
@@ -54,9 +56,9 @@ export default function MyLeavePage() {
       </div>
 
       {/* Balance cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+      <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
         {balance.map((b, idx) => (
-          <div key={b.type} style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 18px' }}>
+          <div key={b.type} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px 18px' }}>
             <p style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{b.type}</p>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', margin: '8px 0' }}>
               <span style={{ fontSize: '28px', fontWeight: 800, color: balanceColors[idx] ?? '#0d7470' }}>{b.remaining}</span>
@@ -79,7 +81,7 @@ export default function MyLeavePage() {
           <div style={{ display: 'flex', justifyContent: 'center', padding: '50px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#0d7470" /></div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc' }}>
                   {['Leave Type', 'From', 'To', 'Days', 'Reason', 'Status'].map((h) => (
@@ -105,14 +107,14 @@ export default function MyLeavePage() {
                   <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', fontSize: '13px', color: '#94a3b8' }}>No leave history found</td></tr>
                 )}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         )}
       </div>
 
       {/* Apply Leave Modal */}
       {showApply && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+        <LegacyDrawer open onClose={() => { setShowApply(false); setFormError(''); }} direction="right" className="legacy-form-drawer">
           <div style={{ backgroundColor: 'white', borderRadius: '14px', width: '440px', maxWidth: '94vw', padding: '28px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>Apply for Leave</h3>
@@ -151,7 +153,7 @@ export default function MyLeavePage() {
               </button>
             </div>
           </div>
-        </div>
+        </LegacyDrawer>
       )}
     </div>
   );

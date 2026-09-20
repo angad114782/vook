@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { type Approval } from '../../api/hr';
@@ -7,6 +8,7 @@ import PaginationBar from '../../components/data/Pagination';
 import { extractError } from '../../utils/errorUtils';
 import { useMgrApprovals } from '../../hooks/queries/useMgrQueries';
 import { useUpdateApproval } from '../../hooks/mutations/useHrMutations';
+import AppDrawer from '../../components/ui/AppDrawer';
 
 type Tab = 'All Request' | 'Leave Request' | 'Attendance Corrections';
 const TABS: Tab[] = ['All Request', 'Leave Request', 'Attendance Corrections'];
@@ -16,12 +18,7 @@ const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: 'n
 
 function ViewModal({ approval, onClose, onAction }: { approval: Approval; onClose: () => void; onAction: (id: string, status: 'APPROVED' | 'REJECTED') => void }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
-      <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 22px', borderBottom: '1px solid #f1f5f9' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Approval Request</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button>
-        </div>
+    <AppDrawer open onOpenChange={(open) => { if (!open) onClose(); }} title="Approval request" description={`${approval.employee.user.name} · ${approval.type}`} placement="responsive" size="sm">
         <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {[
             ['Employee', approval.employee.user.name],
@@ -43,8 +40,7 @@ function ViewModal({ approval, onClose, onAction }: { approval: Approval; onClos
             <button onClick={() => { onAction(approval.id, 'APPROVED'); onClose(); }} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 18px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}><CheckCircle2 size={13} /> Approve</button>
           </div>
         )}
-      </div>
-    </div>
+    </AppDrawer>
   );
 }
 
@@ -90,14 +86,14 @@ export default function ManagerApprovalsPage() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+      <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
         {[
           { label: 'Total Requests',    value: stats.pending + stats.approvedToday + stats.rejected, color: '#7c3aed' },
           { label: 'Pending Requests',  value: stats.pending,       color: '#ea580c' },
           { label: 'Approved Today',    value: stats.approvedToday, color: '#16a34a' },
           { label: 'Rejected Requests', value: stats.rejected,      color: '#dc2626' },
         ].map(({ label, value, color }) => (
-          <div key={label} style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px 18px' }}>
+          <div key={label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px 18px' }}>
             <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>{label}</p>
             <p style={{ fontSize: '26px', fontWeight: 800, color, marginTop: '4px' }}>{value}</p>
           </div>
@@ -132,7 +128,7 @@ export default function ManagerApprovalsPage() {
           <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /><span style={{ fontSize: '14px' }}>Loading...</span></div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc' }}>
                   {['Employee', 'Request Type', 'Details', 'Date', 'Action'].map((h) => (
@@ -163,7 +159,7 @@ export default function ManagerApprovalsPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         )}
       </div>

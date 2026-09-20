@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -77,19 +78,19 @@ export default function DashboardPage() {
         <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage your platform and monitor client companies</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+      <div className="dashboard-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
         {STAT_CARDS.map((s) => (
-          <div key={s.label} style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 20px' }}>
+          <div key={s.label} className="dashboard-stat-card" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '18px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div>
-                <p style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, marginBottom: '6px' }}>{s.label}</p>
-                <p style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.5px' }}>{s.value}</p>
+                <p className="dashboard-stat-label" style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, marginBottom: '6px' }}>{s.label}</p>
+                <p className="dashboard-stat-value" style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.5px' }}>{s.value}</p>
               </div>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: s.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div className="dashboard-stat-icon" style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: s.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <s.icon size={17} color={s.iconColor} />
               </div>
             </div>
-            <p style={{ fontSize: '11px', color: '#94a3b8' }}>{s.sub}</p>
+            <p className="dashboard-stat-sub" style={{ fontSize: '11px', color: '#94a3b8' }}>{s.sub}</p>
           </div>
         ))}
       </div>
@@ -195,7 +196,7 @@ export default function DashboardPage() {
             View All <ArrowUpRight size={14} />
           </button>
         </div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ backgroundColor: '#f8fafc' }}>
               {['Company', 'Plan', 'Users', 'Status', 'Expiry', ''].map((h) => (
@@ -255,7 +256,7 @@ export default function DashboardPage() {
               );
             })}
           </tbody>
-        </table>
+        </ResponsiveTable>
       </div>
 
     </div>

@@ -1,3 +1,4 @@
+import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useSearchParams } from 'react-router-dom';
 import { type SalaryRow, type Payslip } from '../../api/hr';
 import { DollarSign, Download, Loader2 } from 'lucide-react';
@@ -85,7 +86,7 @@ export default function PayrollPage() {
           <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /><span style={{ fontSize: '14px' }}>Loading...</span></div>
         ) : tab === 'salary' ? (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc' }}>
                   {['Employee', 'Role', 'Type', 'Annual CTC', 'Last Revised', 'Actions'].map((h) => (
@@ -120,11 +121,11 @@ export default function PayrollPage() {
                 })}
                 {salary.length === 0 && <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', fontSize: '13px', color: '#94a3b8' }}>No salary records found</td></tr>}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc' }}>
                   {['Payslip ID', 'Employee', 'Period', 'Net Pay', 'Status', 'Actions'].map((h) => (
@@ -156,7 +157,7 @@ export default function PayrollPage() {
                 })}
                 {payslips.length === 0 && <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', fontSize: '13px', color: '#94a3b8' }}>No payslips found</td></tr>}
               </tbody>
-            </table>
+            </ResponsiveTable>
           </div>
         )}
       </div>

@@ -102,14 +102,14 @@ export default function CAApprovalsPage() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+      <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
         {[
           { label: 'Total Requests',    value: allTotal,    color: '#0d7470' },
           { label: 'Pending Review',    value: allPending,  color: '#d97706' },
           { label: 'Approved',          value: allApproved, color: '#16a34a' },
           { label: 'Rejected',          value: allRejected, color: '#dc2626' },
         ].map(({ label, value, color }) => (
-          <div key={label} style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 16px' }}>
+          <div key={label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 16px' }}>
             <p style={{ fontSize: '28px', fontWeight: 800, color, lineHeight: 1 }}>{value}</p>
             <p style={{ fontSize: '11px', fontWeight: 600, color: '#374151', marginTop: '4px' }}>{label}</p>
           </div>
