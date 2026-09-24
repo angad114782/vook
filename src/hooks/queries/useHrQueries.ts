@@ -33,6 +33,19 @@ export const useAttendanceRecords = (params?: Record<string, string>) =>
     queryFn: () => hrApi.getAttendanceRecords(params).then((r) => r.data),
   });
 
+export const useAttendancePeriod = (month: number, year: number) =>
+  useQuery({
+    queryKey: ['hr', 'attendance', 'period', year, month],
+    queryFn: () => hrApi.getAttendancePeriod(month, year).then((r) => r.data),
+  });
+
+export const useAttendanceRegularizations = (enabled = true) =>
+  useQuery({
+    queryKey: ['hr', 'attendance', 'regularizations'],
+    queryFn: () => hrApi.getAttendanceRegularizations().then((r) => r.data),
+    enabled,
+  });
+
 export const useLeaves = (params?: Record<string, string>) =>
   useQuery({
     queryKey: qk.hr.leaves(params),

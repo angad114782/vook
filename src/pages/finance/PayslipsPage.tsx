@@ -1,12 +1,16 @@
 import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import type { Payslip } from '../../api/hr';
-import { Eye, Download, Loader2, BarChart2, Search } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Eye, Download, Loader2, Search } from 'lucide-react';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import PaginationBar from '../../components/data/Pagination';
 import { useFinancePayslips } from '../../hooks/queries/useFinanceQueries';
 import { useAccess } from '../../hooks/queries/useAccess';
+import { useHrDepartments } from '../../hooks/queries/useHrQueries';
+import { financeApi } from '../../api/finance';
+import { toast } from 'sonner';
+import { extractError } from '../../utils/errorUtils';
+import AppDialog from '../../components/ui/AppDialog';
 
 const fmtPay = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
@@ -16,26 +20,20 @@ const STATUS_META: Record<string, { bg: string; color: string }> = {
   Pending:    { bg: '#f1f5f9', color: '#475569' },
 };
 
-const QUICK = [
-  { label: 'View Attendance', icon: Eye },
-  { label: 'Settings',        icon: Download },
-  { label: 'Download Report', icon: Download },
-  { label: 'View Reports',    icon: BarChart2 },
-];
-
 export default function PayslipsPage() {
   const access = useAccess();
   const canExport = access.can('PAYSLIPS.EXPORT');
-  const navigate = useNavigate();
-  const location = useLocation();
-  const portalPath = location.pathname.split('/').slice(0, 2).join('/');
+  const today = new Date();
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const [search, setSearch] = useState('');
-  const [month, setMonth] = useState('February');
-  const [year, setYear] = useState('2026');
+  const [month, setMonth] = useState(monthNames[today.getMonth()]!);
+  const [year, setYear] = useState(String(today.getFullYear()));
   const [dept, setDept] = useState('All Departments');
   const [empType, setEmpType] = useState('All Employees');
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
+  const [selected, setSelected] = useState<Payslip | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   const debouncedSearch = useDebouncedValue(search, 500);
 
@@ -43,8 +41,11 @@ export default function PayslipsPage() {
   if (debouncedSearch) params.search = debouncedSearch;
   if (dept !== 'All Departments') params.department = dept;
   if (empType !== 'All Employees') params.employmentType = empType;
+  params.month = String(monthNames.indexOf(month) + 1);
+  params.year = year;
 
   const { data, isLoading: loading } = useFinancePayslips(params);
+  const departments = useHrDepartments();
   const payslips: Payslip[] = data?.payslips ?? [];
   const pagination = data?.pagination ?? { total: 0, page: 1, limit: 20, totalPages: 1 };
 
@@ -53,6 +54,23 @@ export default function PayslipsPage() {
   const handleEmpChange    = (v: string) => { setEmpType(v); setPage(1); };
 
   const selStyle: React.CSSProperties = { padding: '6px 10px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', color: '#374151', backgroundColor: 'white', cursor: 'pointer', outline: 'none', fontFamily: 'Inter, sans-serif' };
+
+  const download = async (payslip: Payslip) => {
+    setDownloading(payslip.id);
+    try {
+      const response = await financeApi.downloadPayslip(payslip.id);
+      const url = URL.createObjectURL(response.data);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${payslip.payslipId}.pdf`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error(extractError(error, 'Unable to download this payslip'));
+    } finally {
+      setDownloading(null);
+    }
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -69,11 +87,11 @@ export default function PayslipsPage() {
             <input value={search} onChange={(e) => handleSearchChange(e.target.value)} placeholder="Search by name or ID..." style={{ width: '100%', paddingLeft: '32px', paddingRight: '10px', paddingTop: '7px', paddingBottom: '7px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#374151', backgroundColor: '#f8fafc' }} />
           </div>
           <select value={month} onChange={(e) => setMonth(e.target.value)} style={selStyle}>
-            {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m) => <option key={m}>{m}</option>)}
+            {monthNames.map((m) => <option key={m}>{m}</option>)}
           </select>
-          <select value={year} onChange={(e) => setYear(e.target.value)} style={selStyle}><option>2026</option><option>2025</option></select>
+          <select value={year} onChange={(e) => setYear(e.target.value)} style={selStyle}>{[today.getFullYear() - 2, today.getFullYear() - 1, today.getFullYear(), today.getFullYear() + 1].map((option) => <option key={option}>{option}</option>)}</select>
           <select value={dept} onChange={(e) => handleDeptChange(e.target.value)} style={selStyle}>
-            <option>All Departments</option><option>Engineering</option><option>Sales</option><option>Finance</option>
+            <option>All Departments</option>{(departments.data ?? []).map((item) => <option key={item.name}>{item.name}</option>)}
           </select>
           <select value={empType} onChange={(e) => handleEmpChange(e.target.value)} style={selStyle}>
             <option>All Employees</option><option>Permanent</option><option>Contract</option>
@@ -104,8 +122,8 @@ export default function PayslipsPage() {
                       <td style={{ padding: '12px 16px' }}><span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: sm.bg, color: sm.color }}>{p.status}</span></td>
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', gap: '6px' }}>
-                          <button style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}><Eye size={13} /></button>
-                          {canExport && <button aria-label={`Download ${p.payslipId}`} style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}><Download size={13} /></button>}
+                          <button aria-label={`View ${p.payslipId}`} onClick={() => setSelected(p)} style={{ width: '32px', height: '32px', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}><Eye size={13} /></button>
+                          {canExport && <button aria-label={`Download ${p.payslipId}`} disabled={downloading === p.id} onClick={() => void download(p)} style={{ width: '32px', height: '32px', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: downloading === p.id ? 'wait' : 'pointer', color: '#64748b' }}><Download size={13} /></button>}
                         </div>
                       </td>
                     </tr>
@@ -119,23 +137,10 @@ export default function PayslipsPage() {
           </div>
         )}
 
-        {/* Quick Actions */}
-        <div style={{ padding: '14px 20px', borderTop: '1px solid #f1f5f9' }}>
-          <p style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>QUICK ACTIONS</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-            {QUICK.filter(({ label }) => label !== 'Download Report' || canExport).map(({ label, icon: Icon }) => (
-              <button key={label} onClick={() => navigate(`${portalPath}/reports`)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: 'white', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
-                onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#2563eb'; el.style.backgroundColor = '#eff6ff'; }}
-                onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#e2e8f0'; el.style.backgroundColor = 'white'; }}>
-                <Icon size={18} color="#2563eb" />
-                <span style={{ fontSize: '11px', fontWeight: 600, color: '#374151', textAlign: 'center' }}>{label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
       <PaginationBar page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} limit={limit} onPageChange={(p) => setPage(p)} />
+      {selected && <AppDialog open onOpenChange={(open) => !open && setSelected(null)} title={`${selected.employee.user.name} · ${selected.period}`} description={selected.payslipId} footer={<button className="admin-button admin-button--secondary" onClick={() => setSelected(null)}>Close</button>}><div className="payslip-breakdown"><div className="payslip-breakdown__net"><span>Net pay</span><strong>{fmtPay(selected.netPay)}</strong><span className="product-status">{selected.status}</span></div><dl><div><dt>Gross salary</dt><dd>{fmtPay(selected.grossSalary)}</dd></div><div><dt>Total deductions</dt><dd>{fmtPay(selected.totalDeductions)}</dd></div><div><dt>Payable days</dt><dd>{selected.snapshot?.payableDays ?? '—'}</dd></div><div><dt>Overtime pay</dt><dd>{fmtPay(selected.snapshot?.overtimePay ?? 0)}</dd></div></dl><p>This breakdown is sourced from the payroll snapshot for the selected period.</p></div></AppDialog>}
     </div>
   );
 }

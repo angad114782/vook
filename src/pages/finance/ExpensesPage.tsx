@@ -11,6 +11,7 @@ import { useFinanceUpdateExpense } from '../../hooks/mutations/useFinanceMutatio
 import LegacyDrawer from '../../components/ui/LegacyDrawer';
 import { useAccess } from '../../hooks/queries/useAccess';
 import { useSubmitExpense } from '../../hooks/mutations/useEmployeeMutations';
+import { StatusBadge } from '../../components/ui/ProductPrimitives';
 
 type Tab = 'All Request' | 'Pending Requests' | 'Approved Requests' | 'Completed Requests';
 const TABS: Tab[] = ['All Request', 'Pending Requests', 'Approved Requests', 'Completed Requests'];
@@ -31,6 +32,7 @@ export default function ExpensesPage() {
   const canCreate = access.can('EXPENSE_MANAGEMENT.CREATE');
   const canApprove = access.can('EXPENSE_MANAGEMENT.APPROVE');
   const canReject = access.can('EXPENSE_MANAGEMENT.REJECT');
+  const canProcess = access.can('EXPENSE_MANAGEMENT.PROCESS');
   const [tab,         setTab]         = useState<Tab>('All Request');
   const [search,      setSearch]      = useState('');
   const [page,        setPage]        = useState(1);
@@ -44,9 +46,9 @@ export default function ExpensesPage() {
 
   const params: Record<string, string> = { page: String(page), limit: String(limit) };
   if (debouncedSearch) params.search = debouncedSearch;
-  if (tab === 'Pending Requests')   params.status = 'Pending';
-  if (tab === 'Approved Requests')  params.status = 'Approved';
-  if (tab === 'Completed Requests') params.status = 'Rejected';
+  if (tab === 'Pending Requests')   params.status = 'PENDING';
+  if (tab === 'Approved Requests')  params.status = 'APPROVED';
+  if (tab === 'Completed Requests') params.status = 'COMPLETED';
 
   const { data, isLoading: loading } = useFinanceExpenses(params);
   const expenses: Expense[] = data?.expenses ?? [];
@@ -125,11 +127,6 @@ export default function ExpensesPage() {
             <Search size={13} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
             <input value={search} onChange={(e) => handleSearchChange(e.target.value)} placeholder="Search employee..." style={{ width: '100%', paddingLeft: '32px', paddingRight: '10px', paddingTop: '6px', paddingBottom: '6px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#374151', backgroundColor: '#f8fafc' }} />
           </div>
-          {['All Status', 'All Departments', 'All Types'].map((ph) => (
-            <select key={ph} style={{ padding: '6px 10px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', color: '#374151', backgroundColor: 'white', cursor: 'pointer', outline: 'none', fontFamily: 'Inter, sans-serif' }}>
-              <option>{ph}</option>
-            </select>
-          ))}
         </div>
 
         {loading ? (
@@ -139,7 +136,7 @@ export default function ExpensesPage() {
             <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc' }}>
-                  {['Employee', 'Category', 'Amount', 'Date', 'Action'].map((h) => (
+                  {['Employee', 'Category', 'Amount', 'Date', 'Status', 'Action'].map((h) => (
                     <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -156,26 +153,28 @@ export default function ExpensesPage() {
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                           <span style={{ padding: '2px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: cm.bg, color: cm.color }}>{exp.category}</span>
-                          <Paperclip size={11} color="#94a3b8" />
+                          {exp.receiptUrl && <Paperclip size={11} color="#94a3b8" aria-label="Receipt attached" />}
                         </div>
                       </td>
                       <td style={{ padding: '12px 16px' }}><span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{fmtAmt(exp.amount)}</span></td>
                       <td style={{ padding: '12px 16px' }}><span style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>{fmtDate(exp.createdAt)}</span></td>
+                      <td style={{ padding: '12px 16px' }}><StatusBadge status={exp.status} /></td>
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                          {exp.status === 'Pending' && (
+                          {['PENDING', 'SUBMITTED', 'MANAGER_APPROVED'].includes(exp.status.toUpperCase()) && (
                             <>
                               {canApprove && <button aria-label="Approve expense" onClick={(e) => { e.stopPropagation(); handleAction(exp.id, 'Approved'); }} style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', backgroundColor: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><CheckCircle2 size={13} color="white" /></button>}
                               {canReject && <button aria-label="Reject expense" onClick={(e) => { e.stopPropagation(); handleAction(exp.id, 'Rejected'); }} style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', backgroundColor: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><X size={13} color="white" /></button>}
                             </>
                           )}
+                          {exp.status.toUpperCase() === 'FINANCE_APPROVED' && canProcess && <button className="admin-button admin-button--secondary" onClick={(event) => { event.stopPropagation(); handleAction(exp.id, 'Paid'); }}>Mark paid</button>}
                         </div>
                       </td>
                     </tr>
                   );
                 })}
                 {expenses.length === 0 && (
-                  <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', fontSize: '13px', color: '#94a3b8' }}>No expense claims found</td></tr>
+                  <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', fontSize: '13px', color: '#94a3b8' }}>No expense claims found</td></tr>
                 )}
               </tbody>
             </ResponsiveTable>
@@ -213,12 +212,13 @@ export default function ExpensesPage() {
                 </div>
               )}
             </div>
-            {viewExpense.status === 'Pending' && (canApprove || canReject) && (
+            {['PENDING', 'SUBMITTED', 'MANAGER_APPROVED'].includes(viewExpense.status.toUpperCase()) && (canApprove || canReject) && (
               <div style={{ padding: '14px 22px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                 {canReject && <button onClick={() => { handleAction(viewExpense.id, 'Rejected'); setViewExpense(null); }} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 16px', border: '1.5px solid #fecaca', borderRadius: '8px', backgroundColor: 'white', color: '#b91c1c', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}><X size={13} /> Reject</button>}
                 {canApprove && <button onClick={() => { handleAction(viewExpense.id, 'Approved'); setViewExpense(null); }} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 16px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}><CheckCircle2 size={13} /> Approve</button>}
               </div>
             )}
+            {viewExpense.status.toUpperCase() === 'FINANCE_APPROVED' && canProcess && <div style={{ padding: '14px 22px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end' }}><button className="admin-button admin-button--primary" onClick={() => { handleAction(viewExpense.id, 'Paid'); setViewExpense(null); }}>Mark reimbursement paid</button></div>}
           </div>
         </LegacyDrawer>
       )}

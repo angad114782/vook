@@ -50,6 +50,18 @@ export interface AttendanceRecord {
   };
 }
 
+export interface AttendancePeriod {
+  id: string; companyId: string; month: number; year: number; status: 'OPEN' | 'LOCKED';
+  version: number; lockedBy?: string | null; lockedAt?: string | null; updatedAt: string;
+}
+
+export interface AttendanceRegularizationReview {
+  id: string; date: string; requestedCheckIn?: string | null; requestedCheckOut?: string | null;
+  reason: string; status: string; approvalStage: string; createdAt: string;
+  employee: { id: string; employeeId: string; department: string | null; user: { name: string } };
+  history?: Array<{ role: string; action: string; comment?: string | null; at: string }>;
+}
+
 export interface ShiftAssignment {
   id: string;
   employeeId: string;
@@ -90,13 +102,17 @@ export const hrApi = {
   getEmployee:  (id: string)                 => api.get<Employee>(`/hr/employees/${id}`),
   createEmployee: (data: Record<string, unknown>, idempotencyKey?: string) => api.post<Employee & { invitationSent?: boolean; invitationToken?: string }>('/hr/employees', data, idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : undefined),
   updateEmployee: (id: string, data: Record<string, string>) => api.patch<Employee>(`/hr/employees/${id}`, data),
-  employeeAction: (id: string, data: { action: string; version?: number }) => api.post<Employee>(`/hr/employees/${id}/actions`, data),
+  employeeAction: (id: string, data: { action: string; version: number; reason: string }) => api.post<Employee>(`/hr/employees/${id}/actions`, data),
   getDepartments: ()                         => api.get<{ name: string; count: number }[]>('/hr/employees/departments'),
 
   // Attendance
   getAttendance: () => api.get<{ stats: { totalWorkforce: number; perm: number; cont: number; presentToday: number; presentPct: number; absent: number; absentPct: number; lateArrivals: number; avgDelay: number }; departments: { department: string; total: number; present: number; percentage: number }[] }>('/hr/attendance'),
   getAttendanceRecords: (p?: Record<string, string>) => api.get<{ records: AttendanceRecord[]; pagination: Pagination }>('/hr/attendance/records', { params: p }),
   createAttendanceRecord: (data: { employeeId: string; date: string; checkIn?: string; checkOut?: string; status: string; notes?: string }) => api.post<AttendanceRecord>('/hr/attendance', data),
+  getAttendancePeriod: (month: number, year: number) => api.get<AttendancePeriod>('/attendance-periods/current', { params: { month, year } }),
+  lockAttendancePeriod: (month: number, year: number, version: number) => api.post<AttendancePeriod>('/attendance-periods/lock', { month, year, version }),
+  getAttendanceRegularizations: () => api.get<{ regularizations: AttendanceRegularizationReview[] }>('/attendance-regularizations'),
+  attendanceRegularizationAction: (id: string, action: 'APPROVE' | 'REJECT', comment: string) => api.post(`/attendance-regularizations/${id}/actions`, { action, comment }),
   getShifts: (p?: Record<string, string>) => api.get<{
     stats: { totalWorkers: number; morningShift: number; eveningShift: number; nightShift: number };
     shifts: { Morning: ShiftAssignment[]; Evening: ShiftAssignment[]; Night: ShiftAssignment[] };

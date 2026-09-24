@@ -1,15 +1,15 @@
 import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { type Employee } from '../../api/hr';
-import { Search, Plus, Edit2, X, ChevronDown, Loader2 } from 'lucide-react';
+import { Search, Plus, Edit2, ChevronDown, Loader2 } from 'lucide-react';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { extractError } from '../../utils/errorUtils';
 import { useEmployees } from '../../hooks/queries/useHrQueries';
 import { useCreateEmployee, useUpdateEmployee } from '../../hooks/mutations/useHrMutations';
 import PaginationBar from '../../components/data/Pagination';
-import LegacyDrawer from '../../components/ui/LegacyDrawer';
+import AppDrawer from '../../components/ui/AppDrawer';
 import { useAccess } from '../../hooks/queries/useAccess';
 
 const DEPARTMENTS = ['Engineering', 'Sales', 'Marketing', 'HR', 'Design', 'Finance'];
@@ -65,18 +65,14 @@ function EmployeeModal({ emp, onClose }: { emp?: Employee; onClose: () => void }
   const labelStyle: React.CSSProperties = { fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '4px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.3px' };
 
   return (
-    <LegacyDrawer open onClose={onClose} direction="right" className="legacy-form-drawer">
-      <div style={{ backgroundColor: 'white', width: '480px', height: '100vh', overflowY: 'auto', boxShadow: '-8px 0 32px rgba(0,0,0,0.12)' }}>
-        {/* Header */}
-        <div style={{ padding: '20px 24px', background: 'linear-gradient(135deg, #0d4a47, #0d7470)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h2 style={{ fontSize: '16px', fontWeight: 700, color: 'white' }}>{isEdit ? 'Edit Employee' : 'Add Employee'}</h2>
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>Add a new permanent or contract workforce profile</p>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.7)' }}><X size={20} /></button>
-        </div>
-
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <AppDrawer open onOpenChange={(open) => { if (!open && !loading) onClose(); }} placement="responsive" size="md" title={isEdit ? 'Edit Employee' : 'Add Employee'} description="Workforce profile and employment details" contentClassName="employee-form-drawer__body" footer={<>
+      <button type="button" className="admin-button admin-button--secondary" onClick={onClose} disabled={loading}>Cancel</button>
+      <button type="button" className="admin-button" onClick={handleSubmit} disabled={loading}>
+        {loading && <Loader2 size={14} className="employee-form-drawer__spinner" aria-hidden="true" />}
+        {isEdit ? 'Save Changes' : 'Add Employee'}
+      </button>
+    </>}>
+        <div className="employee-form-drawer__sections" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {error && <div style={{ padding: '10px', borderRadius: '8px', backgroundColor: '#fef2f2', color: '#b91c1c', fontSize: '13px' }}>{error}</div>}
 
           {/* Basic Details */}
@@ -143,21 +139,15 @@ function EmployeeModal({ emp, onClose }: { emp?: Employee; onClose: () => void }
           </div>
         </div>
 
-        <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '10px', justifyContent: 'flex-end', position: 'sticky', bottom: 0, backgroundColor: 'white' }}>
-          <button onClick={onClose} style={{ padding: '9px 18px', border: '1.5px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', color: '#374151', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Cancel</button>
-          <button onClick={handleSubmit} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 20px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif', opacity: loading ? 0.7 : 1 }}>
-            {loading && <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />}
-            {isEdit ? 'Save Changes' : 'Add Employee'}
-          </button>
-        </div>
-      </div>
-    </LegacyDrawer>
+    </AppDrawer>
   );
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function EmployeesPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const access = useAccess();
   const canCreate = access.can('EMPLOYEE_MANAGEMENT.CREATE');
   const canEdit = access.can('EMPLOYEE_MANAGEMENT.EDIT');
@@ -223,7 +213,7 @@ export default function EmployeesPage() {
           </div>
         ) : (
           <div className="employee-list-surface__table" style={{ overflowX: 'auto' }}>
-            <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <ResponsiveTable mobileRowClick style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f8fafc' }}>
                   {['Employee Name', 'Role', 'Joining Date', 'Contact Information', 'Status', ''].map((h) => (
@@ -235,7 +225,7 @@ export default function EmployeesPage() {
                 {employees.map((e, i) => {
                   const av = getAv(e.user.name);
                   return (
-                    <tr key={e.id} onClick={() => canEdit && setModal({ open: true, emp: e })} style={{ borderBottom: i < employees.length - 1 ? '1px solid #f8fafc' : 'none', cursor: canEdit ? 'pointer' : 'default' }}>
+                    <tr key={e.id} onClick={() => navigate(`${location.pathname.replace(/\/$/, '')}/${e.id}`)} style={{ borderBottom: i < employees.length - 1 ? '1px solid #f8fafc' : 'none', cursor: 'pointer' }}>
                       <td style={{ padding: '13px 18px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <div style={{ width: '34px', height: '34px', borderRadius: '50%', backgroundColor: av.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: av.color, fontWeight: 700, fontSize: '11px', flexShrink: 0 }}>{initials(e.user.name)}</div>

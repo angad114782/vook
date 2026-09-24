@@ -95,10 +95,10 @@ export default function AppDrawer({
     }, DRAWER_EXIT_DURATION);
   };
 
-  const direction = placement === 'responsive' ? (desktop ? 'right' : 'bottom') : placement;
-  const sideClass = placement === 'bottom' || (!desktop && placement === 'responsive')
-    ? 'app-drawer--bottom'
-    : `app-drawer--${direction}`;
+  const direction = placement === 'responsive' || (!desktop && placement === 'right')
+    ? (desktop ? 'right' : 'bottom')
+    : placement;
+  const sideClass = `app-drawer--${direction}`;
 
   return (
     <Drawer open={renderOpen} onOpenChange={handleOpenChange} direction={direction} shouldScaleBackground={false}>

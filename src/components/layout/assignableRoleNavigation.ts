@@ -16,6 +16,7 @@ export interface AssignableRolePaths {
   attendance?: string;
   shifts?: string;
   leaves?: string;
+  calendar?: string;
   approvals?: string;
   payroll?: string;
   payslips?: string;
@@ -39,6 +40,7 @@ export function assignableRoleGroups(basePath: string, paths: AssignableRolePath
         { to: path('attendance', 'attendance'), label: 'Attendance', Icon: Clock },
         { to: path('shifts', 'shifts'), label: 'Shift management', Icon: CalendarDays },
         { to: path('leaves', 'leaves'), label: 'Leave management', Icon: CalendarDays },
+        { to: path('calendar', 'calendar'), label: 'Holiday calendar', Icon: CalendarDays },
       ],
     },
     {

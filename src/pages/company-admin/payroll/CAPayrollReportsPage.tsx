@@ -4,23 +4,17 @@ import { caApi } from '../../../api/companyAdmin';
 
 const REPORT_TYPES = [
   { id: 'monthly', label: 'Monthly Payroll Summary',  desc: 'Consolidated view of all salary disbursements' },
-  { id: 'dept',    label: 'Department Cost Analysis',  desc: 'Breakdown of salary expenses by department'   },
-  { id: 'overtime',label: 'Overtime Report',           desc: 'Detailed log of overtime hours and payouts'   },
-  { id: 'revision',label: 'Salary Revision History',   desc: 'Log of all salary structure changes'          },
 ];
 
-const DEPTS = ['All Departments','Engineering','Operations','HR','Finance','Sales','Support'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 export default function CAPayrollReportsPage() {
+  const currentYear = new Date().getFullYear();
   const [selectedType, setSelectedType] = useState('monthly');
   const [fromMonth,  setFromMonth]  = useState('January');
-  const [toMonth,    setToMonth]    = useState('February');
-  const [fromYear,   setFromYear]   = useState('2026');
-  const [toYear,     setToYear]     = useState('2026');
-  const [dept,       setDept]       = useState('All Departments');
-  const [fmtExcel,   setFmtExcel]   = useState(false);
-  const [fmtPdf,     setFmtPdf]     = useState(true);
+  const [toMonth,    setToMonth]    = useState(MONTHS[new Date().getMonth()]!);
+  const [fromYear,   setFromYear]   = useState(String(currentYear));
+  const [toYear,     setToYear]     = useState(String(currentYear));
   const [loading, setLoading] = useState(false);
   const [recentDownloads, setRecentDownloads] = useState<{ name: string; date: string; size: string }[]>([]);
   const [preview, setPreview] = useState<string[][]>([]);
@@ -113,7 +107,7 @@ export default function CAPayrollReportsPage() {
                 {MONTHS.map((m) => <option key={m}>{m}</option>)}
               </select>
               <select value={fromYear} onChange={(e) => setFromYear(e.target.value)} style={{ ...selectStyle, marginTop: '6px' }}>
-                {['2024','2025','2026'].map((y) => <option key={y}>{y}</option>)}
+                {[currentYear - 2, currentYear - 1, currentYear, currentYear + 1].map((y) => <option key={y}>{y}</option>)}
               </select>
             </div>
             <div>
@@ -122,37 +116,20 @@ export default function CAPayrollReportsPage() {
                 {MONTHS.map((m) => <option key={m}>{m}</option>)}
               </select>
               <select value={toYear} onChange={(e) => setToYear(e.target.value)} style={{ ...selectStyle, marginTop: '6px' }}>
-                {['2024','2025','2026'].map((y) => <option key={y}>{y}</option>)}
+                {[currentYear - 2, currentYear - 1, currentYear, currentYear + 1].map((y) => <option key={y}>{y}</option>)}
               </select>
             </div>
-          </div>
-
-          {/* Department */}
-          <div style={{ marginBottom: '14px' }}>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#374151', marginBottom: '5px' }}>Department</label>
-            <select value={dept} onChange={(e) => setDept(e.target.value)} style={selectStyle}>
-              {DEPTS.map((d) => <option key={d}>{d}</option>)}
-            </select>
           </div>
 
           {/* Format */}
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Format</label>
-            <div style={{ display: 'flex', gap: '16px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
-                <input type="checkbox" checked={fmtExcel} onChange={(e) => setFmtExcel(e.target.checked)} style={{ accentColor: '#2563eb', width: '14px', height: '14px' }} />
-                <span style={{ fontSize: '12px', color: '#374151' }}>Excel (.xlsx)</span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
-                <input type="checkbox" checked={fmtPdf} onChange={(e) => setFmtPdf(e.target.checked)} style={{ accentColor: '#2563eb', width: '14px', height: '14px' }} />
-                <span style={{ fontSize: '12px', color: '#374151' }}>PDF Document</span>
-              </label>
-            </div>
+            <div className="product-notice">CSV export · includes the selected period and generated-at timestamp in the filename.</div>
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
-              onClick={() => { setFromMonth('January'); setToMonth('February'); setDept('All Departments'); setFmtExcel(false); setFmtPdf(true); }}
+              onClick={() => { setFromMonth('January'); setToMonth(MONTHS[new Date().getMonth()]!); setFromYear(String(currentYear)); setToYear(String(currentYear)); }}
               style={{ padding: '10px 20px', border: '1.5px solid #e2e8f0', borderRadius: '9px', backgroundColor: 'white', color: '#374151', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
             >Clear</button>
             <button
@@ -180,7 +157,6 @@ export default function CAPayrollReportsPage() {
         <div style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>Recent Downloads</h3>
-            <button style={{ fontSize: '11px', color: '#2563eb', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>View All</button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
             {recentDownloads.length === 0 && <p style={{ fontSize: '12px', color: '#94a3b8' }}>No reports downloaded in this session.</p>}
@@ -193,27 +169,12 @@ export default function CAPayrollReportsPage() {
                     <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '1px' }}>{r.date} · {r.size}</p>
                   </div>
                 </div>
-                <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb' }}>
-                  <Download size={13} />
-                </button>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Quick actions */}
-      <div style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
-        <p style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>QUICK ACTIONS</p>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {['Download Payroll', 'Manage Roles', 'Download Summary', 'View Reports'].map((label) => (
-            <button key={label} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', fontSize: '11px', fontWeight: 600, color: '#374151', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-              <div style={{ width: '14px', height: '14px', borderRadius: '3px', border: '1.5px solid #2563eb' }} />
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

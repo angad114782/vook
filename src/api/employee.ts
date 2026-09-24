@@ -40,6 +40,11 @@ export interface MyDocument {
 export interface TodayAttendance {
   id: string; date: string; checkIn: string | null; checkOut: string | null; status: string;
 }
+export interface AttendanceRegularization {
+  id: string; date: string; requestedCheckIn?: string | null; requestedCheckOut?: string | null;
+  reason: string; status: string; approvalStage: string; createdAt: string;
+  history?: Array<{ role: string; action: string; comment?: string | null; at: string }>;
+}
 export interface AttendanceLocation { latitude: number; longitude: number; accuracyMeters: number }
 
 export const employeeApi = {
@@ -48,7 +53,7 @@ export const employeeApi = {
   getTodayAttendance:  () => api.get<{ record: TodayAttendance | null }>('/employee/attendance/today'),
   checkIn:             (location?: AttendanceLocation) => api.post<{ message: string; record: TodayAttendance }>('/employee/attendance/checkin', location ?? {}),
   checkOut:            (location?: AttendanceLocation) => api.post<{ message: string; record: TodayAttendance }>('/employee/attendance/checkout', location ?? {}),
-  getRegularizations:  () => api.get('/attendance-regularizations/mine'),
+  getRegularizations:  () => api.get<{ regularizations: AttendanceRegularization[] }>('/attendance-regularizations/mine'),
   requestRegularization: (data: { date: string; requestedCheckIn?: string; requestedCheckOut?: string; reason: string }) => api.post('/attendance-regularizations/mine', data),
   getLeaves:           () => api.get<{ leaves: MyLeave[]; stats: Record<string, number>; balance: LeaveBalance[] }>('/employee/leaves'),
   applyLeave:    (data: { leaveType: string; startDate: string; endDate: string; reason: string }) => api.post('/employee/leaves', data),

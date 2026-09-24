@@ -2,15 +2,20 @@ import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { type AttendanceRecord } from '../../api/hr';
+import { type AttendanceRecord, type AttendanceRegularizationReview } from '../../api/hr';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import PaginationBar from '../../components/data/Pagination';
-import { Users, UserCheck, UserX, Clock, Loader2, X, Plus, Search } from 'lucide-react';
+import { Users, UserCheck, UserX, Clock, Loader2, X, Plus, Search, LockKeyhole } from 'lucide-react';
 import { extractError } from '../../utils/errorUtils';
-import { useHrAttendance, useAttendanceRecords, useEmployees } from '../../hooks/queries/useHrQueries';
-import { useCreateAttendance } from '../../hooks/mutations/useHrMutations';
+import { useAttendanceRegularizations, useHrAttendance, useAttendancePeriod, useAttendanceRecords, useEmployees } from '../../hooks/queries/useHrQueries';
+import { useAttendanceRegularizationAction, useCreateAttendance, useLockAttendancePeriod } from '../../hooks/mutations/useHrMutations';
 import LegacyDrawer from '../../components/ui/LegacyDrawer';
 import { useAccess } from '../../hooks/queries/useAccess';
+import { useAuthStore } from '../../store/authStore';
+import { useMyRegularizations } from '../../hooks/queries/useEmployeeQueries';
+import { useRequestRegularization } from '../../hooks/mutations/useEmployeeMutations';
+import { EmptyState, ErrorState, LoadingState, StatusBadge } from '../../components/ui/ProductPrimitives';
+import AppDialog from '../../components/ui/AppDialog';
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Present: { bg: '#f0fdf4', color: '#15803d' },
@@ -19,6 +24,7 @@ const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Leave:   { bg: '#eff6ff', color: '#1d4ed8' },
   Holiday: { bg: '#f5f3ff', color: '#7c3aed' },
 };
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 const fmtTime = (t: string | null) => t ? t : '—';
@@ -133,13 +139,55 @@ function AddRecordModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+function EmployeeRegularizationPanel() {
+  const query = useMyRegularizations();
+  const mutation = useRequestRegularization();
+  const [form, setForm] = useState({ date: new Date().toISOString().slice(0, 10), requestedCheckIn: '', requestedCheckOut: '', reason: '' });
+  const [error, setError] = useState('');
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!form.date || !form.reason.trim() || (!form.requestedCheckIn && !form.requestedCheckOut)) { setError('Choose a date, enter the corrected punch time, and explain the reason.'); return; }
+    setError('');
+    mutation.mutate({ ...form, requestedCheckIn: form.requestedCheckIn || undefined, requestedCheckOut: form.requestedCheckOut || undefined }, { onSuccess: () => { toast.success('Regularization request submitted'); setForm({ date: new Date().toISOString().slice(0, 10), requestedCheckIn: '', requestedCheckOut: '', reason: '' }); }, onError: (requestError) => setError(extractError(requestError, 'Unable to submit regularization')) });
+  };
+  return <div className="regularization-layout">
+    <form className="admin-card regularization-form" onSubmit={submit}><div><h2>Correct a missed punch</h2><p>Submit the time that should appear on your attendance record. Your approver will see the reason and history.</p></div>{error && <div className="product-error" role="alert">{error}</div>}<label className="admin-label">Attendance date<input className="admin-input" type="date" max={new Date().toISOString().slice(0, 10)} value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} /></label><div className="regularization-form__times"><label className="admin-label">Correct check-in<input className="admin-input" type="time" value={form.requestedCheckIn} onChange={(event) => setForm({ ...form, requestedCheckIn: event.target.value })} /></label><label className="admin-label">Correct check-out<input className="admin-input" type="time" value={form.requestedCheckOut} onChange={(event) => setForm({ ...form, requestedCheckOut: event.target.value })} /></label></div><label className="admin-label">Reason<textarea className="admin-input" rows={4} value={form.reason} onChange={(event) => setForm({ ...form, reason: event.target.value })} placeholder="For example: device was offline at the branch" /></label><button className="admin-button" disabled={mutation.isPending}>{mutation.isPending ? 'Submitting…' : 'Submit for approval'}</button></form>
+    <section className="admin-card regularization-history"><div><h2>Request history</h2><p>Track the current workflow stage and decision.</p></div>{query.isLoading ? <LoadingState label="Loading requests…" /> : query.isError ? <ErrorState description="Requests could not be loaded." onRetry={() => void query.refetch()} /> : !query.data?.regularizations.length ? <EmptyState title="No regularization requests" description="Submitted corrections will appear here with their approval status." /> : <div className="regularization-list">{query.data.regularizations.map((item) => <article key={item.id}><div><strong>{fmtDate(item.date)}</strong><StatusBadge status={item.status} /></div><p>{item.requestedCheckIn ? `In ${item.requestedCheckIn}` : 'Check-in unchanged'} · {item.requestedCheckOut ? `Out ${item.requestedCheckOut}` : 'Check-out unchanged'}</p><small>{item.reason}</small><span>{item.approvalStage.replaceAll('_', ' ').toLowerCase()}</span></article>)}</div>}</section>
+  </div>;
+}
+
+function AttendanceExceptionInbox({ role, canApprove, canReject }: { role: string; canApprove: boolean; canReject: boolean }) {
+  const query = useAttendanceRegularizations();
+  const mutation = useAttendanceRegularizationAction();
+  const [decision, setDecision] = useState<{ item: AttendanceRegularizationReview; action: 'APPROVE' | 'REJECT' } | null>(null);
+  const [comment, setComment] = useState('');
+  const [error, setError] = useState('');
+  const expectedRole: Record<string, string> = { SUPERVISOR_RECOMMENDATION: 'SUPERVISOR', MANAGER_APPROVAL: 'MANAGER', HR_COMPLETION: 'HR' };
+  const canAct = (item: AttendanceRegularizationReview) => role === 'COMPANY_ADMIN' || expectedRole[item.approvalStage] === role;
+  const submit = () => {
+    if (!decision) return;
+    if (decision.action === 'REJECT' && !comment.trim()) { setError('Add a reason before rejecting this correction.'); return; }
+    setError('');
+    mutation.mutate({ id: decision.item.id, action: decision.action, comment: comment.trim() }, { onSuccess: () => { toast.success(decision.action === 'APPROVE' ? 'Regularization moved to the next stage' : 'Regularization rejected'); setDecision(null); setComment(''); }, onError: (actionError) => setError(extractError(actionError, 'Unable to update this request')) });
+  };
+  return <section className="admin-card exception-inbox"><header><div><h2>Attendance exceptions</h2><p>Resolve missed-punch corrections in the configured approval sequence before locking attendance.</p></div><StatusBadge status={`${query.data?.regularizations.filter((item) => item.status === 'PENDING').length ?? 0}_PENDING`}>{query.data?.regularizations.filter((item) => item.status === 'PENDING').length ?? 0} pending</StatusBadge></header>{query.isLoading ? <LoadingState label="Loading attendance exceptions…" /> : query.isError ? <ErrorState description="Attendance exceptions could not be loaded." onRetry={() => void query.refetch()} /> : !query.data?.regularizations.length ? <EmptyState title="No attendance exceptions" description="Regularization requests will appear here for review." /> : <div className="exception-list">{query.data.regularizations.map((item) => { const actionable = item.status === 'PENDING' && canAct(item); return <article key={item.id}><div className="exception-list__identity"><strong>{item.employee.user.name}</strong><small>{item.employee.employeeId} · {item.employee.department ?? 'No department'}</small></div><div><strong>{fmtDate(item.date)}</strong><small>{item.requestedCheckIn ? `In ${item.requestedCheckIn}` : 'In unchanged'} · {item.requestedCheckOut ? `Out ${item.requestedCheckOut}` : 'Out unchanged'}</small></div><div><StatusBadge status={item.status} /><small>{item.approvalStage.replaceAll('_', ' ').toLowerCase()}</small></div><p>{item.reason}</p>{actionable && <div className="exception-list__actions">{canReject && <button className="admin-button admin-button--secondary" onClick={() => { setDecision({ item, action: 'REJECT' }); setComment(''); setError(''); }}>Reject</button>}{canApprove && <button className="admin-button" onClick={() => { setDecision({ item, action: 'APPROVE' }); setComment(''); setError(''); }}>Approve</button>}</div>}</article>; })}</div>}
+    {decision && <AppDialog open onOpenChange={(open) => !open && setDecision(null)} title={`${decision.action === 'APPROVE' ? 'Approve' : 'Reject'} attendance correction`} description={`${decision.item.employee.user.name} · ${fmtDate(decision.item.date)}`} footer={<><button className="admin-button admin-button--secondary" onClick={() => setDecision(null)}>Cancel</button><button className="admin-button" disabled={mutation.isPending} onClick={submit}>{mutation.isPending ? 'Saving…' : decision.action === 'APPROVE' ? 'Approve and continue' : 'Reject request'}</button></>}><div className="product-form">{error && <div className="product-error" role="alert">{error}</div>}<div className="product-notice">Requested punch: {decision.item.requestedCheckIn || 'unchanged'} → {decision.item.requestedCheckOut || 'unchanged'}</div><label className="admin-label">Comment {decision.action === 'REJECT' ? '(required)' : '(optional)'}<textarea className="admin-input" rows={4} value={comment} onChange={(event) => setComment(event.target.value)} /></label></div></AppDialog>}
+  </section>;
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function AttendancePage() {
+  const role = useAuthStore((state) => state.user?.role);
+  const isEmployee = role === 'EMPLOYEE';
   const access = useAccess();
-  const canCreate = access.can('ATTENDANCE.CREATE');
+  const canCreate = !isEmployee && access.can('ATTENDANCE.CREATE');
+  const canApproveRegularization = access.can('ATTENDANCE.APPROVE');
+  const canRejectRegularization = access.can('ATTENDANCE.REJECT');
+  const canReviewRegularizations = !isEmployee && (canApproveRegularization || canRejectRegularization);
   const [urlParams, setUrlParams] = useSearchParams();
-  const tab = urlParams.get('tab') === 'records' ? 'records' : 'overview';
+  const requestedTab = urlParams.get('tab');
+  const tab = requestedTab === 'records' || ((isEmployee || canReviewRegularizations) && requestedTab === 'regularization') ? requestedTab : 'overview';
   const page = Math.max(1, Number(urlParams.get('page') ?? '1') || 1);
   const search = urlParams.get('search') ?? '';
   const monthFilter = urlParams.get('month') ?? String(new Date().getMonth() + 1);
@@ -154,6 +202,8 @@ export default function AttendancePage() {
   };
 
   const { data: overviewData, isLoading: overviewLoading } = useHrAttendance();
+  const periodQuery = useAttendancePeriod(Number(monthFilter), Number(yearFilter));
+  const lockPeriod = useLockAttendancePeriod();
 
   const recordParams: Record<string, string> = { page: String(page), limit: '20', month: monthFilter, year: yearFilter };
   if (debouncedSearch) recordParams.search = debouncedSearch;
@@ -162,6 +212,11 @@ export default function AttendancePage() {
   const pagination = recordsData?.pagination ?? { total: 0, page: 1, limit: 20, totalPages: 1 };
 
   const handleSearchChange = (v: string) => updateUrl({ search: v || null, page: '1' });
+  const handleLockPeriod = () => {
+    if (!periodQuery.data || periodQuery.data.status === 'LOCKED') return;
+    if (!window.confirm(`Lock attendance for ${MONTHS[Number(monthFilter) - 1]} ${yearFilter}? Payroll can use this period after locking, and attendance changes should require an authorized correction.`)) return;
+    lockPeriod.mutate({ month: Number(monthFilter), year: Number(yearFilter), version: periodQuery.data.version }, { onSuccess: () => toast.success('Attendance period locked for payroll'), onError: (error) => toast.error(extractError(error, 'Unable to lock attendance period')) });
+  };
 
   const s = overviewData?.stats;
   const statCards = [
@@ -170,8 +225,6 @@ export default function AttendancePage() {
     { label: 'Absent',          value: s?.absent ?? 0,          sub: `${s?.absentPct ?? 0}% impact`,                 icon: UserX,     color: '#ef4444', bg: '#fef2f2' },
     { label: 'Late Arrivals',   value: s?.lateArrivals ?? 0,    sub: 'Checked in after 09:00',                       icon: Clock,     color: '#f59e0b', bg: '#fffbeb' },
   ];
-
-  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -182,19 +235,18 @@ export default function AttendancePage() {
           <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Attendance</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Company-wide attendance overview and daily records</p>
         </div>
-        {tab === 'records' && canCreate && (
-          <button onClick={() => setShowAddModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px', backgroundColor: '#0d7470', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-            <Plus size={14} /> Add Record
-          </button>
-        )}
+        {tab === 'records' && !isEmployee && <div className="attendance-period-actions"><StatusBadge status={periodQuery.data?.status ?? 'OPEN'}>{periodQuery.data?.status === 'LOCKED' ? 'Attendance locked' : 'Attendance open'}</StatusBadge>{canCreate && periodQuery.data?.status !== 'LOCKED' && <><button className="admin-button admin-button--secondary" disabled={lockPeriod.isPending || periodQuery.isLoading} onClick={handleLockPeriod}><LockKeyhole size={15} aria-hidden="true" /> {lockPeriod.isPending ? 'Locking…' : 'Lock period'}</button><button className="admin-button" onClick={() => setShowAddModal(true)}><Plus size={15} aria-hidden="true" /> Add record</button></>}</div>}
       </div>
 
       {/* Tab switcher */}
       <div style={{ display: 'flex', backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '4px', gap: '2px', width: 'fit-content' }}>
-        {[['overview', 'Overview'], ['records', 'Daily Records']].map(([key, label]) => (
+        {[['overview', 'Overview'], ['records', 'Daily Records'], ...((isEmployee || canReviewRegularizations) ? [['regularization', isEmployee ? 'Regularization' : 'Exceptions']] : [])].map(([key, label]) => (
           <button key={key} onClick={() => updateUrl({ tab: key === 'overview' ? null : key, page: '1' })} style={{ padding: '8px 18px', border: 'none', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif', backgroundColor: tab === key ? '#0d7470' : 'transparent', color: tab === key ? 'white' : '#64748b', transition: 'all 0.15s' }}>{label}</button>
         ))}
       </div>
+
+      {tab === 'regularization' && isEmployee && <EmployeeRegularizationPanel />}
+      {tab === 'regularization' && canReviewRegularizations && <AttendanceExceptionInbox role={role ?? ''} canApprove={canApproveRegularization} canReject={canRejectRegularization} />}
 
       {/* ── Overview Tab ── */}
       {tab === 'overview' && (
@@ -252,6 +304,7 @@ export default function AttendancePage() {
       {/* ── Records Tab ── */}
       {tab === 'records' && (
         <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+          {periodQuery.data?.status === 'LOCKED' && <div className="attendance-lock-notice"><LockKeyhole size={16} aria-hidden="true" /><span><strong>This period is locked.</strong> Payroll may consume this attendance snapshot; corrections require an audited regularization workflow.</span></div>}
           {/* Filters */}
           <div style={{ padding: '14px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
             <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
@@ -262,7 +315,7 @@ export default function AttendancePage() {
               {MONTHS.map((m, i) => <option key={m} value={String(i + 1)}>{m}</option>)}
             </select>
             <select value={yearFilter} onChange={(e) => updateUrl({ year: e.target.value, page: '1' })} style={{ padding: '7px 10px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', color: '#374151', backgroundColor: 'white', cursor: 'pointer', outline: 'none', fontFamily: 'Inter, sans-serif' }}>
-              <option>2026</option><option>2025</option>
+              {[new Date().getFullYear() - 1, new Date().getFullYear()].map((year) => <option key={year}>{year}</option>)}
             </select>
           </div>
 

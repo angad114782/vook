@@ -63,6 +63,7 @@ function DataCards<T>({
   columns,
   getRowKey,
   empty,
+  onRowClick,
 }: ResponsiveDataViewProps<T>) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const listId = useId();
@@ -79,7 +80,6 @@ function DataCards<T>({
   const actions = columns.find((column) => column.cardRole === "actions");
   const details = columns.filter(
     (column) =>
-      !column.hideOnCard &&
       column !== primary &&
       column !== status &&
       column !== actions,
@@ -95,6 +95,34 @@ function DataCards<T>({
         const statusContent = status?.render(item);
         const drawerTitle =
           textFromNode(primaryContent).trim() || "Record details";
+        if (onRowClick) {
+          return (
+            <article
+              key={key}
+              className="responsive-data-card"
+              role="button"
+              tabIndex={0}
+              aria-label={`View details for ${drawerTitle}`}
+              onClick={(event) => {
+                if (event.target instanceof Element && event.target.closest('button,a')) return;
+                onRowClick(item);
+              }}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                if (event.target instanceof Element && event.target.closest('button,a')) return;
+                event.preventDefault();
+                onRowClick(item);
+              }}
+            >
+              <div className="responsive-data-card__summary">
+                <div className="responsive-data-card__primary">{primaryContent}</div>
+                {status && <div className="responsive-data-card__status">{statusContent}</div>}
+                <ChevronRight className="responsive-data-card__affordance" size={18} strokeWidth={2} aria-hidden />
+              </div>
+              {actions && <div className="responsive-data-card__inline-actions">{actions.render(item)}</div>}
+            </article>
+          );
+        }
         return (
           <Drawer
             key={key}
@@ -255,7 +283,7 @@ interface ResponsiveTableProps extends TableHTMLAttributes<HTMLTableElement> {
 export function ResponsiveTable({
   children,
   className = "",
-  mobileRowClick = false,
+  mobileRowClick = true,
   ...tableProps
 }: ResponsiveTableProps) {
   const desktop = useMediaQuery("(min-width: 1200px)");

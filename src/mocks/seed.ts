@@ -43,6 +43,9 @@ export interface MockState {
   attendance: Array<Record<string, unknown>>;
   attendanceEvents: Array<Record<string, unknown>>;
   attendanceRegularizations: Array<Record<string, unknown>>;
+  attendancePeriods: Array<Record<string, unknown>>;
+  holidayCalendars: Array<Record<string, unknown>>;
+  payrollCompliance: Array<Record<string, unknown>>;
   leaves: Array<Record<string, unknown>>;
   approvals: Array<Record<string, unknown>>;
   salaries: Array<Record<string, unknown>>;
@@ -1118,7 +1121,7 @@ export const createMockSeed = (now = new Date()): MockState => {
     grossSalary: Math.round(Number(employee.annualCtc) / 12),
     totalDeductions: Math.round(Number(employee.annualCtc) / 120),
     netPay: Math.round(Number(employee.annualCtc) * 0.075),
-    status: index < 5 ? "PROCESSED" : "DRAFT",
+    status: index < 3 ? "PAID" : index < 5 ? "PUBLISHED" : "DRAFT",
     paymentStatus: index < 3 ? "PAID" : "PENDING",
     paidAt: index < 3 ? daysFrom(now, -3) : undefined,
     createdAt: daysFrom(now, -5),
@@ -1129,7 +1132,8 @@ export const createMockSeed = (now = new Date()): MockState => {
       companyId: "company_northstar",
       month: now.getMonth() + 1,
       year: now.getFullYear(),
-      status: "UNDER_REVIEW",
+        status: "UNDER_REVIEW",
+        version: 1,
       preparedBy: "user_finance",
       approvedBy: null,
       finalizedAt: null,
@@ -1404,6 +1408,20 @@ export const createMockSeed = (now = new Date()): MockState => {
     attendance,
     attendanceEvents,
     attendanceRegularizations: [],
+    attendancePeriods: [
+      {
+        id: `attendance_period_${now.getFullYear()}_${now.getMonth() + 1}`,
+        companyId: "company_northstar",
+        month: now.getMonth() + 1,
+        year: now.getFullYear(),
+        status: "LOCKED",
+        version: 1,
+        lockedBy: "user_hr",
+        lockedAt: daysFrom(now, -4),
+        createdAt: daysFrom(now, -30),
+        updatedAt: daysFrom(now, -4),
+      },
+    ],
     leaves,
     approvals,
     salaries,
@@ -1769,6 +1787,42 @@ export const createMockSeed = (now = new Date()): MockState => {
         biometricEnabled: false,
       },
     },
+    holidayCalendars: [
+      {
+        id: "holiday_calendar_northstar",
+        companyId: "company_northstar",
+        name: "India company calendar",
+        year: now.getFullYear(),
+        stateCode: "MH",
+        branchIds: ["office_pune"],
+        employeeGroupIds: [],
+        version: 1,
+        createdAt: daysFrom(now, -120),
+        updatedAt: daysFrom(now, -10),
+        permittedActions: ["EDIT", "COPY", "PUBLISH"],
+        holidays: [
+          { id: "holiday_republic", name: "Republic Day", date: `${now.getFullYear()}-01-26`, kind: "NATIONAL", optional: false },
+          { id: "holiday_independence", name: "Independence Day", date: `${now.getFullYear()}-08-15`, kind: "NATIONAL", optional: false },
+          { id: "holiday_gandhi", name: "Gandhi Jayanti", date: `${now.getFullYear()}-10-02`, kind: "NATIONAL", optional: false },
+          { id: "holiday_diwali", name: "Diwali", date: `${now.getFullYear()}-11-08`, kind: "COMPANY", optional: false },
+        ],
+      },
+    ],
+    payrollCompliance: [
+      {
+        id: "payroll_compliance_northstar",
+        companyId: "company_northstar",
+        version: 1,
+        effectiveFrom: `${now.getFullYear()}-04-01`,
+        stateCode: "MH",
+        pf: { enabled: true, employeeGroup: "All Employees", employeeRate: 12, employerRate: 12, wageCeiling: 15000 },
+        esi: { enabled: true, employeeGroup: "All Employees", employeeRate: 0.75, employerRate: 3.25, wageCeiling: 21000 },
+        professionalTax: { enabled: true, employeeGroup: "All Employees", stateCode: "MH" },
+        labourWelfareFund: { enabled: false, employeeGroup: "All Employees", stateCode: "MH" },
+        tds: { enabled: true, employeeGroup: "All Employees", defaultRegime: "NEW" },
+        updatedAt: daysFrom(now, -10),
+      },
+    ],
   };
 };
 

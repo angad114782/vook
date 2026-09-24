@@ -26,6 +26,12 @@ export const useFinancePayslips = (params?: Record<string, string>) =>
     queryFn: () => financeApi.getPayslips(params).then((r) => r.data),
   });
 
+export const usePayrollRuns = () =>
+  useQuery({
+    queryKey: qk.finance.payrollRuns(),
+    queryFn: () => financeApi.getPayrollRuns().then((r) => r.data),
+  });
+
 export const useFinanceExpenses = (params?: Record<string, string>) =>
   useQuery({
     queryKey: qk.finance.expenses(params),

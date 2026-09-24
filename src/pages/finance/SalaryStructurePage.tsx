@@ -1,7 +1,7 @@
 import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import type { SalaryRow } from '../../api/hr';
-import { Edit2, Loader2, Download, Eye, BarChart2, Search } from 'lucide-react';
+import { Edit2, Loader2, Download, Eye, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import PaginationBar from '../../components/data/Pagination';
@@ -21,9 +21,6 @@ const initials = (name?: string) => (name ?? 'User').split(' ').map((w) => w[0])
 export default function SalaryStructurePage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const [monthFilter, setMonthFilter] = useState('February');
-  const [yearFilter, setYearFilter] = useState('2026');
-  const [deptFilter, setDeptFilter] = useState('All Departments');
   const [empFilter, setEmpFilter] = useState('All Employees');
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
@@ -32,7 +29,6 @@ export default function SalaryStructurePage() {
 
   const params: Record<string, string> = { page: String(page), limit: String(limit) };
   if (debouncedSearch) params.search = debouncedSearch;
-  if (deptFilter !== 'All Departments') params.department = deptFilter;
   if (empFilter !== 'All Employees') params.employmentType = empFilter;
 
   const { data, isLoading: loading } = useFinanceSalary(params);
@@ -40,17 +36,14 @@ export default function SalaryStructurePage() {
   const pagination = data?.pagination ?? { total: 0, page: 1, limit: 20, totalPages: 1 };
 
   const handleSearchChange = (v: string) => { setSearch(v); setPage(1); };
-  const handleDeptChange   = (v: string) => { setDeptFilter(v); setPage(1); };
   const handleEmpChange    = (v: string) => { setEmpFilter(v); setPage(1); };
 
-  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const selStyle: React.CSSProperties = { padding: '6px 10px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', color: '#374151', backgroundColor: 'white', cursor: 'pointer', outline: 'none', fontFamily: 'Inter, sans-serif' };
 
   const QUICK = [
-    { label: 'View Attendance', icon: Eye,      path: '/finance/dashboard' },
+    { label: 'View Attendance', icon: Eye,      path: '/finance/attendance' },
     { label: 'Settings',        icon: Edit2,     path: '/finance/settings' },
     { label: 'Download Report', icon: Download,  path: '/finance/reports' },
-    { label: 'View Reports',    icon: BarChart2, path: '/finance/reports' },
   ];
 
   return (
@@ -67,17 +60,8 @@ export default function SalaryStructurePage() {
             <Search size={13} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
             <input value={search} onChange={(e) => handleSearchChange(e.target.value)} placeholder="Search employee..." style={{ width: '100%', paddingLeft: '32px', paddingRight: '10px', paddingTop: '7px', paddingBottom: '7px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#374151', backgroundColor: '#f8fafc' }} />
           </div>
-          <select value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)} style={selStyle}>
-            {MONTHS.map((m) => <option key={m}>{m}</option>)}
-          </select>
-          <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} style={selStyle}>
-            <option>2026</option><option>2025</option><option>2024</option>
-          </select>
           <select value={empFilter} onChange={(e) => handleEmpChange(e.target.value)} style={selStyle}>
             <option>All Employees</option><option>Permanent</option><option>Contract</option>
-          </select>
-          <select value={deptFilter} onChange={(e) => handleDeptChange(e.target.value)} style={selStyle}>
-            <option>All Departments</option><option>Engineering</option><option>Sales</option><option>Finance</option>
           </select>
         </div>
 
@@ -114,7 +98,7 @@ export default function SalaryStructurePage() {
                       <td style={{ padding: '12px 16px' }}><span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{fmtCtc(s.annualCtc)}</span></td>
                       <td style={{ padding: '12px 16px' }}><span style={{ fontSize: '12px', color: '#64748b' }}>{fmtDate(s.lastRevised)}</span></td>
                       <td style={{ padding: '12px 16px' }}>
-                        <button style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#2563eb' }}><Edit2 size={13} /></button>
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>View only</span>
                       </td>
                     </tr>
                   );
@@ -130,7 +114,7 @@ export default function SalaryStructurePage() {
         {/* Quick Actions */}
         <div style={{ padding: '14px 20px', borderTop: '1px solid #f1f5f9' }}>
           <p style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>QUICK ACTIONS</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
             {QUICK.map(({ label, icon: Icon, path }) => (
               <button key={label} onClick={() => navigate(path)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: 'white', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
                 onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#2563eb'; el.style.backgroundColor = '#eff6ff'; }}

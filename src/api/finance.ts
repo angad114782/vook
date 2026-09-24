@@ -19,6 +19,29 @@ export interface AttendanceStats {
   lateArrivals: number; avgDelay: number;
 }
 
+export type PayrollRunAction = 'review' | 'approve' | 'finalize' | 'publish';
+
+export interface PayrollRunSummary {
+  id: string;
+  month: number;
+  year: number;
+  status: string;
+  approvalStage?: string;
+  paidAt?: string | null;
+  employeeCount: number;
+  grossPayMinor: number;
+  deductionsMinor: number;
+  totalNetMinor: number;
+  preparedBy?: string | null;
+  approvedBy?: string | null;
+  finalizedAt?: string | null;
+  publishedAt?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+  version: number;
+  permittedActions: PayrollRunAction[];
+}
+
 export const financeApi = {
   getAttendance: () =>
     api.get<{ stats: AttendanceStats; departments: { department: string; total: number; present: number; percentage: number }[] }>('/finance/attendance'),
@@ -30,6 +53,9 @@ export const financeApi = {
     api.get<{ payslips: Payslip[]; pagination: Pagination }>('/finance/payslips', { params: p }),
   runPayroll: (data: { month: number; year: number; employeeIds?: string[] }) =>
     api.post<{ message: string; period: string; month: number; year: number; created: number; skipped: number }>('/finance/payroll/run', data),
+  getPayrollRuns: () => api.get<PayrollRunSummary[]>('/payroll-runs'),
+  payrollRunAction: (id: string, action: PayrollRunAction, data: { version: number; reason: string }) =>
+    api.post<PayrollRunSummary>(`/payroll-runs/${id}/${action}`, data),
   downloadPayslip: (id: string) => api.get<Blob>(`/finance/payslips/${id}/download`, { responseType: 'blob' }),
   markPayslipPaid: (id: string) => api.post<Payslip>(`/finance/payroll/payslips/${id}/pay`),
   recalculatePayslip: (id: string) => api.post<Payslip>(`/finance/payroll/payslips/${id}/recalculate`),

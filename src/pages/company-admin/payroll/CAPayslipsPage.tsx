@@ -4,15 +4,15 @@ import { Search, Download, Loader2, X, CheckCircle2, RefreshCw, AlertTriangle } 
 import { type Payslip } from '../../../api/hr';
 import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
 import PaginationBar from '../../../components/data/Pagination';
-import { useHrPayslips } from '../../../hooks/queries/useHrQueries';
+import { useHrDepartments, useHrPayslips } from '../../../hooks/queries/useHrQueries';
 import { hrApi } from '../../../api/hr';
 import { useQueryClient } from '@tanstack/react-query';
 import { extractError } from '../../../utils/errorUtils';
 import LegacyDrawer from '../../../components/ui/LegacyDrawer';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const YEARS  = ['2024','2025','2026'];
-const DEPTS  = ['All Departments','Engineering','Operations','HR','Finance','Sales','Support'];
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = [CURRENT_YEAR - 2, CURRENT_YEAR - 1, CURRENT_YEAR, CURRENT_YEAR + 1].map(String);
 const TYPES  = ['All Employees','Permanent','Contract'];
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
@@ -21,6 +21,9 @@ const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Processing: { bg: '#fed7aa', color: '#c2410c' },
   'On Hold':  { bg: '#fef9c3', color: '#a16207' },
   Pending:    { bg: '#f1f5f9', color: '#475569' },
+  PUBLISHED:  { bg: '#dcfce7', color: '#15803d' },
+  PAID:       { bg: '#dcfce7', color: '#15803d' },
+  DRAFT:      { bg: '#f1f5f9', color: '#475569' },
 };
 
 const fmt = (n: number) => `₹${n.toLocaleString('en-IN')}`;
@@ -38,6 +41,7 @@ export default function CAPayslipsPage() {
   const [payingId, setPayingId] = useState<string | null>(null);
   const [recalculatingId, setRecalculatingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
+  const [bulkDownloading, setBulkDownloading] = useState(false);
   const queryClient = useQueryClient();
   const limit = 20;
 
@@ -51,6 +55,7 @@ export default function CAPayslipsPage() {
   if (type !== 'All Employees') params.employmentType = type;
 
   const { data, isLoading: loading } = useHrPayslips(params);
+  const departments = useHrDepartments();
   const payslips   = data?.payslips   ?? [];
   const pagination = data?.pagination ?? { total: 0, page: 1, limit: 20, totalPages: 1 };
 
@@ -61,8 +66,17 @@ export default function CAPayslipsPage() {
     const { data } = await hrApi.downloadPayslip(id);
     const url = URL.createObjectURL(data); const a = document.createElement('a'); a.href = url; a.download = `${name}.pdf`; a.click(); URL.revokeObjectURL(url);
   };
+  const canDownload = (status: string) => ['PUBLISHED', 'PAID'].includes(status.toUpperCase());
+  const bulkDownload = async () => {
+    const available = payslips.filter((payslip) => canDownload(payslip.status));
+    if (!available.length) { setActionError('No published payslips are available for the selected filters.'); return; }
+    setActionError(''); setBulkDownloading(true);
+    try { for (const payslip of available) await download(payslip.id, payslip.payslipId); }
+    catch (error) { setActionError(extractError(error, 'One or more payslips could not be downloaded')); }
+    finally { setBulkDownloading(false); }
+  };
   const markPaid = async (id: string) => {
-    if (!window.confirm('Mark this finalized payslip as paid?')) return;
+    if (!window.confirm('Mark this published payslip as paid? This records the payment status in the audit trail.')) return;
     setPayingId(id);
     try {
       await hrApi.markPayslipPaid(id);
@@ -108,8 +122,8 @@ export default function CAPayslipsPage() {
           </div>
           <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>View and download payslips for all employees.</p>
         </div>
-        <button style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-          <Download size={13} /> Bulk Download
+        <button onClick={() => void bulkDownload()} disabled={bulkDownloading || loading} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: bulkDownloading ? 'wait' : 'pointer', fontFamily: 'Inter, sans-serif' }}>
+          {bulkDownloading ? <Loader2 size={13} className="spin" /> : <Download size={13} />} {bulkDownloading ? 'Downloading…' : 'Bulk Download'}
         </button>
       </div>
 
@@ -129,7 +143,7 @@ export default function CAPayslipsPage() {
           {TYPES.map((t) => <option key={t}>{t}</option>)}
         </select>
         <select value={dept} onChange={(e) => handleDeptChange(e.target.value)} style={selectStyle}>
-          {DEPTS.map((d) => <option key={d}>{d}</option>)}
+          <option>All Departments</option>{(departments.data ?? []).map((item) => <option key={item.name}>{item.name}</option>)}
         </select>
       </div>
 
@@ -167,9 +181,9 @@ export default function CAPayslipsPage() {
                     </td>
                     <td style={{ padding: '11px 14px', borderBottom: '1px solid #f1f5f9' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <button onClick={(e) => { e.stopPropagation(); if (['Finalized', 'Paid'].includes(p.status)) void download(p.id, p.payslipId); }} disabled={!['Finalized', 'Paid'].includes(p.status)} style={{ background: 'none', border: 'none', cursor: ['Finalized', 'Paid'].includes(p.status) ? 'pointer' : 'not-allowed', color: '#2563eb', opacity: ['Finalized', 'Paid'].includes(p.status) ? 1 : 0.5 }} title="Download payslip"><Download size={15} /></button>
+                        <button aria-label={`Download ${p.payslipId}`} onClick={(e) => { e.stopPropagation(); if (canDownload(p.status)) void download(p.id, p.payslipId); }} disabled={!canDownload(p.status)} style={{ background: 'none', border: 'none', cursor: canDownload(p.status) ? 'pointer' : 'not-allowed', color: '#2563eb', opacity: canDownload(p.status) ? 1 : 0.5 }} title="Download published payslip"><Download size={15} /></button>
                         {p.grossSalary === 0 && p.totalDeductions === 0 && p.netPay === 0 && <button onClick={(e) => { e.stopPropagation(); void recalculate(p); }} disabled={recalculatingId === p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', border: '1px solid #bfdbfe', background: '#eff6ff', color: '#2563eb', borderRadius: '6px', padding: '4px 7px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }} title="Recalculate zero-value payslip">{recalculatingId === p.id ? <Loader2 size={12} /> : <RefreshCw size={12} />} Fix</button>}
-                        {p.status === 'Finalized' && <button onClick={(e) => { e.stopPropagation(); void markPaid(p.id); }} disabled={payingId === p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', border: '1px solid #bbf7d0', background: '#f0fdf4', color: '#15803d', borderRadius: '6px', padding: '4px 7px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }} title="Mark as paid">{payingId === p.id ? <Loader2 size={12} /> : <CheckCircle2 size={12} />} Pay</button>}
+                        {p.status.toUpperCase() === 'PUBLISHED' && <button onClick={(e) => { e.stopPropagation(); void markPaid(p.id); }} disabled={payingId === p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', border: '1px solid #bbf7d0', background: '#f0fdf4', color: '#15803d', borderRadius: '6px', padding: '4px 7px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }} title="Mark as paid">{payingId === p.id ? <Loader2 size={12} /> : <CheckCircle2 size={12} />} Pay</button>}
                       </div>
                     </td>
                   </tr>
@@ -184,19 +198,6 @@ export default function CAPayslipsPage() {
       </div>
 
       <PaginationBar page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} limit={limit} onPageChange={(p) => setPage(p)} />
-
-      {/* Quick actions */}
-      <div style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
-        <p style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>QUICK ACTIONS</p>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {['Download Payroll'].map((label) => (
-            <button key={label} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', fontSize: '12px', fontWeight: 600, color: '#374151', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-              <div style={{ width: '16px', height: '16px', borderRadius: '4px', border: '1.5px solid #2563eb' }} />
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {viewPayslip && (
         <LegacyDrawer open onClose={() => setViewPayslip(null)} direction="right" className="legacy-detail-drawer">

@@ -38,6 +38,7 @@ export const qk = {
     salary:     (p?: object)              => ['finance', 'salary', p],
     payslips:   (p?: object)              => ['finance', 'payslips', p],
     expenses:   (p?: object)              => ['finance', 'expenses', p],
+    payrollRuns: ()                       => ['finance', 'payroll-runs'],
     report:     (type: string, p?: object) => ['finance', 'report', type, p],
   },
   sa: {

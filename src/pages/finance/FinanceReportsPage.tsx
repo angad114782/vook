@@ -1,22 +1,11 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import { useFinancePayrollReport, useFinanceAttendanceReport, useFinanceWorkforceReport } from '../../hooks/queries/useFinanceQueries';
 import { useAccess } from '../../hooks/queries/useAccess';
 
-type Tab = 'Payroll Report' | 'Expense Report' | 'Cost Analysis';
-const TABS: Tab[] = ['Payroll Report', 'Expense Report', 'Cost Analysis'];
+type Tab = 'Payroll Report' | 'Attendance Inputs' | 'Workforce';
+const TABS: Tab[] = ['Payroll Report', 'Attendance Inputs', 'Workforce'];
 
-
-function DateRangeBar() {
-  const [active, setActive] = useState('6M');
-  return (
-    <div style={{ display: 'flex', gap: '4px' }}>
-      {['1M', '3M', '6M', '1Y', 'All'].map((r) => (
-        <button key={r} onClick={() => setActive(r)} style={{ padding: '4px 10px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: 600, fontFamily: 'Inter, sans-serif', backgroundColor: active === r ? '#2563eb' : '#f1f5f9', color: active === r ? 'white' : '#64748b', transition: 'all 0.15s' }}>{r}</button>
-      ))}
-    </div>
-  );
-}
 
 function SummaryRow({ items }: { items: { label: string; value: string; trend?: string; up?: boolean }[] }) {
   return (
@@ -67,6 +56,20 @@ export default function FinanceReportsPage() {
   const payrollData = payroll as PayrollReport | undefined;
   const attendanceData = attendance as AttendanceReport | undefined;
   const workforceData = workforce as WorkforceReport | undefined;
+  const exportReport = () => {
+    let rows: Array<Array<string | number>> = [];
+    if (tab === 'Payroll Report' && payrollData) rows = [['Period', 'Net pay', 'Payslips'], ...payrollData.byMonth.map((item) => [item.label, item.net, item.count])];
+    if (tab === 'Attendance Inputs' && attendanceData) rows = [['Status', 'Records'], ...Object.entries(attendanceData.byStatus)];
+    if (tab === 'Workforce' && workforceData) rows = [['Department', 'Employees', 'Active'], ...workforceData.byDepartment.map((item) => [item.department, item.count, item.active])];
+    if (!rows.length) return;
+    const csv = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${tab.toLowerCase().replaceAll(' ', '-')}-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -75,7 +78,7 @@ export default function FinanceReportsPage() {
           <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Reports</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Financial summaries and analytics across payroll, expenses, and costs</p>
         </div>
-        {canExport && <button style={{ padding: '8px 16px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Export Report</button>}
+        {canExport && <button onClick={exportReport} disabled={loading} style={{ padding: '8px 16px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: loading ? 'wait' : 'pointer', fontFamily: 'Inter, sans-serif', display: 'inline-flex', alignItems: 'center', gap: 7 }}><Download size={15} aria-hidden="true" /> Export CSV</button>}
       </div>
 
       <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
@@ -93,7 +96,6 @@ export default function FinanceReportsPage() {
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Live Payroll Summary</h3>
-                <DateRangeBar />
               </div>
               <SummaryRow items={[
                 { label: 'Total Net', value: fmtMoney(payrollData.summary.totalNet) },
@@ -110,11 +112,10 @@ export default function FinanceReportsPage() {
                 ))}
               </div>
             </>
-          ) : tab === 'Expense Report' && attendanceData ? (
+          ) : tab === 'Attendance Inputs' && attendanceData ? (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Attendance Cost Inputs</h3>
-                <DateRangeBar />
               </div>
               <SummaryRow items={[
                 { label: 'Present', value: String(attendanceData.byStatus.Present) },
@@ -138,7 +139,6 @@ export default function FinanceReportsPage() {
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Workforce Cost Base</h3>
-                <DateRangeBar />
               </div>
               <SummaryRow items={[
                 { label: 'Total Employees', value: String(workforceData.summary.total) },

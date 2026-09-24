@@ -45,6 +45,44 @@ export const useCreateAttendance = () => {
   });
 };
 
+export const useEmployeeLifecycleAction = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, action, version, reason }: { id: string; action: string; version: number; reason: string }) =>
+      hrApi.employeeAction(id, { action, version, reason }).then((r) => r.data),
+    onSuccess: (employee) => {
+      qc.setQueryData(['hr', 'employee', employee.id], employee);
+      qc.invalidateQueries({ queryKey: ['hr', 'employees'] });
+      qc.invalidateQueries({ queryKey: ['ca', 'dashboard'] });
+    },
+  });
+};
+
+export const useLockAttendancePeriod = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ month, year, version }: { month: number; year: number; version: number }) =>
+      hrApi.lockAttendancePeriod(month, year, version).then((r) => r.data),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ['hr', 'attendance', 'period', variables.year, variables.month] });
+      qc.invalidateQueries({ queryKey: ['hr', 'attendance'] });
+    },
+  });
+};
+
+export const useAttendanceRegularizationAction = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, action, comment }: { id: string; action: 'APPROVE' | 'REJECT'; comment: string }) =>
+      hrApi.attendanceRegularizationAction(id, action, comment).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['hr', 'attendance', 'regularizations'] });
+      qc.invalidateQueries({ queryKey: ['emp', 'attendance', 'regularizations'] });
+      qc.invalidateQueries({ queryKey: ['hr', 'attendance'] });
+    },
+  });
+};
+
 export const useUpdateLeave = () => {
   const qc = useQueryClient();
   return useMutation({

@@ -6,7 +6,8 @@ import { useEmployees } from '../../../hooks/queries/useHrQueries';
 import { extractError } from '../../../utils/errorUtils';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const YEARS  = ['2024','2025','2026'];
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = [CURRENT_YEAR - 2, CURRENT_YEAR - 1, CURRENT_YEAR, CURRENT_YEAR + 1].map(String);
 
 function StepCircle({ n, label, active, done }: { n: number; label: string; active: boolean; done: boolean }) {
   return (

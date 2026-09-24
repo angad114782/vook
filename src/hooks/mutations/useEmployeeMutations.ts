@@ -32,6 +32,18 @@ export const useCheckOut = () => {
   });
 };
 
+export const useRequestRegularization = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { date: string; requestedCheckIn?: string; requestedCheckOut?: string; reason: string }) =>
+      employeeApi.requestRegularization(data).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['emp', 'attendance', 'regularizations'] });
+      qc.invalidateQueries({ queryKey: ['hr', 'attendance'] });
+    },
+  });
+};
+
 export const useApplyLeave = () => {
   const qc = useQueryClient();
   return useMutation({

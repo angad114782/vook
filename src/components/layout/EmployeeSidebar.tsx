@@ -2,7 +2,9 @@ import { LayoutDashboard, Settings, UserCircle } from 'lucide-react';
 import RoleSidebar from './RoleSidebar';
 import { assignableRoleGroups } from './assignableRoleNavigation';
 
-const groups = assignableRoleGroups('/employee');
+const groups = assignableRoleGroups('/employee', { payroll: '/employee/payslips' })
+  .map((group) => ({ ...group, entries: group.entries.filter((entry) => entry.to !== '/employee/payslips' || entry.label === 'Payslips') }))
+  .filter((group) => group.entries.length > 0);
 
 interface EmployeeSidebarProps { mobileOpen?: boolean; onMobileClose?: () => void }
 

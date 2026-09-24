@@ -56,6 +56,8 @@ const LeaveManagementPage   = lazy(() => import('./pages/hr/LeaveManagementPage'
 const ApprovalsPage         = lazy(() => import('./pages/hr/ApprovalsPage'));
 const DocumentPoliciesPage  = lazy(() => import('./pages/hr/DocumentPoliciesPage'));
 const HRSettingsPage        = lazy(() => import('./pages/hr/HRSettingsPage'));
+const HolidayCalendarPage   = lazy(() => import('./pages/hr/HolidayCalendarPage'));
+const EmployeeDetailPage    = lazy(() => import('./pages/hr/EmployeeDetailPage'));
 
 // Manager pages
 const ManagerDashboardPage  = lazy(() => import('./pages/manager/ManagerDashboardPage'));
@@ -63,11 +65,10 @@ const ManagerSettingsPage   = lazy(() => import('./pages/manager/ManagerSettings
 
 // Company Admin pages
 const CADashboardPage        = lazy(() => import('./pages/company-admin/CADashboardPage'));
-const CARunPayrollPage       = lazy(() => import('./pages/company-admin/payroll/CARunPayrollPage'));
 const CASalaryStructurePage  = lazy(() => import('./pages/company-admin/payroll/CASalaryStructurePage'));
 const CAPayslipsPage         = lazy(() => import('./pages/company-admin/payroll/CAPayslipsPage'));
 const CAPayrollReportsPage   = lazy(() => import('./pages/company-admin/payroll/CAPayrollReportsPage'));
-const CACompliancePage       = lazy(() => import('./pages/company-admin/payroll/CACompliancePage'));
+const CACompliancePage       = lazy(() => import('./pages/company-admin/payroll/CAComplianceProductionPage'));
 const CAUsersPage            = lazy(() => import('./pages/company-admin/CAUsersPage'));
 const CADepartmentsPage      = lazy(() => import('./pages/company-admin/CADepartmentsPage'));
 const CAActivityPage         = lazy(() => import('./pages/company-admin/CAActivityPage'));
@@ -84,10 +85,12 @@ const CAAttendanceIntegrationsPage = lazy(() => import('./pages/company-admin/CA
 // Employee pages
 const EmployeeDashboardPage = lazy(() => import('./pages/employee/EmployeeDashboardPage'));
 const EmployeeSettingsPage  = lazy(() => import('./pages/employee/EmployeeSettingsPage'));
+const EmployeePayslipsPage  = lazy(() => import('./pages/employee/EmployeePayslipsPage'));
 
 // Finance pages
 const FinanceDashboardPage = lazy(() => import('./pages/finance/FinanceDashboardPage'));
 const FinancePayrollPage   = lazy(() => import('./pages/finance/FinancePayrollPage'));
+const PayrollOverviewPage  = lazy(() => import('./pages/finance/PayrollOverviewPage'));
 const SalaryStructurePage  = lazy(() => import('./pages/finance/SalaryStructurePage'));
 const PayslipsPage         = lazy(() => import('./pages/finance/PayslipsPage'));
 const ExpensesPage         = lazy(() => import('./pages/finance/ExpensesPage'));
@@ -175,11 +178,13 @@ export default function App() {
             <Route path="notifications" element={<NotificationInboxPage />} />
             <Route path="dashboard"  element={guarded(<HRDashboardPage />, 'DASHBOARD.VIEW', 'Dashboard')} />
             <Route path="employees"  element={guarded(<EmployeesPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
+            <Route path="employees/:id" element={guarded(<EmployeeDetailPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
+            <Route path="calendar" element={guarded(<HolidayCalendarPage />, 'LEAVE_MANAGEMENT.VIEW', 'Leave Management')} />
             <Route path="attendance" element={guarded(<AttendancePage />, 'ATTENDANCE.VIEW', 'Attendance')} />
             <Route path="shifts"     element={guarded(<ShiftManagementPage />, 'SHIFT_MANAGEMENT.VIEW', 'Shift Management')} />
             <Route path="leaves"     element={guarded(<LeaveManagementPage />, 'LEAVE_MANAGEMENT.VIEW', 'Leave Management')} />
             <Route path="approvals"  element={guarded(<ApprovalsPage />, 'APPROVALS.VIEW', 'Approvals')} />
-            <Route path="payroll"    element={guarded(<FinancePayrollPage />, 'PAYROLL.VIEW', 'Payroll')} />
+            <Route path="payroll"    element={guarded(<PayrollOverviewPage />, 'PAYROLL.VIEW', 'Payroll')} />
             <Route path="payslips"   element={guarded(<PayslipsPage />, 'PAYSLIPS.VIEW', 'Payslips')} />
             <Route path="expenses"   element={guarded(<ExpensesPage />, 'EXPENSE_MANAGEMENT.VIEW', 'Expense Management')} />
             <Route path="documents"  element={guarded(<DocumentPoliciesPage />, 'DOCUMENTS.VIEW', 'Documents')} />
@@ -198,11 +203,13 @@ export default function App() {
             <Route path="attendance" element={guarded(<AttendancePage />, 'ATTENDANCE.VIEW', 'Attendance')} />
             <Route path="attendance-integrations" element={guarded(<CAAttendanceIntegrationsPage />, 'ATTENDANCE.VIEW', 'Attendance')} />
             <Route path="workforce"  element={guarded(<EmployeesPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
+            <Route path="workforce/:id" element={guarded(<EmployeeDetailPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
+            <Route path="calendar" element={guarded(<HolidayCalendarPage />, 'LEAVE_MANAGEMENT.VIEW', 'Leave Management')} />
             <Route path="shifts"     element={guarded(<ShiftManagementPage />, 'SHIFT_MANAGEMENT.VIEW', 'Shift Management')} />
             <Route path="leaves"     element={guarded(<LeaveManagementPage />, 'LEAVE_MANAGEMENT.VIEW', 'Leave Management')} />
             <Route path="payroll" element={<Navigate to="/company-admin/payroll/overview" replace />} />
-            <Route path="payroll/overview"         element={guarded(<FinancePayrollPage />, 'PAYROLL.VIEW', 'Payroll')} />
-            <Route path="payroll/run"              element={guarded(<CARunPayrollPage />, 'PAYROLL.PROCESS', 'Payroll')} />
+            <Route path="payroll/overview"         element={guarded(<PayrollOverviewPage />, 'PAYROLL.VIEW', 'Payroll')} />
+            <Route path="payroll/run"              element={guarded(<FinancePayrollPage />, 'PAYROLL.PROCESS', 'Payroll')} />
             <Route path="payroll/salary-structure" element={guarded(<CASalaryStructurePage />, 'PAYROLL.VIEW', 'Payroll')} />
             <Route path="payroll/payslips"         element={guarded(<CAPayslipsPage />, 'PAYSLIPS.VIEW', 'Payslips')} />
             <Route path="payroll/reports"          element={guarded(<CAPayrollReportsPage />, 'REPORTS_ANALYTICS.VIEW', 'Reports & Analytics')} />
@@ -230,12 +237,14 @@ export default function App() {
             <Route path="notifications" element={<NotificationInboxPage />} />
             <Route path="dashboard"  element={guarded(<EmployeeDashboardPage />, 'DASHBOARD.VIEW', 'Dashboard')} />
             <Route path="workforce"  element={guarded(<EmployeesPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
+            <Route path="workforce/:id" element={guarded(<EmployeeDetailPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
+            <Route path="calendar" element={guarded(<HolidayCalendarPage />, 'LEAVE_MANAGEMENT.VIEW', 'Leave Management')} />
             <Route path="attendance" element={guarded(<AttendancePage />, 'ATTENDANCE.VIEW', 'Attendance')} />
             <Route path="shifts"     element={guarded(<ShiftManagementPage />, 'SHIFT_MANAGEMENT.VIEW', 'Shift Management')} />
             <Route path="leaves"     element={guarded(<LeaveManagementPage />, 'LEAVE_MANAGEMENT.VIEW', 'Leave Management')} />
             <Route path="approvals"  element={guarded(<ApprovalsPage />, 'APPROVALS.VIEW', 'Approvals')} />
-            <Route path="payroll"    element={guarded(<FinancePayrollPage />, 'PAYROLL.VIEW', 'Payroll')} />
-            <Route path="payslips"   element={guarded(<PayslipsPage />, 'PAYSLIPS.VIEW', 'Payslips')} />
+            <Route path="payroll"    element={<Navigate to="/employee/payslips" replace />} />
+            <Route path="payslips"   element={guarded(<EmployeePayslipsPage />, 'PAYSLIPS.VIEW', 'Payslips')} />
             <Route path="expenses"   element={guarded(<ExpensesPage />, 'EXPENSE_MANAGEMENT.VIEW', 'Expense Management')} />
             <Route path="documents"  element={guarded(<DocumentPoliciesPage />, 'DOCUMENTS.VIEW', 'Documents')} />
             <Route path="reports"    element={guarded(<FinanceReportsPage />, 'REPORTS_ANALYTICS.VIEW', 'Reports & Analytics')} />
@@ -249,11 +258,14 @@ export default function App() {
             <Route path="notifications"    element={<NotificationInboxPage />} />
             <Route path="dashboard"        element={guarded(<FinanceDashboardPage />, 'DASHBOARD.VIEW', 'Dashboard')} />
             <Route path="workforce"        element={guarded(<EmployeesPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
+            <Route path="workforce/:id"    element={guarded(<EmployeeDetailPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
+            <Route path="calendar"         element={guarded(<HolidayCalendarPage />, 'LEAVE_MANAGEMENT.VIEW', 'Leave Management')} />
             <Route path="attendance"       element={guarded(<AttendancePage />, 'ATTENDANCE.VIEW', 'Attendance')} />
             <Route path="shifts"           element={guarded(<ShiftManagementPage />, 'SHIFT_MANAGEMENT.VIEW', 'Shift Management')} />
             <Route path="leaves"           element={guarded(<LeaveManagementPage />, 'LEAVE_MANAGEMENT.VIEW', 'Leave Management')} />
             <Route path="approvals"        element={guarded(<ApprovalsPage />, 'APPROVALS.VIEW', 'Approvals')} />
-            <Route path="payroll"          element={guarded(<FinancePayrollPage />, 'PAYROLL.VIEW', 'Payroll')} />
+            <Route path="payroll"          element={guarded(<PayrollOverviewPage />, 'PAYROLL.VIEW', 'Payroll')} />
+            <Route path="payroll/run"      element={guarded(<FinancePayrollPage />, 'PAYROLL.PROCESS', 'Payroll')} />
             <Route path="salary-structure" element={guarded(<SalaryStructurePage />, 'PAYROLL.VIEW', 'Payroll')} />
             <Route path="payslips"         element={guarded(<PayslipsPage />, 'PAYSLIPS.VIEW', 'Payslips')} />
             <Route path="expenses"         element={guarded(<ExpensesPage />, 'EXPENSE_MANAGEMENT.VIEW', 'Expense Management')} />
@@ -269,11 +281,13 @@ export default function App() {
             <Route path="notifications" element={<NotificationInboxPage />} />
             <Route path="dashboard"  element={guarded(<ManagerDashboardPage />, 'DASHBOARD.VIEW', 'Dashboard')} />
             <Route path="workforce"  element={guarded(<EmployeesPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
+            <Route path="workforce/:id" element={guarded(<EmployeeDetailPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
+            <Route path="calendar" element={guarded(<HolidayCalendarPage />, 'LEAVE_MANAGEMENT.VIEW', 'Leave Management')} />
             <Route path="approvals"  element={guarded(<ApprovalsPage />, 'APPROVALS.VIEW', 'Approvals')} />
             <Route path="attendance" element={guarded(<AttendancePage />, 'ATTENDANCE.VIEW', 'Attendance')} />
             <Route path="shifts"     element={guarded(<ShiftManagementPage />, 'SHIFT_MANAGEMENT.VIEW', 'Shift Management')} />
             <Route path="leaves"     element={guarded(<LeaveManagementPage />, 'LEAVE_MANAGEMENT.VIEW', 'Leave Management')} />
-            <Route path="payroll"    element={guarded(<FinancePayrollPage />, 'PAYROLL.VIEW', 'Payroll')} />
+            <Route path="payroll"    element={guarded(<PayrollOverviewPage />, 'PAYROLL.VIEW', 'Payroll')} />
             <Route path="payslips"   element={guarded(<PayslipsPage />, 'PAYSLIPS.VIEW', 'Payslips')} />
             <Route path="expenses"   element={guarded(<ExpensesPage />, 'EXPENSE_MANAGEMENT.VIEW', 'Expense Management')} />
             <Route path="documents"  element={guarded(<DocumentPoliciesPage />, 'DOCUMENTS.VIEW', 'Documents')} />
@@ -288,11 +302,13 @@ export default function App() {
             <Route path="notifications" element={<NotificationInboxPage />} />
             <Route path="dashboard"  element={guarded(<SupervisorDashboardPage />, 'DASHBOARD.VIEW', 'Dashboard')} />
             <Route path="workforce"  element={guarded(<EmployeesPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
+            <Route path="workforce/:id" element={guarded(<EmployeeDetailPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
+            <Route path="calendar" element={guarded(<HolidayCalendarPage />, 'LEAVE_MANAGEMENT.VIEW', 'Leave Management')} />
             <Route path="attendance" element={guarded(<AttendancePage />, 'ATTENDANCE.VIEW', 'Attendance')} />
             <Route path="shifts"     element={guarded(<ShiftManagementPage />, 'SHIFT_MANAGEMENT.VIEW', 'Shift Management')} />
             <Route path="leaves"     element={guarded(<LeaveManagementPage />, 'LEAVE_MANAGEMENT.VIEW', 'Leave Management')} />
             <Route path="approvals"  element={guarded(<ApprovalsPage />, 'APPROVALS.VIEW', 'Approvals')} />
-            <Route path="payroll"    element={guarded(<FinancePayrollPage />, 'PAYROLL.VIEW', 'Payroll')} />
+            <Route path="payroll"    element={guarded(<PayrollOverviewPage />, 'PAYROLL.VIEW', 'Payroll')} />
             <Route path="payslips"   element={guarded(<PayslipsPage />, 'PAYSLIPS.VIEW', 'Payslips')} />
             <Route path="expenses"   element={guarded(<ExpensesPage />, 'EXPENSE_MANAGEMENT.VIEW', 'Expense Management')} />
             <Route path="documents"  element={guarded(<DocumentPoliciesPage />, 'DOCUMENTS.VIEW', 'Documents')} />

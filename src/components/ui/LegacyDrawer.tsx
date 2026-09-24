@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Drawer, DrawerContent } from './drawer';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 
 const DRAWER_EXIT_DURATION = 500;
 
@@ -13,6 +14,7 @@ interface LegacyDrawerProps {
 
 /** Compatibility frame for legacy page content while its inner markup is normalized. */
 export default function LegacyDrawer({ open, onClose, children, direction = 'bottom', className = '' }: LegacyDrawerProps) {
+  const compact = useMediaQuery('(max-width: 1199px)');
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [renderOpen, setRenderOpen] = useState(open);
@@ -61,8 +63,10 @@ export default function LegacyDrawer({ open, onClose, children, direction = 'bot
     }, DRAWER_EXIT_DURATION);
   };
 
+  const actualDirection = compact && direction === 'right' ? 'bottom' : direction;
+
   return (
-    <Drawer open={renderOpen} onOpenChange={handleOpenChange} direction={direction} shouldScaleBackground={false}>
+    <Drawer open={renderOpen} onOpenChange={handleOpenChange} direction={actualDirection} shouldScaleBackground={false}>
       <DrawerContent className={`legacy-drawer ${className}`}>{children}</DrawerContent>
     </Drawer>
   );

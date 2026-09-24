@@ -7,6 +7,10 @@ import { Check, Loader2, ChevronRight } from 'lucide-react';
 import { useFinanceEmployees } from '../../hooks/queries/useFinanceQueries';
 import { useFinanceRunPayroll } from '../../hooks/mutations/useFinanceMutations';
 import { useAccess } from '../../hooks/queries/useAccess';
+import { useAttendancePeriod, useAttendanceRecords } from '../../hooks/queries/useHrQueries';
+import AppDialog from '../../components/ui/AppDialog';
+import { StatusBadge } from '../../components/ui/ProductPrimitives';
+import { Link, useLocation } from 'react-router-dom';
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -14,7 +18,7 @@ const STEPS = [
   { n: 1, label: 'Select Employees' },
   { n: 2, label: 'Review Attendance' },
   { n: 3, label: 'Salary Calculation' },
-  { n: 4, label: 'Finalize & Generate' },
+  { n: 4, label: 'Prepare for Review' },
 ];
 
 const avatarColors = [
@@ -53,35 +57,53 @@ function StepBar({ step }: { step: Step }) {
 interface EmpRow { emp: Employee; selected: boolean; daysPresent: number; leaves: number; ot: number }
 
 export default function FinancePayrollPage() {
+  const location = useLocation();
   const access = useAccess();
   const canProcess = access.can('PAYROLL.PROCESS');
   const [step, setStep] = useState<Step>(1);
   const [rows, setRows] = useState<EmpRow[]>([]);
   const [typeFilter, setTypeFilter] = useState('All Types');
   const [generated, setGenerated] = useState(false);
+  const [calculationRow, setCalculationRow] = useState<EmpRow | null>(null);
   const [generateError, setGenerateError] = useState('');
   const today = new Date();
   const [periodMonth, setPeriodMonth] = useState(today.getMonth() + 1);
   const [periodYear, setPeriodYear] = useState(today.getFullYear());
 
   const { data: empData, isLoading: loading } = useFinanceEmployees({ limit: '200' });
+  const { data: attendanceData, isLoading: attendanceLoading } = useAttendanceRecords({ limit: '100', month: String(periodMonth), year: String(periodYear) });
+  const attendancePeriod = useAttendancePeriod(periodMonth, periodYear);
   const runPayroll = useFinanceRunPayroll();
 
   const employees = empData?.employees ?? [];
 
-  // Initialize rows once employees are loaded
+  // Attendance is an authoritative payroll input. Keep selection state while
+  // recalculating the selected period's present, leave, and overtime values.
   useEffect(() => {
     const loadedEmployees = empData?.employees ?? [];
-    if (loadedEmployees.length > 0 && rows.length === 0) {
-      setRows(loadedEmployees.map((e) => ({
-        emp: e,
-        selected: false,
-        daysPresent: 0,
-        leaves: 0,
-        ot: 0,
-      })));
-    }
-  }, [empData?.employees, rows.length]);
+    const records = attendanceData?.records ?? [];
+    if (!loadedEmployees.length) return;
+    setRows((current) => loadedEmployees.map((employee) => {
+      const previous = current.find((item) => item.emp.id === employee.id);
+      const periodRecords = records.filter((record) => {
+        const recordDate = new Date(`${record.date.slice(0, 10)}T00:00:00`);
+        return record.employeeId.id === employee.id && recordDate.getMonth() + 1 === periodMonth && recordDate.getFullYear() === periodYear;
+      });
+      const overtimeMinutes = periodRecords.reduce((total, record) => {
+        if (!record.checkIn || !record.checkOut) return total;
+        const [inHour, inMinute] = record.checkIn.split(':').map(Number);
+        const [outHour, outMinute] = record.checkOut.split(':').map(Number);
+        return total + Math.max(0, (outHour * 60 + outMinute) - (inHour * 60 + inMinute) - 540);
+      }, 0);
+      return {
+        emp: employee,
+        selected: previous?.selected ?? false,
+        daysPresent: periodRecords.filter((record) => ['Present', 'Late', 'Holiday'].includes(record.status)).length,
+        leaves: periodRecords.filter((record) => ['Leave', 'Absent'].includes(record.status)).length,
+        ot: Math.round(overtimeMinutes / 60 * 10) / 10,
+      };
+    }));
+  }, [attendanceData?.records, empData?.employees, periodMonth, periodYear]);
 
   const toggleAll = (v: boolean) => setRows((r) => r.map((x) => filtered.some((item) => item.emp.id === x.emp.id) ? { ...x, selected: v } : x));
   const toggleRow = (id: string) => setRows((r) => r.map((x) => x.emp.id === id ? { ...x, selected: !x.selected } : x));
@@ -127,7 +149,7 @@ export default function FinancePayrollPage() {
       {
         onSuccess: () => {
           setGenerated(true);
-          toast.success('Payslips generated successfully');
+          toast.success('Payroll prepared and ready for review');
         },
         onError: (err) => {
           const message = extractError(err, 'Failed to generate payslips');
@@ -173,13 +195,10 @@ export default function FinancePayrollPage() {
                     <button key={t} onClick={() => setTypeFilter(t)} style={{ padding: '5px 12px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: 'Inter, sans-serif', backgroundColor: typeFilter === t ? '#2563eb' : 'white', color: typeFilter === t ? 'white' : '#374151' }}>{t}</button>
                   ))}
                 </div>
-                <select style={{ padding: '6px 10px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', color: '#374151', backgroundColor: 'white', outline: 'none', fontFamily: 'Inter, sans-serif' }}>
-                  <option>Pending</option><option>All</option>
-                </select>
               </div>
             </div>
 
-            {loading ? (
+            {loading || attendanceLoading || attendancePeriod.isLoading ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#2563eb" /></div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
@@ -226,7 +245,7 @@ export default function FinancePayrollPage() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
               <span style={{ fontSize: '13px', color: '#64748b' }}>{selected.length} of {employees.length} employees selected</span>
-              <button onClick={() => selected.length > 0 && missingSalary.length === 0 && noPayableDays.length === 0 && setStep(2)} style={btnStyle(selected.length === 0 || missingSalary.length > 0 || noPayableDays.length > 0)}>
+              <button onClick={() => selected.length > 0 && missingSalary.length === 0 && noPayableDays.length === 0 && attendancePeriod.data?.status === 'LOCKED' && setStep(2)} style={btnStyle(selected.length === 0 || missingSalary.length > 0 || noPayableDays.length > 0 || attendancePeriod.data?.status !== 'LOCKED')}>
                 Next <ChevronRight size={14} />
               </button>
             </div>
@@ -240,6 +259,7 @@ export default function FinancePayrollPage() {
                 {noPayableDays.map((r) => `${r.emp.user.name} (${r.emp.employeeId})`).join(', ')} joined after this payroll period. Select the employee&apos;s joining month or a later period.
               </div>
             )}
+            {attendancePeriod.data?.status !== 'LOCKED' && !attendancePeriod.isLoading && <div className="payroll-preflight-warning"><StatusBadge status="BLOCKER">Blocker</StatusBadge><span><strong>Attendance is still open for this period.</strong> Lock it before payroll can be prepared.</span><Link to={`/${location.pathname.split('/')[1]}/attendance?tab=records&month=${periodMonth}&year=${periodYear}`}>Review attendance</Link></div>}
           </>
         )}
 
@@ -316,7 +336,7 @@ export default function FinancePayrollPage() {
                         <td style={{ padding: '11px 14px' }}><span style={{ fontSize: '13px', color: '#16a34a', fontWeight: 600 }}>+{fmtPay(Math.round(allowance))}</span></td>
                         <td style={{ padding: '11px 14px' }}><span style={{ fontSize: '13px', color: '#dc2626', fontWeight: 600 }}>-{fmtPay(Math.round(deduction))}</span></td>
                         <td style={{ padding: '11px 14px' }}><span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{fmtPay(Math.round(net))}</span></td>
-                        <td style={{ padding: '11px 14px' }}><button style={{ fontSize: '12px', color: '#2563eb', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>View →</button></td>
+                        <td style={{ padding: '11px 14px' }}><button onClick={() => setCalculationRow(r)} style={{ fontSize: '12px', color: '#2563eb', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>View breakdown →</button></td>
                       </tr>
                     );
                   })}
@@ -330,7 +350,7 @@ export default function FinancePayrollPage() {
           </>
         )}
 
-        {/* Step 4 – Finalize & Generate */}
+        {/* Step 4 – Prepare for review */}
         {step === 4 && (
           <>
             <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '14px' }}>Payroll Summary</h3>
@@ -384,7 +404,8 @@ export default function FinancePayrollPage() {
             {generated && (
               <div style={{ padding: '12px 16px', borderRadius: '8px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Check size={16} color="#16a34a" />
-                <span style={{ fontSize: '13px', color: '#16a34a', fontWeight: 600 }}>Payslips generated successfully for {selected.length - holdCount} employees.</span>
+                <span style={{ flex: 1, fontSize: '13px', color: '#166534', fontWeight: 600 }}>Payroll is ready for review for {selected.length - holdCount} employees. Payslips remain unpublished until approval and finalization.</span>
+                <Link className="admin-button admin-button--secondary" to={location.pathname.startsWith('/company-admin') ? '/company-admin/payroll/overview' : '/finance/payroll'}>Open payroll overview</Link>
               </div>
             )}
             {generateError && (
@@ -396,15 +417,22 @@ export default function FinancePayrollPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
               <button onClick={() => { setStep(3); setGenerated(false); }} style={{ padding: '9px 18px', border: '1.5px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', color: '#374151', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>← Back</button>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', alignSelf: 'center' }}>QUICK ACTIONS</p>
                 {canProcess && <button onClick={() => handleGenerate()} disabled={generating || generated} style={btnStyle(generating || generated)}>
-                  {generating ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Generating...</> : generated ? '✓ Payslips Generated' : 'Generate Payslips →'}
+                  {generating ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Preparing...</> : generated ? '✓ Ready for Review' : 'Prepare Payroll →'}
                 </button>}
               </div>
             </div>
           </>
         )}
       </div>
+      {calculationRow && <AppDialog open onOpenChange={(open) => !open && setCalculationRow(null)} title={`${calculationRow.emp.user.name} · Calculation preview`} description={`${MONTH_LABELS[periodMonth - 1]} ${periodYear} · ${calculationRow.emp.employeeId}`} footer={<button className="admin-button admin-button--secondary" onClick={() => setCalculationRow(null)}>Close</button>}><CalculationBreakdown row={calculationRow} calculate={calcSalary} /></AppDialog>}
     </div>
   );
+}
+
+const MONTH_LABELS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+function CalculationBreakdown({ row, calculate }: { row: EmpRow; calculate: (row: EmpRow) => { base: number; allowance: number; deduction: number; net: number; configured: boolean } }) {
+  const result = calculate(row);
+  return <div className="payslip-breakdown"><div className="payslip-breakdown__net"><span>Estimated net pay</span><strong>{fmtPay(result.net)}</strong></div><dl><div><dt>Configured monthly salary</dt><dd>{fmtPay(result.base)}</dd></div><div><dt>Allowances</dt><dd>{fmtPay(result.allowance)}</dd></div><div><dt>Attendance days</dt><dd>{row.daysPresent}</dd></div><div><dt>Leave / unpaid days</dt><dd>{row.leaves}</dd></div><div><dt>Overtime hours</dt><dd>{row.ot}</dd></div><div><dt>Estimated deductions</dt><dd>{fmtPay(result.deduction)}</dd></div></dl><p>This is a preflight estimate. The authoritative run applies the saved effective-dated salary and statutory configuration and stores an immutable calculation snapshot.</p></div>;
 }

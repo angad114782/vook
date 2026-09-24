@@ -10,13 +10,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import LegacyDrawer from '../../../components/ui/LegacyDrawer';
 
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const fmtCtc = (n: number | null) => n ? `INR ${n.toLocaleString('en-IN')}` : 'Not configured';
 const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : '—';
 
 export default function CASalaryStructurePage() {
   const [search,  setSearch]  = useState('');
-  const [month,   setMonth]   = useState('February');
   const [editEmp, setEditEmp] = useState<SalaryRow | null>(null);
   const [editCTC, setEditCTC] = useState('');
   const [editBasic, setEditBasic] = useState('');
@@ -70,14 +68,6 @@ export default function CASalaryStructurePage() {
     } finally { setSaving(false); }
   };
 
-  const selectStyle: React.CSSProperties = {
-    padding: '8px 28px 8px 10px', border: '1px solid #e2e8f0', borderRadius: '8px',
-    fontSize: '12px', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#374151',
-    backgroundColor: 'white', appearance: 'none',
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', cursor: 'pointer',
-  };
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div>
@@ -92,9 +82,6 @@ export default function CASalaryStructurePage() {
             <Search size={13} style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
             <input value={search} onChange={(e) => handleSearchChange(e.target.value)} placeholder="Search employee..." style={{ paddingLeft: '30px', paddingRight: '10px', paddingTop: '8px', paddingBottom: '8px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#374151', width: '200px' }} />
           </div>
-          <select value={month} onChange={(e) => setMonth(e.target.value)} style={selectStyle}>
-            {MONTHS.map((m) => <option key={m}>{m}</option>)}
-          </select>
         </div>
         <span style={{ fontSize: '12px', color: '#64748b' }}>{pagination.total} employees</span>
       </div>
@@ -128,8 +115,8 @@ export default function CASalaryStructurePage() {
                   <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700, color: e.annualCtc && e.annualCtc > 0 ? '#0f172a' : '#dc2626', borderBottom: '1px solid #f1f5f9' }}>{fmtCtc(e.annualCtc)}</td>
                   <td style={{ padding: '12px 16px', fontSize: '12px', color: '#2563eb', fontWeight: 600, borderBottom: '1px solid #f1f5f9' }}>{fmtDate(e.lastRevised)}</td>
                   <td style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
-                    <button onClick={() => openEdit(e)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb', display: 'flex', alignItems: 'center' }}>
-                      <Edit2 size={14} />
+                    <button aria-label={`Revise salary for ${e.name}`} onClick={() => openEdit(e)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb', display: 'flex', alignItems: 'center' }}>
+                      <Edit2 size={14} aria-hidden="true" />
                     </button>
                   </td>
                 </tr>
@@ -143,19 +130,6 @@ export default function CASalaryStructurePage() {
       </div>
 
       <PaginationBar page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} limit={limit} onPageChange={(p) => setPage(p)} />
-
-      {/* Quick actions */}
-      <div style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
-        <p style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>QUICK ACTIONS</p>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {['Download Payroll', 'Manage Roles'].map((label) => (
-            <button key={label} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', fontSize: '12px', fontWeight: 600, color: '#374151', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-              <div style={{ width: '16px', height: '16px', borderRadius: '4px', border: '1.5px solid #2563eb' }} />
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Edit CTC Modal */}
       {editEmp && (

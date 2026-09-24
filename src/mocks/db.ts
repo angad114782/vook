@@ -80,6 +80,27 @@ export async function getMockState(): Promise<MockState> {
       catalogChanged = true;
     }
 
+    if (!stored.holidayCalendars) {
+      stored.holidayCalendars = structuredClone(seededState.holidayCalendars);
+      catalogChanged = true;
+    }
+    if (!stored.attendancePeriods) {
+      stored.attendancePeriods = structuredClone(seededState.attendancePeriods);
+      catalogChanged = true;
+    }
+    if (!stored.payrollCompliance) {
+      stored.payrollCompliance = structuredClone(seededState.payrollCompliance);
+      catalogChanged = true;
+    }
+
+    // Migrate the legacy demo payslip state into the production lifecycle
+    // without replacing employee or user-created records.
+    stored.payslips = (stored.payslips ?? []).map((payslip) => {
+      if (payslip.status !== 'PROCESSED') return payslip;
+      catalogChanged = true;
+      return { ...payslip, status: payslip.paymentStatus === 'PAID' ? 'PAID' : 'PUBLISHED' };
+    });
+
     // Seed additions should appear for existing demo sessions too. Keep
     // user-created comments intact while backfilling only new fixture rows.
     const storedComments = stored.comments ?? [];

@@ -21,10 +21,18 @@ export const useTodayAttendance = () =>
     staleTime: 60 * 1000,
   });
 
-export const useMyLeaves = () =>
+export const useMyRegularizations = (enabled = true) =>
+  useQuery({
+    queryKey: ['emp', 'attendance', 'regularizations'],
+    queryFn: () => employeeApi.getRegularizations().then((r) => r.data),
+    enabled,
+  });
+
+export const useMyLeaves = (enabled = true) =>
   useQuery({
     queryKey: qk.emp.leaves(),
     queryFn: () => employeeApi.getLeaves().then((r) => r.data),
+    enabled,
   });
 
 export const useMyPayslips = () =>
