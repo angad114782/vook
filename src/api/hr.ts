@@ -4,6 +4,7 @@ import api from './axios';
 
 export interface Employee {
   id: string; employeeId: string; department: string | null; designation: string | null;
+  mobile?: string | null;
   shiftType: string | null; shiftTiming: string | null; joiningDate: string | null;
   annualCtc: number | null; employmentType: string; status: string;
   bankName: string | null; branchName: string | null; accountHolder: string | null;

@@ -1,6 +1,6 @@
 import axios, { type AxiosRequestConfig } from 'axios';
 import { toast } from 'sonner';
-import { runtimeConfig } from '../config/runtime';
+import { isMockMode, runtimeConfig } from '../config/runtime';
 import { toV2ResourcePath } from './routes';
 
 let csrfToken: string | null = null;
@@ -47,6 +47,16 @@ api.interceptors.response.use(
     }
 
     const status = error.response?.status;
+    const original = error.config as AxiosRequestConfig & { _mockGetRetry?: number };
+    const retryCount = original?._mockGetRetry ?? 0;
+    const method = original?.method?.toUpperCase();
+    const transientMockReadFailure = !status || (status >= 500 && status !== 501);
+    if (isMockMode && method === 'GET' && retryCount < 1 && transientMockReadFailure) {
+      original._mockGetRetry = retryCount + 1;
+      await new Promise((resolve) => window.setTimeout(resolve, 200));
+      return api(original);
+    }
+
     if (status === 409) {
       toast.error(error.response?.data?.error?.message ?? error.response?.data?.message ?? 'This record changed. Refresh and try again.');
     }
@@ -54,9 +64,9 @@ api.interceptors.response.use(
       toast.error('Server error. Please try again.');
     }
 
-    const original = error.config as AxiosRequestConfig & { _retry?: boolean };
+    const authOriginal = original as AxiosRequestConfig & { _retry?: boolean };
 
-    if (error.response?.status !== 401 || original._retry || authEndpoint) {
+    if (error.response?.status !== 401 || authOriginal._retry || authEndpoint) {
       return Promise.reject(error);
     }
 
@@ -70,7 +80,7 @@ api.interceptors.response.use(
       });
     }
 
-    original._retry = true;
+    authOriginal._retry = true;
     isRefreshing = true;
 
     try {
@@ -80,7 +90,7 @@ api.interceptors.response.use(
       window.dispatchEvent(new CustomEvent('auth:session-refreshed'));
 
       drainQueue();
-      return api(original);
+      return api(authOriginal);
     } catch (refreshErr) {
       drainQueue(refreshErr);
       setCsrfToken(null);

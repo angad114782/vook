@@ -73,14 +73,12 @@ const CAUsersPage            = lazy(() => import('./pages/company-admin/CAUsersP
 const CADepartmentsPage      = lazy(() => import('./pages/company-admin/CADepartmentsPage'));
 const CAActivityPage         = lazy(() => import('./pages/company-admin/CAActivityPage'));
 const CAModulesPage          = lazy(() => import('./pages/company-admin/CAModulesPage'));
-const CACompanyDetailsPage   = lazy(() => import('./pages/company-admin/CACompanyDetailsPage'));
 const CARolesPage            = lazy(() => import('./pages/company-admin/CARolesPage'));
 const CAWorkflowsPage        = lazy(() => import('./pages/company-admin/CAWorkflowsPage'));
 const CASupportPage          = lazy(() => import('./pages/company-admin/CASupportPage'));
 const CAOnboardingPage       = lazy(() => import('./pages/company-admin/CAOnboardingPage'));
 const CAPlanPage             = lazy(() => import('./pages/company-admin/CAPlanPage'));
 const CALandingPage          = lazy(() => import('./pages/company-admin/CALandingPage'));
-const CAAttendanceIntegrationsPage = lazy(() => import('./pages/company-admin/CAAttendanceIntegrationsPage'));
 
 // Employee pages
 const EmployeeDashboardPage = lazy(() => import('./pages/employee/EmployeeDashboardPage'));
@@ -201,7 +199,6 @@ export default function App() {
             <Route path="onboarding" element={<CAOnboardingPage />} />
             <Route path="plan"       element={<CAPlanPage />} />
             <Route path="attendance" element={guarded(<AttendancePage />, 'ATTENDANCE.VIEW', 'Attendance')} />
-            <Route path="attendance-integrations" element={guarded(<CAAttendanceIntegrationsPage />, 'ATTENDANCE.VIEW', 'Attendance')} />
             <Route path="workforce"  element={guarded(<EmployeesPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
             <Route path="workforce/:id" element={guarded(<EmployeeDetailPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
             <Route path="calendar" element={guarded(<HolidayCalendarPage />, 'LEAVE_MANAGEMENT.VIEW', 'Leave Management')} />
@@ -220,10 +217,10 @@ export default function App() {
             <Route path="approvals"  element={guarded(<ApprovalsPage />, 'APPROVALS.VIEW', 'Approvals')} />
             <Route path="reports"    element={guarded(<FinanceReportsPage />, 'REPORTS_ANALYTICS.VIEW', 'Reports & Analytics')} />
             <Route path="users"      element={guarded(<CAUsersPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
-            <Route path="departments" element={guarded(<CADepartmentsPage />, 'ORGANIZATION.VIEW', 'Organization')} />
+            <Route path="departments" element={guarded(<CADepartmentsPage section="departments" />, 'ORGANIZATION.VIEW', 'Organization')} />
+            <Route path="designations" element={guarded(<CADepartmentsPage section="designations" />, 'ORGANIZATION.VIEW', 'Organization')} />
             <Route path="activity"   element={<CAActivityPage />} />
             <Route path="modules"    element={<CAModulesPage />} />
-            <Route path="settings/company"   element={<CACompanyDetailsPage />} />
             <Route path="account-security"   element={<Navigate to="/company-admin/profile" replace />} />
             <Route path="settings/roles"     element={<CARolesPage />} />
             <Route path="settings/workflows" element={<CAWorkflowsPage />} />

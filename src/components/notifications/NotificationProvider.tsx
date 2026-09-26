@@ -41,7 +41,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     queryFn: async () => normalize((await notificationsApi.list({ status: 'unread', limit: 50 })).data),
     enabled: Boolean(user),
     staleTime: 30_000,
-    refetchOnWindowFocus: false,
   });
 
   const refresh = useCallback(async () => { await queryClient.invalidateQueries({ queryKey: notificationQueryKey }); }, [queryClient]);

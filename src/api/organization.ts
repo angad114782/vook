@@ -5,15 +5,12 @@ export interface RoleDefinition {
   kind: 'SYSTEM' | 'TEMPLATE' | 'CUSTOM'; locked: boolean; permissions: string[]; revision: number;
 }
 export interface RoleAssignment {
-  id: string; _id?: string; companyId: string; roleDefinitionId: string; scopeType: 'COMPANY' | 'BRANCH' | 'DEPARTMENT' | 'TEAM' | 'SELF';
+  id: string; _id?: string; companyId: string; roleDefinitionId: string; scopeType: 'COMPANY' | 'DEPARTMENT' | 'TEAM' | 'SELF';
   scopeId?: string | null; isPrimary: boolean; role: string; roleName: string; permissions: string[];
   userId: { id: string; _id?: string; name: string; email: string };
 }
 
 export const organizationApi = {
-  getAttendanceIntegrations: <T>() => api.get<T>('/company-admin/attendance-integrations'),
-  saveAttendancePolicy: (data: Record<string, unknown>) => api.put('/company-admin/attendance-verification-policy', data),
-  getOffices: <T>() => api.get<T[]>('/hr/offices'),
   getTeams: <T>() => api.get<T[]>('/teams'),
   getDesignations: <T>() => api.get<T[]>('/company-admin/designations'),
   createDepartment: (data: Record<string, unknown>) => api.post('/company-admin/departments', data),

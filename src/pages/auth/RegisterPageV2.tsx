@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, Building2, Check, CheckCircle2, CreditCard, LockKeyhole, Loader2, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, CreditCard, LockKeyhole, Loader2, ShieldCheck, Sparkles, Users } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { onboardingApi, type CheckoutRegistrationData } from '../../api/onboarding';
 import type { PlanData } from '../../api/subscriptions';
@@ -211,7 +211,7 @@ export default function RegisterPageV2() {
                 >
                   <span className="public-plan-card__head"><span><small>{plan.type}</small><strong>{plan.name}</strong></span>{isSelected && <span className="public-plan-card__selected"><Check size={12} /> Selected</span>}</span>
                   <span className="public-plan-card__price">&#8377;{price.toLocaleString('en-IN')}<small>/{form.billingCycle === 'Annual' ? 'year' : 'month'}</small></span>
-                  <span className="public-plan-card__limits"><span><Users size={13} /> {plan.maxUsers} employees</span><span><Building2 size={13} /> {plan.maxBranches} branches</span></span>
+                  <span className="public-plan-card__limits"><span><Users size={13} /> {plan.maxUsers} employees</span></span>
                   <span className="public-plan-card__included"><small>Includes</small>{features.map((feature) => <span key={feature}><Check size={12} />{feature}</span>)}<span className="public-plan-card__modules"><span>Modules</span>{modules.slice(0, 4).map((module) => <em key={module}>{module}</em>)}{modules.length > 4 && <em>+{modules.length - 4} more</em>}</span></span>
                 </button>;
               })}

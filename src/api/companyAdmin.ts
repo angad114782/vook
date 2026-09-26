@@ -16,13 +16,12 @@ export interface CAModule {
 }
 export interface CAEntitlements {
   plan: { id: string | null; versionId: string | null; code: string | null; name: string | null };
-  modules: CAModule[]; limits: { employees: number; branches: number; storageGB: number; apiRequests?: number };
+  modules: CAModule[]; limits: { employees: number; storageGB: number; apiRequests?: number };
   overrides: Array<{ id: string; moduleId?: string; limitKey?: string; effect: string; limitValue?: number; reason: string; expiresAt?: string }>;
 }
 export interface CAOnboarding {
   onboarding: { status: 'NOT_STARTED' | 'IN_PROGRESS' | 'READY' | 'COMPLETED'; steps: Array<{ key: string; status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED'; completedAt?: string }> };
   company: CACompany;
-  firstBranch: Record<string, unknown> | null;
   entitlements: CAEntitlements;
 }
 

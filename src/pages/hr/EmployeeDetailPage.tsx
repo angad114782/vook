@@ -69,7 +69,7 @@ export default function EmployeeDetailPage() {
 
   return <div className="product-page employee-workspace">
     <Link className="product-back-link" to={workforcePath}><ArrowLeft size={16} aria-hidden="true" /> Back to employees</Link>
-    <PageHeader eyebrow={`${employee.employeeId} · Employee record`} title={employee.user.name} description={[employee.designation, employee.department, employee.branchName].filter(Boolean).join(' · ') || 'Employment details are incomplete.'} actions={<><StatusBadge status={employee.status}>{employee.status}</StatusBadge>{canChangeLifecycle && <button className="admin-button admin-button--secondary" onClick={() => { setSelectedAction(availableActions[0]?.action ?? ''); setLifecycleOpen(true); }}><RefreshCw size={15} aria-hidden="true" /> Change lifecycle</button>}</>} />
+    <PageHeader eyebrow={`${employee.employeeId} · Employee record`} title={employee.user.name} description={[employee.designation, employee.department].filter(Boolean).join(' · ') || 'Employment details are incomplete.'} actions={<><StatusBadge status={employee.status}>{employee.status}</StatusBadge>{canChangeLifecycle && <button className="admin-button admin-button--secondary" onClick={() => { setSelectedAction(availableActions[0]?.action ?? ''); setLifecycleOpen(true); }}><RefreshCw size={15} aria-hidden="true" /> Change lifecycle</button>}</>} />
     <section className="employee-workspace__hero admin-card">
       <div className="employee-workspace__avatar" aria-hidden="true">{employee.user.name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</div>
       <div><strong>{employee.user.name}</strong><span>{employee.user.email}</span><small>{employee.employmentType} · Joined {formatDate(employee.joiningDate)}</small></div>
@@ -92,12 +92,12 @@ function EmployeeTab({ tab, employee, portal }: { tab: Tab; employee: Employee; 
   const fields = useMemo(() => ({
     overview: [
       ['Employee ID', employee.employeeId], ['Lifecycle status', employee.status], ['Department', employee.department], ['Designation', employee.designation],
-      ['Branch', employee.branchName], ['Manager', 'Not assigned'], ['Joining date', formatDate(employee.joiningDate)], ['Worker category', employee.employmentType],
+      ['Manager', 'Not assigned'], ['Joining date', formatDate(employee.joiningDate)], ['Worker category', employee.employmentType],
     ],
     job: [['Department', employee.department], ['Designation', employee.designation], ['Employment type', employee.employmentType], ['Shift type', employee.shiftType], ['Shift timing', employee.shiftTiming], ['Cost centre', 'Not provided'], ['Probation end', 'Not provided'], ['Notice period', 'Not provided']],
-    personal: [['Legal name', employee.user.name], ['Preferred name', 'Not provided'], ['Work email', employee.user.email], ['Personal mobile', 'Not provided'], ['Date of birth', 'Not provided'], ['Emergency contact', 'Not provided'], ['Current address', 'Not provided'], ['Permanent address', 'Not provided']],
+    personal: [['Legal name', employee.user.name], ['Preferred name', 'Not provided'], ['Work email', employee.user.email], ['Personal mobile', employee.mobile ?? 'Not provided'], ['Date of birth', 'Not provided'], ['Emergency contact', 'Not provided'], ['Current address', 'Not provided'], ['Permanent address', 'Not provided']],
     statutory: [['PAN', 'Not provided'], ['Aadhaar', 'Not provided'], ['UAN', 'Not provided'], ['ESIC number', 'Not provided'], ['PF applicable', 'Needs review'], ['ESI applicable', 'Needs review'], ['Tax regime', 'Not selected'], ['Professional tax state', 'Not provided']],
-    compensation: [['Annual CTC', employee.annualCtc ? formatCurrency(employee.annualCtc) : 'Not configured'], ['Salary structure', employee.annualCtc ? 'Employee-specific structure' : 'Not assigned'], ['Effective from', formatDate(employee.joiningDate)], ['Bank name', employee.bankName], ['Account holder', employee.accountHolder], ['Payment status', 'Setup review required']],
+    compensation: [['Annual CTC', employee.annualCtc ? formatCurrency(employee.annualCtc) : 'Not configured'], ['Salary structure', employee.annualCtc ? 'Employee-specific structure' : 'Not assigned'], ['Effective from', formatDate(employee.joiningDate)], ['Bank name', employee.bankName], ['Bank branch', employee.branchName], ['Account holder', employee.accountHolder], ['Payment status', 'Setup review required']],
     access: [['Account status', employee.user.accountStatus ?? 'Not created'], ['Assigned role', employee.user.role ?? 'Employee'], ['Last sign in', employee.user.lastLoginAt ? new Date(employee.user.lastLoginAt).toLocaleString('en-IN') : 'Never'], ['Record scope', 'Self / assigned organization']],
   }), [employee]);
 

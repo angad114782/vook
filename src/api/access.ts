@@ -5,7 +5,7 @@ export interface AccessSnapshot {
   permissions: string[];
   modules: Array<{ name: string; key?: string; isEnabled: boolean; source?: string }>;
   roles?: Array<{ role: string; scopeType: string; scopeId?: string; permissions: string[] }>;
-  limits?: { employees: number; branches: number; storageGB: number; apiRequests?: number };
+  limits?: { employees: number; storageGB: number; apiRequests?: number };
   subscription: {
     state: 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'SUSPENDED' | 'CANCELLED' | 'UNKNOWN';
     plan: string | null;

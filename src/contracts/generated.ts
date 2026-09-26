@@ -550,40 +550,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/branches": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listBranches"];
-        put?: never;
-        post: operations["createBranch"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/branches/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: components["parameters"]["Id"];
-            };
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["updateBranch"];
-        trace?: never;
-    };
     "/teams": {
         parameters: {
             query?: never;
@@ -2438,7 +2404,6 @@ export interface components {
         };
         EntitlementLimits: {
             employees: number;
-            branches: number;
             storageGB: number;
             apiRequests: number;
         };
@@ -2447,7 +2412,7 @@ export interface components {
             companyId: string;
             moduleId?: string;
             /** @enum {string} */
-            limitKey?: "employees" | "branches" | "storageGB" | "apiRequests";
+            limitKey?: "employees" | "storageGB" | "apiRequests";
             /** @enum {string} */
             effect: "GRANT" | "DENY" | "SET_LIMIT";
             oldValue?: unknown;
@@ -2492,22 +2457,11 @@ export interface components {
             /** Format: date-time */
             graceEndsAt?: string | null;
         };
-        Branch: {
-            id: string;
-            companyId: string;
-            name: string;
-            code: string;
-            latitude?: number;
-            longitude?: number;
-            geofenceRadiusMeters?: number;
-            isActive?: boolean;
-        };
         Department: {
             id: string;
             companyId: string;
             name: string;
             code: string;
-            branchIds?: string[];
             isActive?: boolean;
         };
         Team: {
@@ -2550,7 +2504,7 @@ export interface components {
             userId: string;
             roleDefinitionId: string;
             /** @enum {string} */
-            scopeType: "COMPANY" | "BRANCH" | "DEPARTMENT" | "TEAM" | "SELF";
+            scopeType: "COMPANY" | "DEPARTMENT" | "TEAM" | "SELF";
             scopeId?: string | null;
             isPrimary?: boolean;
         };
@@ -3326,44 +3280,6 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
-        responses: {
-            200: components["responses"]["Object"];
-        };
-    };
-    listBranches: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: components["responses"]["Object"];
-        };
-    };
-    createBranch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["Object"];
-        responses: {
-            201: components["responses"]["Object"];
-        };
-    };
-    updateBranch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: components["parameters"]["Id"];
-            };
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["Object"];
         responses: {
             200: components["responses"]["Object"];
         };

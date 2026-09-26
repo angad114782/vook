@@ -35,7 +35,7 @@ export const modulesApi = {
   toggleModule: (companyId: string, moduleId: string, isEnabled: boolean, reason: string, expiresAt?: string) =>
     api.put('/modules/toggle', { companyId, moduleId, isEnabled, reason, expiresAt: expiresAt || null }),
 
-  createOverride: (data: { companyId: string; effect: 'GRANT' | 'DENY' | 'SET_LIMIT'; moduleId?: string; limitKey?: 'employees' | 'branches' | 'storageGB' | 'apiRequests'; limitValue?: number; reason: string; expiresAt?: string }) =>
+  createOverride: (data: { companyId: string; effect: 'GRANT' | 'DENY' | 'SET_LIMIT'; moduleId?: string; limitKey?: 'employees' | 'storageGB' | 'apiRequests'; limitValue?: number; reason: string; expiresAt?: string }) =>
     api.post('/entitlement-overrides', data),
 
   getPermissions: (role?: string) =>

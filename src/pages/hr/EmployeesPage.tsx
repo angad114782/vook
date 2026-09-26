@@ -13,7 +13,6 @@ import AppDrawer from '../../components/ui/AppDrawer';
 import { useAccess } from '../../hooks/queries/useAccess';
 
 const DEPARTMENTS = ['Engineering', 'Sales', 'Marketing', 'HR', 'Design', 'Finance'];
-const SHIFTS = ['Morning', 'Evening', 'Night'];
 
 const avatarColors = [
   { bg: '#eef2ff', color: '#6366f1' }, { bg: '#f5f3ff', color: '#8b5cf6' },
@@ -32,12 +31,12 @@ function EmployeeModal({ emp, onClose }: { emp?: Employee; onClose: () => void }
   const [form, setForm] = useState({
     name: emp?.user.name ?? '', email: emp?.user.email ?? '',
     department: emp?.department ?? '', designation: emp?.designation ?? '',
-    shiftType: emp?.shiftType ?? 'Morning', shiftTiming: emp?.shiftTiming ?? '09:00-18:00',
     joiningDate: emp?.joiningDate ? emp.joiningDate.slice(0, 10) : '',
     annualCtc: emp?.annualCtc ? String(emp.annualCtc) : '',
     employmentType: emp?.employmentType ?? 'Permanent',
     accountHolder: emp?.accountHolder ?? '', bankName: emp?.bankName ?? '', branchName: emp?.branchName ?? '',
   });
+  const [mobile, setMobile] = useState(emp?.mobile ?? '');
   const [error, setError] = useState('');
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -46,7 +45,9 @@ function EmployeeModal({ emp, onClose }: { emp?: Employee; onClose: () => void }
   const loading = createEmployee.isPending || updateEmployee.isPending;
 
   const handleSubmit = () => {
-    if (!form.name || (!isEdit && !form.email)) { setError('Name and email are required'); return; }
+    if (!form.name.trim()) { setError('Name is required'); return; }
+    if (!isEdit && !mobile.trim()) { setError('Mobile number is required'); return; }
+    if (!isEdit && form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) { setError('Enter a valid email address'); return; }
     setError('');
     if (isEdit) {
       updateEmployee.mutate({ id: emp!.id, data: form as Record<string, string> }, {
@@ -54,7 +55,7 @@ function EmployeeModal({ emp, onClose }: { emp?: Employee; onClose: () => void }
         onError: (err) => setError(extractError(err, 'Failed to save employee')),
       });
     } else {
-      createEmployee.mutate(form as Record<string, string>, {
+      createEmployee.mutate({ ...form, mobile: mobile.trim() } as Record<string, string>, {
         onSuccess: () => { toast.success('Employee added'); onClose(); },
         onError: (err) => setError(extractError(err, 'Failed to save employee')),
       });
@@ -83,19 +84,8 @@ function EmployeeModal({ emp, onClose }: { emp?: Employee; onClose: () => void }
                 <div><label style={labelStyle}>Full Name *</label><input value={form.name} onChange={(e) => set('name', e.target.value)} disabled={isEdit} placeholder="e.g. Ankita Yadav" style={{ ...inputStyle, opacity: isEdit ? 0.7 : 1 }} /></div>
                 <div><label style={labelStyle}>Date of Joining</label><input type="date" value={form.joiningDate} onChange={(e) => set('joiningDate', e.target.value)} style={inputStyle} /></div>
               </div>
-              {!isEdit && <div><label style={labelStyle}>Email *</label><input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="employee@company.com" style={inputStyle} /></div>}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={labelStyle}>Shift Type</label>
-                  <div style={{ position: 'relative' }}>
-                    <select value={form.shiftType} onChange={(e) => set('shiftType', e.target.value)} style={{ ...inputStyle, appearance: 'none', paddingRight: '28px' }}>
-                      {SHIFTS.map((s) => <option key={s}>{s}</option>)}
-                    </select>
-                    <ChevronDown size={13} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
-                  </div>
-                </div>
-                <div><label style={labelStyle}>Shift Timing</label><input value={form.shiftTiming} onChange={(e) => set('shiftTiming', e.target.value)} placeholder="09:00-18:00" style={inputStyle} /></div>
-              </div>
+              {!isEdit && <div><label style={labelStyle}>Mobile Number *</label><input type="tel" autoComplete="tel" required value={mobile} onChange={(e) => setMobile(e.target.value)} placeholder="e.g. +91 98765 43210" style={inputStyle} /></div>}
+              {!isEdit && <div><label style={labelStyle}>Email (Optional)</label><input type="email" autoComplete="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="employee@company.com" style={inputStyle} /></div>}
               <div>
                 <label style={labelStyle}>Employment Type</label>
                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -133,7 +123,7 @@ function EmployeeModal({ emp, onClose }: { emp?: Employee; onClose: () => void }
               <div><label style={labelStyle}>Account Holder Name</label><input value={form.accountHolder} onChange={(e) => set('accountHolder', e.target.value)} style={inputStyle} /></div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div><label style={labelStyle}>Bank Name</label><input value={form.bankName} onChange={(e) => set('bankName', e.target.value)} placeholder="e.g. HDFC Bank" style={inputStyle} /></div>
-                <div><label style={labelStyle}>Branch Name</label><input value={form.branchName} onChange={(e) => set('branchName', e.target.value)} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Bank Branch</label><input value={form.branchName} onChange={(e) => set('branchName', e.target.value)} style={inputStyle} /></div>
               </div>
             </div>
           </div>
@@ -238,7 +228,7 @@ export default function EmployeesPage() {
                       <td style={{ padding: '13px 18px' }}><span style={{ fontSize: '13px', color: '#374151' }}>{e.designation ?? '—'}</span></td>
                       <td style={{ padding: '13px 18px' }}><span style={{ fontSize: '13px', color: '#374151' }}>{fmtDate(e.joiningDate)}</span></td>
                       <td style={{ padding: '13px 18px' }}>
-                        <p style={{ fontSize: '12px', color: '#374151' }}>{e.user.email}</p>
+                        <p style={{ fontSize: '12px', color: '#374151' }}>{e.mobile || e.user.email}</p>
                         <p style={{ fontSize: '11px', color: '#94a3b8' }}>{fmtCurrency(e.annualCtc)} CTC</p>
                       </td>
                       <td style={{ padding: '13px 18px' }}>

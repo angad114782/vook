@@ -1,15 +1,15 @@
-import { Activity, BarChart2, Blocks, Building2, CalendarCheck, CalendarDays, CheckSquare, CreditCard, FileText, FolderOpen, GitBranch, LayoutDashboard, LifeBuoy, Receipt, Settings, Shield, ShieldCheck, UserCircle, UserCog, Users } from 'lucide-react';
+import { Activity, BarChart2, Blocks, BriefcaseBusiness, Building2, CalendarCheck, CalendarDays, CheckSquare, CreditCard, FileText, FolderOpen, LayoutDashboard, LifeBuoy, Receipt, Shield, ShieldCheck, UserCircle, UserCog, Users, Workflow } from 'lucide-react';
 import RoleSidebar, { type RoleNavGroup } from './RoleSidebar';
 
 const groups: RoleNavGroup[] = [
   { label: 'Work', entries: [
-    { key: 'people', label: 'People', Icon: Users, children: [
+    { key: 'users', label: 'Users', Icon: Users, children: [
+      { to: '/company-admin/departments', label: 'Departments', Icon: Building2 },
+      { to: '/company-admin/designations', label: 'Designations', Icon: BriefcaseBusiness },
       { to: '/company-admin/workforce', label: 'Employees', Icon: Users },
-      { to: '/company-admin/departments', label: 'Organization', Icon: Building2 },
     ] },
     { key: 'time-attendance', label: 'Time & attendance', Icon: CalendarCheck, children: [
       { to: '/company-admin/attendance', label: 'Attendance', Icon: CalendarCheck },
-      { to: '/company-admin/attendance-integrations', label: 'Attendance policy', Icon: ShieldCheck },
       { to: '/company-admin/shifts', label: 'Shift management', Icon: CalendarDays },
       { to: '/company-admin/calendar', label: 'Holiday calendar', Icon: CalendarDays },
     ] },
@@ -32,9 +32,8 @@ const groups: RoleNavGroup[] = [
       { to: '/company-admin/users', label: 'Users & access', Icon: UserCog },
       { to: '/company-admin/settings/roles', label: 'Roles & scopes', Icon: Shield },
     ] },
-    { to: '/company-admin/settings/workflows', label: 'Workflows', Icon: GitBranch },
+    { to: '/company-admin/settings/workflows', label: 'Workflows', Icon: Workflow },
     { to: '/company-admin/activity', label: 'Activity log', Icon: Activity },
-    { to: '/company-admin/settings/company', label: 'Company details', Icon: Settings },
   ] },
   { label: 'Plan', entries: [
     { to: '/company-admin/modules', label: 'Plan and modules', Icon: Blocks },

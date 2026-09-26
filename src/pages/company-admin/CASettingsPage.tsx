@@ -90,10 +90,10 @@ export default function CASettingsPage() {
   const handleSave = () => {
     updateCompany.mutate(form, {
       onSuccess: () => {
-        toast.success("Company details updated");
+        toast.success("Company profile updated");
       },
       onError: (err) => {
-        toast.error(extractError(err, "Failed to save company details"));
+        toast.error(extractError(err, "Failed to save company profile"));
       },
     });
   };
@@ -110,7 +110,6 @@ export default function CASettingsPage() {
       : "—";
   const plan = company?.subscription?.plan ?? company?.plan ?? "";
   const pm = getPlanBadge(plan, plans);
-  // @ts-ignore Legacy page retained for old imports while the route uses CACompanyDetailsPage.
   {
     const fmtDate = (d: string | null) =>
       d

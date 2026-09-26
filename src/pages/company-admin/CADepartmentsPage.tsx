@@ -2,8 +2,6 @@ import { ResponsiveTable } from "../../components/data/ResponsiveDataView";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Building2,
-  BriefcaseBusiness,
   Pencil,
   Plus,
   Power,
@@ -13,12 +11,10 @@ import { organizationApi } from "../../api/organization";
 import { caApi } from "../../api/companyAdmin";
 import AppDrawer from "../../components/ui/AppDrawer";
 
-type Branch = { _id: string; name: string; code: string };
 type Department = {
   id: string;
   name: string;
   code: string;
-  branchIds?: Array<string | { _id: string }>;
   isActive: boolean;
   active: number;
   total: number;
@@ -28,22 +24,21 @@ type Designation = {
   name: string;
   code: string;
   departmentId?: { _id: string; name: string };
-  branchIds?: Branch[];
   isActive: boolean;
 };
 
-export default function CADepartmentsPage() {
+type OrganizationSection = "departments" | "designations";
+
+export default function CADepartmentsPage({
+  section = "departments",
+}: {
+  section?: OrganizationSection;
+}) {
   const client = useQueryClient();
-  const [tab, setTab] = useState<"departments" | "designations">("departments");
   const departments = useQuery({
     queryKey: ["ca", "departments", "organization"],
     queryFn: () =>
       caApi.getDepartments().then((response) => response.data as Department[]),
-  });
-  const branches = useQuery({
-    queryKey: ["ca", "branches"],
-    queryFn: () =>
-      organizationApi.getOffices<Branch>().then((response) => response.data),
   });
   const designations = useQuery({
     queryKey: ["ca", "designations"],
@@ -56,14 +51,12 @@ export default function CADepartmentsPage() {
     id?: string;
     name: string;
     code: string;
-    branchIds: string[];
   }>();
   const [designationForm, setDesignationFormState] = useState<{
     id?: string;
     name: string;
     code: string;
     departmentId: string;
-    branchIds: string[];
   }>();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -71,7 +64,6 @@ export default function CADepartmentsPage() {
     id?: string;
     name: string;
     code: string;
-    branchIds: string[];
   }) => {
     if (!next) {
       setDrawerOpen(false);
@@ -86,7 +78,6 @@ export default function CADepartmentsPage() {
     name: string;
     code: string;
     departmentId: string;
-    branchIds: string[];
   }) => {
     if (!next) {
       setDrawerOpen(false);
@@ -110,7 +101,6 @@ export default function CADepartmentsPage() {
       if (departmentForm.id)
         await organizationApi.updateDepartment(departmentForm.id, {
           name: departmentForm.name,
-          branchIds: departmentForm.branchIds,
         });
       else await organizationApi.createDepartment(departmentForm);
       setDrawerOpen(false);
@@ -132,7 +122,6 @@ export default function CADepartmentsPage() {
         name: designationForm.name,
         code: designationForm.code,
         departmentId: designationForm.departmentId || undefined,
-        branchIds: designationForm.branchIds,
       };
       if (designationForm.id)
         await organizationApi.updateDesignation(designationForm.id, payload);
@@ -146,13 +135,10 @@ export default function CADepartmentsPage() {
       );
     }
   };
-  const toggleBranch = (ids: string[], id: string) =>
-    ids.includes(id) ? ids.filter((value) => value !== id) : [...ids, id];
   const openDepartmentForm = (form: {
     id?: string;
     name: string;
     code: string;
-    branchIds: string[];
   }) => {
     setDesignationForm(undefined);
     setDepartmentForm(form);
@@ -163,7 +149,6 @@ export default function CADepartmentsPage() {
     name: string;
     code: string;
     departmentId: string;
-    branchIds: string[];
   }) => {
     setDepartmentForm(undefined);
     setDesignationForm(form);
@@ -174,51 +159,36 @@ export default function CADepartmentsPage() {
     <div className="admin-page">
       <header className="admin-page__header">
         <div>
-          <h1>Organization</h1>
+          <h1>{section === "departments" ? "Departments" : "Designations"}</h1>
           <p>
-            Manage branch-aware departments and designations used across
-            workforce scope and reporting.
+            {section === "departments"
+              ? "Manage departments used across workforce records and reporting."
+              : "Manage designations used across workforce records and reporting."}
           </p>
         </div>
         <button
           className="admin-button admin-button--primary"
           onClick={() =>
-            tab === "departments"
-              ? openDepartmentForm({ name: "", code: "", branchIds: [] })
+            section === "departments"
+              ? openDepartmentForm({ name: "", code: "" })
               : openDesignationForm({
                   name: "",
                   code: "",
                   departmentId: "",
-                  branchIds: [],
                 })
           }
         >
           <Plus size={15} /> Add{" "}
-          {tab === "departments" ? "department" : "designation"}
+          {section === "departments" ? "department" : "designation"}
         </button>
       </header>
-      <div className="cycle-switch" aria-label="Organization records">
-        <button
-          className={tab === "departments" ? "is-active" : ""}
-          onClick={() => setTab("departments")}
-        >
-          <Building2 size={14} /> Departments
-        </button>
-        <button
-          className={tab === "designations" ? "is-active" : ""}
-          onClick={() => setTab("designations")}
-        >
-          <BriefcaseBusiness size={14} /> Designations
-        </button>
-      </div>
       <section className="admin-card" style={{ overflow: "auto" }}>
-        {tab === "departments" ? (
+        {section === "departments" ? (
           <ResponsiveTable className="org-table">
             <thead>
               <tr>
                 <th>Department</th>
                 <th>Code</th>
-                <th>Branches</th>
                 <th>Headcount</th>
                 <th>Status</th>
                 <th />
@@ -232,11 +202,6 @@ export default function CADepartmentsPage() {
                   </td>
                   <td>
                     <code>{item.code}</code>
-                  </td>
-                  <td>
-                    {item.branchIds?.length
-                      ? `${item.branchIds.length} assigned`
-                      : "All branches"}
                   </td>
                   <td>
                     {item.active} active · {item.total} total
@@ -255,9 +220,6 @@ export default function CADepartmentsPage() {
                           id: item.id,
                           name: item.name,
                           code: item.code,
-                          branchIds: (item.branchIds ?? []).map((value: any) =>
-                            typeof value === "string" ? value : value._id,
-                          ),
                         })
                       }
                     >
@@ -294,7 +256,6 @@ export default function CADepartmentsPage() {
                 <th>Designation</th>
                 <th>Code</th>
                 <th>Department</th>
-                <th>Branches</th>
                 <th>Status</th>
                 <th />
               </tr>
@@ -310,11 +271,6 @@ export default function CADepartmentsPage() {
                   </td>
                   <td>{item.departmentId?.name ?? "Any"}</td>
                   <td>
-                    {item.branchIds?.length
-                      ? item.branchIds.map((branch) => branch.code).join(", ")
-                      : "All branches"}
-                  </td>
-                  <td>
                     <span data-status={item.isActive ? "ACTIVE" : "INACTIVE"}>
                       {item.isActive ? "Active" : "Inactive"}
                     </span>
@@ -329,8 +285,6 @@ export default function CADepartmentsPage() {
                           name: item.name,
                           code: item.code,
                           departmentId: item.departmentId?._id ?? "",
-                          branchIds:
-                            item.branchIds?.map((branch) => branch._id) ?? [],
                         })
                       }
                     >
@@ -364,7 +318,7 @@ export default function CADepartmentsPage() {
               ? `${departmentForm.id ? "Edit" : "Add"} department`
               : `${designationForm?.id ? "Edit" : "Add"} designation`
           }
-          description="Assign specific branches, or leave all clear to make the record company-wide."
+          description="Manage company-wide departments and designations."
           placement="responsive"
           size="sm"
           contentClassName="organization-drawer__body"
@@ -453,53 +407,6 @@ export default function CADepartmentsPage() {
                 </label>
               </>
             ) : null}
-            <fieldset style={{ border: 0, padding: 0, margin: "16px 0 0" }}>
-              <legend
-                style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}
-              >
-                Branches
-              </legend>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {branches.data?.map((branch) => {
-                  const ids =
-                    departmentForm?.branchIds ??
-                    designationForm?.branchIds ??
-                    [];
-                  return (
-                    <label
-                      key={branch._id}
-                      style={{
-                        display: "flex",
-                        gap: 6,
-                        alignItems: "center",
-                        border: "1px solid #cbd5e1",
-                        borderRadius: 8,
-                        padding: "8px 10px",
-                        fontSize: 12,
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={ids.includes(branch._id)}
-                        onChange={() =>
-                          departmentForm
-                            ? setDepartmentForm({
-                                ...departmentForm,
-                                branchIds: toggleBranch(ids, branch._id),
-                              })
-                            : designationForm &&
-                              setDesignationForm({
-                                ...designationForm,
-                                branchIds: toggleBranch(ids, branch._id),
-                              })
-                        }
-                      />{" "}
-                      {branch.name}
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
           </div>
           <footer className="organization-drawer__footer">
             <button

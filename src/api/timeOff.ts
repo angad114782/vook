@@ -5,7 +5,6 @@ export interface HolidayCalendarInput {
   name: string;
   year: number;
   stateCode: string | null;
-  branchIds: string[];
   employeeGroupIds: string[];
 }
 

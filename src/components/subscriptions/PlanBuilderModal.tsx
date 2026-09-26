@@ -30,7 +30,6 @@ export default function PlanBuilderModal({ plan, onClose, onSave }: Props) {
     price: source?.pricing.monthly ?? plan?.price ?? 0,
     annualPrice: source?.pricing.annual ?? plan?.annualPrice ?? 0,
     maxUsers: source?.limits.employees ?? plan?.maxUsers ?? 50,
-    maxBranches: source?.limits.branches ?? plan?.maxBranches ?? 2,
     storageGB: source?.limits.storageGB ?? plan?.storageGB ?? 5,
     apiRequests:
       (source?.limits as any)?.apiRequests ??
@@ -97,7 +96,6 @@ export default function PlanBuilderModal({ plan, onClose, onSave }: Props) {
       !form.name.trim() ||
       !form.type.trim() ||
       form.maxUsers < 1 ||
-      form.maxBranches < 1 ||
       form.storageGB < 1
     ) {
       setError("Add a plan name, unique code, and valid limits.");
@@ -208,7 +206,7 @@ export default function PlanBuilderModal({ plan, onClose, onSave }: Props) {
               <strong>2. Account limits</strong>
               <span>Applied after a customer completes online checkout</span>
             </div>
-            <div className="plan-builder__grid plan-builder__grid--3">
+            <div className="plan-builder__grid plan-builder__grid--2">
               <label className="admin-label">
                 Employees
                 <input
@@ -218,21 +216,6 @@ export default function PlanBuilderModal({ plan, onClose, onSave }: Props) {
                   value={form.maxUsers}
                   onChange={(event) =>
                     setForm({ ...form, maxUsers: Number(event.target.value) })
-                  }
-                />
-              </label>
-              <label className="admin-label">
-                Branches
-                <input
-                  className="admin-input"
-                  type="number"
-                  min={1}
-                  value={form.maxBranches}
-                  onChange={(event) =>
-                    setForm({
-                      ...form,
-                      maxBranches: Number(event.target.value),
-                    })
                   }
                 />
               </label>

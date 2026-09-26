@@ -12,7 +12,6 @@ export default function CAModulesPage() {
     <section className="entitlement-summary">
       <div className="admin-card"><small>Current plan</small><strong>{data?.plan.name ?? data?.plan.code ?? 'Custom'}</strong><span>Version-pinned entitlements</span></div>
       <div className="admin-card"><small>Employees</small><strong>{data?.limits.employees ?? '—'}</strong><span>Maximum active workforce</span></div>
-      <div className="admin-card"><small>Branches</small><strong>{data?.limits.branches ?? '—'}</strong><span>Location capacity</span></div>
       <div className="admin-card"><small>Storage</small><strong>{data?.limits.storageGB ?? '—'} GB</strong><span>Document allowance</span></div>
     </section>
     <section><h2 className="section-title">Included modules <span>{included.length}</span></h2><div className="entitlement-grid">{included.map((item) => <article className="admin-card entitlement-card" key={item.id}><CheckCircle2 size={18} /><div><strong>{item.module.name}</strong><p>{item.module.description || 'Included in your plan'}</p></div><small>{item.source === 'OVERRIDE_GRANT' ? 'Granted override' : 'Plan'}</small></article>)}</div></section>

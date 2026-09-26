@@ -6,7 +6,7 @@ export interface PlanVersion {
   pricing: { monthly: number; annual: number };
   trial: { enabled: boolean; days: number };
   moduleIds: Array<string | ModuleCatalogItem>;
-  limits: { employees: number; branches: number; storageGB: number; apiRequests?: number };
+  limits: { employees: number; storageGB: number; apiRequests?: number };
   features: string[]; publishedAt: string; publishedBy?: string;
 }
 export interface PlanDraftRecord {
@@ -15,7 +15,7 @@ export interface PlanDraftRecord {
   pricing: { monthly: number; annual: number };
   trial: { enabled: boolean; days: number };
   moduleIds: Array<string | ModuleCatalogItem>;
-  limits: { employees: number; branches: number; storageGB: number; apiRequests?: number };
+  limits: { employees: number; storageGB: number; apiRequests?: number };
   features: string[];
   revision: number;
   updatedBy?: string;
@@ -23,7 +23,7 @@ export interface PlanDraftRecord {
 }
 export interface PlanData {
   id: string; name: string; type: string; status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-  price: number; annualPrice: number; maxUsers: number; maxBranches: number; storageGB: number;
+  price: number; annualPrice: number; maxUsers: number; storageGB: number;
   apiRequests?: number;
   trialEnabled: boolean; defaultTrialDays: number; moduleIds: Array<string | ModuleCatalogItem>;
   features: string[]; currentVersionId?: PlanVersion; draft?: PlanDraftRecord;
@@ -43,7 +43,7 @@ export interface SubscriptionsResponse {
 }
 export interface RevenueTrendPoint { month: string; revenue: number }
 export interface PlanDraft {
-  name: string; type: string; price: number; annualPrice: number; maxUsers: number; maxBranches: number;
+  name: string; type: string; price: number; annualPrice: number; maxUsers: number;
   storageGB: number; apiRequests?: number; trialEnabled: boolean; defaultTrialDays: number; moduleIds: string[]; features: string[];
 }
 export const subscriptionsApi = {

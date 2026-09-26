@@ -40,11 +40,6 @@ function AssignmentManager({ roles }: { roles: RoleDefinition[] }) {
     queryFn: () =>
       caApi.getUsers({ limit: "100" }).then((response) => response.data.users),
   });
-  const branches = useQuery({
-    queryKey: ["ca", "branches"],
-    queryFn: () =>
-      organizationApi.getOffices<any>().then((response) => response.data),
-  });
   const departments = useQuery({
     queryKey: ["ca", "departments"],
     queryFn: () => caApi.getDepartments().then((response) => response.data),
@@ -69,13 +64,11 @@ function AssignmentManager({ roles }: { roles: RoleDefinition[] }) {
       }));
   }, [assignable, form.roleDefinitionId]);
   const scopeOptions =
-    form.scopeType === "BRANCH"
-      ? (branches.data ?? [])
-      : form.scopeType === "DEPARTMENT"
-        ? (departments.data ?? [])
-        : form.scopeType === "TEAM"
-          ? (teams.data ?? [])
-          : [];
+    form.scopeType === "DEPARTMENT"
+      ? (departments.data ?? [])
+      : form.scopeType === "TEAM"
+        ? (teams.data ?? [])
+        : [];
   const create = useMutation({
     mutationFn: () => organizationApi.createRoleAssignment(form),
     onSuccess: async () => {
@@ -107,7 +100,7 @@ function AssignmentManager({ roles }: { roles: RoleDefinition[] }) {
           <h2>People and organizational scope</h2>
           <p>
             A person can hold several roles. Each role only applies inside its
-            company, branch, department, team, or own record.
+            company, department, team, or own record.
           </p>
         </div>
         <UserRoundCog size={19} />
@@ -157,7 +150,6 @@ function AssignmentManager({ roles }: { roles: RoleDefinition[] }) {
             }
           >
             <option>COMPANY</option>
-            <option>BRANCH</option>
             <option>DEPARTMENT</option>
             <option>TEAM</option>
             <option>SELF</option>
@@ -168,7 +160,7 @@ function AssignmentManager({ roles }: { roles: RoleDefinition[] }) {
           <select
             className="admin-input"
             disabled={
-              !["BRANCH", "DEPARTMENT", "TEAM"].includes(form.scopeType)
+              !["DEPARTMENT", "TEAM"].includes(form.scopeType)
             }
             value={form.scopeId}
             onChange={(event) =>
@@ -176,7 +168,7 @@ function AssignmentManager({ roles }: { roles: RoleDefinition[] }) {
             }
           >
             <option value="">
-              {["BRANCH", "DEPARTMENT", "TEAM"].includes(form.scopeType)
+              {["DEPARTMENT", "TEAM"].includes(form.scopeType)
                 ? "Select record"
                 : "Automatic"}
             </option>
@@ -195,7 +187,7 @@ function AssignmentManager({ roles }: { roles: RoleDefinition[] }) {
             create.isPending ||
             !form.userId ||
             !form.roleDefinitionId ||
-            (["BRANCH", "DEPARTMENT", "TEAM"].includes(form.scopeType) &&
+            (["DEPARTMENT", "TEAM"].includes(form.scopeType) &&
               !form.scopeId)
           }
           onClick={() => create.mutate()}

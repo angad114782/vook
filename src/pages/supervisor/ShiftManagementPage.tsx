@@ -124,6 +124,7 @@ export default function ShiftManagementPage() {
   const handleAssign = async () => {
     if (!form.employeeId) { setError('Select an employee'); return; }
     setError('');
+    if (isMockMode) { setError('Shift assignments cannot be saved in mock mode.'); return; }
     try {
       await createShift.mutateAsync(form);
       toast.success('Shift assigned successfully');
@@ -144,9 +145,14 @@ export default function ShiftManagementPage() {
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage shift assignments and workforce planning</p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          {canCreate && !isMockMode && <button onClick={() => setShowAssign(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-            <Plus size={13} /> Assign Shift
-          </button>}
+          {canCreate && <>
+            <button onClick={() => setShowAssign(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', backgroundColor: '#0d7470', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+              <Plus size={13} /> Add Shift
+            </button>
+            <button onClick={() => setTab('Workforce Planning')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', backgroundColor: 'white', border: '1px solid #0d7470', borderRadius: '8px', color: '#0d7470', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+              <Plus size={13} /> Add Planning
+            </button>
+          </>}
         </div>
       </div>
 
@@ -330,7 +336,7 @@ export default function ShiftManagementPage() {
         </>
       )}
 
-      {canCreate && !isMockMode && showAssign && (
+      {canCreate && showAssign && (
         <LegacyDrawer open onClose={() => setShowAssign(false)} direction="right" className="legacy-form-drawer">
           <div style={{ width: '420px', backgroundColor: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 18px 40px rgba(0,0,0,0.14)' }}>
             <div style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -105,12 +105,6 @@ paths:
     patch: { operationId: updateDepartment, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
   /departments/summary:
     get: { operationId: getDepartmentSummary, responses: { '200': { $ref: '#/components/responses/Object' } } }
-  /branches:
-    get: { operationId: listBranches, responses: { '200': { $ref: '#/components/responses/Object' } } }
-    post: { operationId: createBranch, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
-  /branches/{id}:
-    parameters: [{ $ref: '#/components/parameters/Id' }]
-    patch: { operationId: updateBranch, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
   /teams:
     get: { operationId: listTeams, responses: { '200': { $ref: '#/components/responses/Object' } } }
     post: { operationId: createTeam, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
@@ -464,8 +458,8 @@ components:
         - { type: object, required: [id, planId, version, publishedAt], properties: { id: { type: string }, planId: { type: string }, version: { type: integer }, publishedAt: { type: string, format: date-time }, publishedBy: { type: string } } }
     EntitlementLimits:
       type: object
-      required: [employees, branches, storageGB, apiRequests]
-      properties: { employees: { type: integer, minimum: 0 }, branches: { type: integer, minimum: 0 }, storageGB: { type: integer, minimum: 0 }, apiRequests: { type: integer, minimum: 0 } }
+      required: [employees, storageGB, apiRequests]
+      properties: { employees: { type: integer, minimum: 0 }, storageGB: { type: integer, minimum: 0 }, apiRequests: { type: integer, minimum: 0 } }
     EntitlementOverride:
       type: object
       required: [id, companyId, effect, reason, createdAt]
@@ -473,7 +467,7 @@ components:
         id: { type: string }
         companyId: { type: string }
         moduleId: { type: string }
-        limitKey: { type: string, enum: [employees, branches, storageGB, apiRequests] }
+        limitKey: { type: string, enum: [employees, storageGB, apiRequests] }
         effect: { type: string, enum: [GRANT, DENY, SET_LIMIT] }
         oldValue: {}
         newValue: {}
@@ -503,14 +497,10 @@ components:
         trialEndsAt: { type: [string, 'null'], format: date-time }
         currentPeriodEnd: { type: [string, 'null'], format: date-time }
         graceEndsAt: { type: [string, 'null'], format: date-time }
-    Branch:
-      type: object
-      required: [id, companyId, name, code]
-      properties: { id: { type: string }, companyId: { type: string }, name: { type: string }, code: { type: string }, latitude: { type: number }, longitude: { type: number }, geofenceRadiusMeters: { type: integer }, isActive: { type: boolean } }
     Department:
       type: object
       required: [id, companyId, name, code]
-      properties: { id: { type: string }, companyId: { type: string }, name: { type: string }, code: { type: string }, branchIds: { type: array, items: { type: string } }, isActive: { type: boolean } }
+      properties: { id: { type: string }, companyId: { type: string }, name: { type: string }, code: { type: string }, isActive: { type: boolean } }
     Team:
       type: object
       required: [id, companyId, name]
@@ -530,7 +520,7 @@ components:
     RoleAssignment:
       type: object
       required: [id, companyId, userId, roleDefinitionId, scopeType]
-      properties: { id: { type: string }, companyId: { type: string }, userId: { type: string }, roleDefinitionId: { type: string }, scopeType: { type: string, enum: [COMPANY, BRANCH, DEPARTMENT, TEAM, SELF] }, scopeId: { type: [string, 'null'] }, isPrimary: { type: boolean } }
+      properties: { id: { type: string }, companyId: { type: string }, userId: { type: string }, roleDefinitionId: { type: string }, scopeType: { type: string, enum: [COMPANY, DEPARTMENT, TEAM, SELF] }, scopeId: { type: [string, 'null'] }, isPrimary: { type: boolean } }
     AccessSnapshot:
       type: object
       required: [role, permissions, modules, roles, subscription]

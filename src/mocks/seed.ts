@@ -389,20 +389,6 @@ export const createMockSeed = (now = new Date()): MockState => {
       ["VIEW", "CREATE", "EDIT", "DELETE", "CONFIGURE"],
       true,
     ],
-    [
-      "module_integrations",
-      "ATTENDANCE_INTEGRATIONS",
-      "Attendance Integrations",
-      "Integrations",
-      ["VIEW", "CREATE", "EDIT", "DELETE", "CONFIGURE"],
-    ],
-    [
-      "module_api",
-      "API_WEBHOOKS",
-      "API & Webhooks",
-      "Integrations",
-      ["VIEW", "CREATE", "EDIT", "DELETE", "CONFIGURE"],
-    ],
   ];
   const modules = moduleDefinitions.map(
     ([id, key, name, category, actions, isCore], index) => ({
@@ -535,7 +521,15 @@ export const createMockSeed = (now = new Date()): MockState => {
         ),
         ...permissionsFor(
           ["LEAVE_MANAGEMENT"],
-          ["VIEW", "CREATE", "EDIT", "APPROVE", "REJECT", "EXPORT", "CONFIGURE"],
+          [
+            "VIEW",
+            "CREATE",
+            "EDIT",
+            "APPROVE",
+            "REJECT",
+            "EXPORT",
+            "CONFIGURE",
+          ],
         ),
         ...permissionsFor(
           ["APPROVALS"],
@@ -565,12 +559,26 @@ export const createMockSeed = (now = new Date()): MockState => {
       locked: false,
       permissions: [
         ...permissionsFor(
-          ["DASHBOARD", "EMPLOYEE_MANAGEMENT", "ATTENDANCE", "POLICIES", "NOTIFICATIONS"],
+          [
+            "DASHBOARD",
+            "EMPLOYEE_MANAGEMENT",
+            "ATTENDANCE",
+            "POLICIES",
+            "NOTIFICATIONS",
+          ],
           ["VIEW"],
         ),
         ...permissionsFor(
           ["PAYROLL"],
-          ["VIEW", "CREATE", "EDIT", "PROCESS", "FINALIZE", "PUBLISH", "EXPORT"],
+          [
+            "VIEW",
+            "CREATE",
+            "EDIT",
+            "PROCESS",
+            "FINALIZE",
+            "PUBLISH",
+            "EXPORT",
+          ],
         ),
         ...permissionsFor(
           ["PAYSLIPS"],
@@ -595,11 +603,23 @@ export const createMockSeed = (now = new Date()): MockState => {
       locked: false,
       permissions: [
         ...permissionsFor(
-          ["DASHBOARD", "EMPLOYEE_MANAGEMENT", "SHIFT_MANAGEMENT", "POLICIES", "NOTIFICATIONS"],
+          [
+            "DASHBOARD",
+            "EMPLOYEE_MANAGEMENT",
+            "SHIFT_MANAGEMENT",
+            "POLICIES",
+            "NOTIFICATIONS",
+          ],
           ["VIEW"],
         ),
-        ...permissionsFor(["ATTENDANCE"], ["VIEW", "APPROVE", "REJECT", "EXPORT"]),
-        ...permissionsFor(["LEAVE_MANAGEMENT", "APPROVALS"], ["VIEW", "APPROVE", "REJECT"]),
+        ...permissionsFor(
+          ["ATTENDANCE"],
+          ["VIEW", "APPROVE", "REJECT", "EXPORT"],
+        ),
+        ...permissionsFor(
+          ["LEAVE_MANAGEMENT", "APPROVALS"],
+          ["VIEW", "APPROVE", "REJECT"],
+        ),
         ...permissionsFor(
           ["EXPENSE_MANAGEMENT"],
           ["VIEW", "APPROVE", "REJECT"],
@@ -618,7 +638,13 @@ export const createMockSeed = (now = new Date()): MockState => {
       locked: false,
       permissions: [
         ...permissionsFor(
-          ["DASHBOARD", "EMPLOYEE_MANAGEMENT", "SHIFT_MANAGEMENT", "REPORTS_ANALYTICS", "NOTIFICATIONS"],
+          [
+            "DASHBOARD",
+            "EMPLOYEE_MANAGEMENT",
+            "SHIFT_MANAGEMENT",
+            "REPORTS_ANALYTICS",
+            "NOTIFICATIONS",
+          ],
           ["VIEW"],
         ),
         ...permissionsFor(
@@ -1132,8 +1158,8 @@ export const createMockSeed = (now = new Date()): MockState => {
       companyId: "company_northstar",
       month: now.getMonth() + 1,
       year: now.getFullYear(),
-        status: "UNDER_REVIEW",
-        version: 1,
+      status: "UNDER_REVIEW",
+      version: 1,
       preparedBy: "user_finance",
       approvedBy: null,
       finalizedAt: null,
@@ -1801,10 +1827,34 @@ export const createMockSeed = (now = new Date()): MockState => {
         updatedAt: daysFrom(now, -10),
         permittedActions: ["EDIT", "COPY", "PUBLISH"],
         holidays: [
-          { id: "holiday_republic", name: "Republic Day", date: `${now.getFullYear()}-01-26`, kind: "NATIONAL", optional: false },
-          { id: "holiday_independence", name: "Independence Day", date: `${now.getFullYear()}-08-15`, kind: "NATIONAL", optional: false },
-          { id: "holiday_gandhi", name: "Gandhi Jayanti", date: `${now.getFullYear()}-10-02`, kind: "NATIONAL", optional: false },
-          { id: "holiday_diwali", name: "Diwali", date: `${now.getFullYear()}-11-08`, kind: "COMPANY", optional: false },
+          {
+            id: "holiday_republic",
+            name: "Republic Day",
+            date: `${now.getFullYear()}-01-26`,
+            kind: "NATIONAL",
+            optional: false,
+          },
+          {
+            id: "holiday_independence",
+            name: "Independence Day",
+            date: `${now.getFullYear()}-08-15`,
+            kind: "NATIONAL",
+            optional: false,
+          },
+          {
+            id: "holiday_gandhi",
+            name: "Gandhi Jayanti",
+            date: `${now.getFullYear()}-10-02`,
+            kind: "NATIONAL",
+            optional: false,
+          },
+          {
+            id: "holiday_diwali",
+            name: "Diwali",
+            date: `${now.getFullYear()}-11-08`,
+            kind: "COMPANY",
+            optional: false,
+          },
         ],
       },
     ],
@@ -1815,11 +1865,35 @@ export const createMockSeed = (now = new Date()): MockState => {
         version: 1,
         effectiveFrom: `${now.getFullYear()}-04-01`,
         stateCode: "MH",
-        pf: { enabled: true, employeeGroup: "All Employees", employeeRate: 12, employerRate: 12, wageCeiling: 15000 },
-        esi: { enabled: true, employeeGroup: "All Employees", employeeRate: 0.75, employerRate: 3.25, wageCeiling: 21000 },
-        professionalTax: { enabled: true, employeeGroup: "All Employees", stateCode: "MH" },
-        labourWelfareFund: { enabled: false, employeeGroup: "All Employees", stateCode: "MH" },
-        tds: { enabled: true, employeeGroup: "All Employees", defaultRegime: "NEW" },
+        pf: {
+          enabled: true,
+          employeeGroup: "All Employees",
+          employeeRate: 12,
+          employerRate: 12,
+          wageCeiling: 15000,
+        },
+        esi: {
+          enabled: true,
+          employeeGroup: "All Employees",
+          employeeRate: 0.75,
+          employerRate: 3.25,
+          wageCeiling: 21000,
+        },
+        professionalTax: {
+          enabled: true,
+          employeeGroup: "All Employees",
+          stateCode: "MH",
+        },
+        labourWelfareFund: {
+          enabled: false,
+          employeeGroup: "All Employees",
+          stateCode: "MH",
+        },
+        tds: {
+          enabled: true,
+          employeeGroup: "All Employees",
+          defaultRegime: "NEW",
+        },
         updatedAt: daysFrom(now, -10),
       },
     ],

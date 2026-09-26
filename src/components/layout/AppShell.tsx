@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { ErrorBoundary } from '../ErrorBoundary';
@@ -16,10 +16,9 @@ interface AppShellProps {
   profilePath: string;
   supportPath?: string;
   inboxPath?: string;
-  banner?: ReactNode;
 }
 
-export default function AppShell({ Sidebar, roles, roleLabel, profilePath, supportPath, inboxPath, banner }: AppShellProps) {
+export default function AppShell({ Sidebar, roles, roleLabel, profilePath, supportPath, inboxPath }: AppShellProps) {
   const { user } = useAuthStore();
   const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
@@ -36,7 +35,6 @@ export default function AppShell({ Sidebar, roles, roleLabel, profilePath, suppo
     <Sidebar mobileOpen={mobileNavOpen} onMobileClose={() => setMobileNavOpen(false)} />
     <div className="app-layout-content">
       <TopBar onOpenNavigation={() => setMobileNavOpen(true)} roleLabel={roleLabel} profilePath={profilePath} contextLabel={contextLabel} supportPath={supportPath} inboxPath={inboxPath} />
-      {banner}
       <main id="main-content" ref={mainRef} tabIndex={-1} className="app-shell__main"><div className="app-shell__content"><ErrorBoundary><Outlet /></ErrorBoundary></div></main>
     </div>
   </div>;

@@ -365,7 +365,7 @@ export default function EmployeeSettingsPage() {
                   />
                 </div>
                 <div>
-                  <label style={labelStyle}>Branch Name</label>
+                  <label style={labelStyle}>Bank Branch</label>
                   <input
                     value={profile?.branchName ?? "—"}
                     readOnly

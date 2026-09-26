@@ -63,8 +63,6 @@ export function toV2ResourcePath(input: string): string {
     [/^\/company-admin\/role-permissions/, '/role-permissions'],
     [/^\/company-admin\/workflows/, '/workflows'],
     [/^\/company-admin\/reports/, '/reports'],
-    [/^\/company-admin\/attendance-integrations/, '/attendance-integrations'],
-    [/^\/company-admin\/attendance-verification-policy/, '/attendance-verification-policy'],
     [/^\/platform\/broadcasts/, '/broadcasts'],
     [/^\/platform\/employees/, '/employees'],
     [/^\/platform\/users/, '/users'],

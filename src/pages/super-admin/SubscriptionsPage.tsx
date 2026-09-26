@@ -160,7 +160,6 @@ export default function SubscriptionsPage() {
         price: draft?.pricing.monthly ?? plan.price,
         annualPrice: draft?.pricing.annual ?? plan.annualPrice,
         maxUsers: draft?.limits.employees ?? plan.maxUsers,
-        maxBranches: draft?.limits.branches ?? plan.maxBranches,
         storageGB: draft?.limits.storageGB ?? plan.storageGB,
         apiRequests: draft?.limits.apiRequests ?? plan.apiRequests,
         moduleIds: (draft?.moduleIds ?? plan.moduleIds).map((item) => typeof item === 'string' ? item : item.id),

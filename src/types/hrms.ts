@@ -19,7 +19,7 @@ export type EmployeeLifecycle =
   | 'EXITED'
   | 'ARCHIVED';
 
-export type OrganizationUnitType = 'COMPANY' | 'BRANCH' | 'DEPARTMENT' | 'TEAM' | 'COST_CENTRE';
+export type OrganizationUnitType = 'COMPANY' | 'DEPARTMENT' | 'TEAM' | 'COST_CENTRE';
 
 export interface OrganizationUnit extends MutableRecord {
   type: OrganizationUnitType;
@@ -35,7 +35,6 @@ export interface HolidayCalendar extends MutableRecord {
   name: string;
   year: number;
   stateCode: string | null;
-  branchIds: EntityId[];
   employeeGroupIds: EntityId[];
   holidays: Holiday[];
 }

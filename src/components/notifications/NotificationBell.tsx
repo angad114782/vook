@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, Bell, Check, Info, MessageSquare, ShieldAlert, TriangleAlert } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useNotificationCenter } from '../../hooks/useNotificationCenter';
+import SubscriptionStatus from '../subscription/SubscriptionStatus';
 
 const visibleNotificationLimit = 6;
 
@@ -86,6 +87,10 @@ export default function NotificationBell({ supportPath, inboxPath }: { supportPa
               </button>
             )}
           </div>
+
+          {workspace === 'company-admin' && (
+            <SubscriptionStatus onViewPlan={() => { setOpen(false); navigate('/company-admin/plan'); }} />
+          )}
 
           {groups.length ? (
             <>

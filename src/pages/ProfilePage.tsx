@@ -1,14 +1,4 @@
 import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type FormEvent,
-} from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import {
   BadgeCheck,
   Camera,
   Check,
@@ -18,7 +8,6 @@ import {
   Laptop,
   Loader2,
   Mail,
-  MonitorSmartphone,
   Palette,
   RotateCcw,
   ShieldCheck,
@@ -28,8 +17,16 @@ import {
   UserRound,
   UsersRound,
 } from "lucide-react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { accountApi } from "../api/account";
-import { useAccess } from "../hooks/queries/useAccess";
 import { useAuthStore } from "../store/authStore";
 import "./profilePage.css";
 
@@ -324,7 +321,6 @@ const sessionId = (session: Session, index: number) =>
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { user, setUser, logout } = useAuthStore();
-  const access = useAccess();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const role = (user?.role ?? "EMPLOYEE") as RoleKey;
   const meta = roleMeta[role] ?? roleMeta.EMPLOYEE;
@@ -423,22 +419,6 @@ export default function ProfilePage() {
       active = false;
     };
   }, []);
-
-  const enabledModules = useMemo(
-    () =>
-      (access.data?.modules ?? [])
-        .filter((module) => module.isEnabled)
-        .map((module) => module.name)
-        .slice(0, 8),
-    [access.data?.modules],
-  );
-  const assignedRoles = useMemo(
-    () =>
-      (access.data?.roles ?? [])
-        .map((item) => formatRole(item.role))
-        .filter(Boolean),
-    [access.data?.roles],
-  );
 
   const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -1036,49 +1016,6 @@ export default function ProfilePage() {
           </main>
 
           <aside className="profile-side">
-            <section className="profile-card profile-scope-card profile-card--scope">
-              <div className="profile-card__header">
-                <div>
-                  <p className="profile-card__eyebrow">ROLE CONTEXT</p>
-                  <h2>What you can manage</h2>
-                  <p>{meta.summary}</p>
-                </div>
-                <MonitorSmartphone size={19} />
-              </div>
-              <div className="profile-capability-list">
-                {meta.capabilities.map((capability) => (
-                  <div key={capability}>
-                    <Check size={14} /> {capability}
-                  </div>
-                ))}
-              </div>
-              {assignedRoles.length > 0 && (
-                <div className="profile-role-assignment">
-                  <span>
-                    Assigned role{assignedRoles.length > 1 ? "s" : ""}
-                  </span>
-                  <strong>{assignedRoles.join(" · ")}</strong>
-                </div>
-              )}
-              <div className="profile-module-block">
-                <div className="profile-module-block__heading">
-                  <span>Enabled modules</span>
-                  {access.isLoading && (
-                    <Loader2 size={13} className="profile-spin" />
-                  )}
-                </div>
-                <div className="profile-chip-list">
-                  {enabledModules.length > 0 ? (
-                    enabledModules.map((module) => (
-                      <span key={module}>{module}</span>
-                    ))
-                  ) : (
-                    <span className="is-muted">Loading access…</span>
-                  )}
-                </div>
-              </div>
-            </section>
-
             <section className="profile-card profile-card--preferences">
               <div className="profile-card__header">
                 <div>

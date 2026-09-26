@@ -129,7 +129,7 @@ function ViewModal({ company, plans, onClose, onEdit }: { company: Company; plan
   );
 
   return (
-    <AppDrawer open onOpenChange={(open) => { if (!open) onClose(); }} title={company.name} description={`${company.companyCode} · ${company.industry ?? 'Company details'}`} placement="responsive" size="sm" contentClassName="company-drawer__body">
+    <AppDrawer open onOpenChange={(open) => { if (!open) onClose(); }} title={company.name} description={`${company.companyCode} · ${company.industry ?? 'Company'}`} placement="responsive" size="sm" contentClassName="company-drawer__body">
         <div style={{ padding: '4px 0 8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
             <div style={{ width: '42px', height: '42px', borderRadius: '11px', backgroundColor: av.bg, display: 'grid', placeItems: 'center', color: av.color, fontWeight: 800, fontSize: '14px' }}>{initials(company.name)}</div>

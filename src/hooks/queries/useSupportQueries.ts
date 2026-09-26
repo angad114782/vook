@@ -1,5 +1,6 @@
 import { type InfiniteData, useInfiniteQuery } from '@tanstack/react-query';
 import { supportApi, type SupportCommentsResponse } from '../../api/support';
+import { isMockMode } from '../../config/runtime';
 import { qk } from '../../lib/queryKeys';
 
 export const useSupportComments = (ticketId?: string, enabled = true) =>
@@ -20,7 +21,7 @@ export const useSupportComments = (ticketId?: string, enabled = true) =>
     getPreviousPageParam: (firstPage) => firstPage.hasMore ? firstPage.nextCursor : undefined,
     getNextPageParam: () => undefined,
     staleTime: 30_000,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
+    refetchOnMount: isMockMode ? true : false,
+    refetchOnReconnect: isMockMode ? 'always' : false,
     enabled: Boolean(ticketId) && enabled,
   });
