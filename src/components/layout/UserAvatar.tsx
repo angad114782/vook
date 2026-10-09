@@ -3,9 +3,9 @@ import type { AuthUser } from '../../store/authStore';
 
 const avatarColors = [
   { bg: '#dff5ef', color: '#0d5c57' },
-  { bg: '#e7efff', color: '#3157a5' },
+  { bg: '#dff3f1', color: '#0d4a47' },
   { bg: '#fff0d9', color: '#9a5b12' },
-  { bg: '#f5e9ff', color: '#7a3a9b' },
+  { bg: '#e6f4f1', color: '#2f6f6b' },
 ];
 
 const getInitials = (name: string) => name

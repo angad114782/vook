@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { PageSkeleton } from './components/ui/Skeleton';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
@@ -55,6 +56,7 @@ const AttendancePage        = lazy(() => import('./pages/hr/AttendancePage'));
 const LeaveManagementPage   = lazy(() => import('./pages/hr/LeaveManagementPage'));
 const ApprovalsPage         = lazy(() => import('./pages/hr/ApprovalsPage'));
 const DocumentPoliciesPage  = lazy(() => import('./pages/hr/DocumentPoliciesPage'));
+const AttendanceDevicesPage = lazy(() => import('./pages/hr/AttendanceDevicesPage'));
 const HRSettingsPage        = lazy(() => import('./pages/hr/HRSettingsPage'));
 const HolidayCalendarPage   = lazy(() => import('./pages/hr/HolidayCalendarPage'));
 const EmployeeDetailPage    = lazy(() => import('./pages/hr/EmployeeDetailPage'));
@@ -101,11 +103,7 @@ const ShiftManagementPage      = lazy(() => import('./pages/supervisor/ShiftMana
 const SupervisorSettingsPage   = lazy(() => import('./pages/supervisor/SupervisorSettingsPage'));
 
 function PageSpinner() {
-  return (
-    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: 32, height: 32, border: '3px solid #e5e7eb', borderTopColor: '#0d7470', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-    </div>
-  );
+  return <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}><PageSkeleton label="Loading page" /></div>;
 }
 
 const guarded = (element: React.ReactElement, permission?: string, module?: string) =>
@@ -179,6 +177,7 @@ export default function App() {
             <Route path="employees/:id" element={guarded(<EmployeeDetailPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
             <Route path="calendar" element={guarded(<HolidayCalendarPage />, 'LEAVE_MANAGEMENT.VIEW', 'Leave Management')} />
             <Route path="attendance" element={guarded(<AttendancePage />, 'ATTENDANCE.VIEW', 'Attendance')} />
+            <Route path="devices" element={guarded(<AttendanceDevicesPage />, 'ATTENDANCE.VIEW', 'Attendance')} />
             <Route path="shifts"     element={guarded(<ShiftManagementPage />, 'SHIFT_MANAGEMENT.VIEW', 'Shift Management')} />
             <Route path="leaves"     element={guarded(<LeaveManagementPage />, 'LEAVE_MANAGEMENT.VIEW', 'Leave Management')} />
             <Route path="approvals"  element={guarded(<ApprovalsPage />, 'APPROVALS.VIEW', 'Approvals')} />
@@ -199,6 +198,7 @@ export default function App() {
             <Route path="onboarding" element={<CAOnboardingPage />} />
             <Route path="plan"       element={<CAPlanPage />} />
             <Route path="attendance" element={guarded(<AttendancePage />, 'ATTENDANCE.VIEW', 'Attendance')} />
+            <Route path="devices" element={guarded(<AttendanceDevicesPage />, 'ATTENDANCE.VIEW', 'Attendance')} />
             <Route path="workforce"  element={guarded(<EmployeesPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
             <Route path="workforce/:id" element={guarded(<EmployeeDetailPage />, 'EMPLOYEE_MANAGEMENT.VIEW', 'Employee Management')} />
             <Route path="calendar" element={guarded(<HolidayCalendarPage />, 'LEAVE_MANAGEMENT.VIEW', 'Leave Management')} />

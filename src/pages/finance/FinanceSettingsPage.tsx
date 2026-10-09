@@ -8,8 +8,8 @@ type Tab = 'Profile' | 'Notifications' | 'Security';
 const TABS: Tab[] = ['Profile', 'Notifications', 'Security'];
 
 const avatarColors = [
-  { bg: '#eef2ff', color: '#6366f1' }, { bg: '#f0fdf4', color: '#10b981' },
-  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fdf4ff', color: '#ec4899' },
+  { bg: '#f0fdfa', color: '#0d7470' }, { bg: '#f0fdf4', color: '#10b981' },
+  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fff7ed', color: '#b45309' },
 ];
 const getAv = (name?: string) => avatarColors[(name ?? 'F').charCodeAt(0) % avatarColors.length]!;
 const initials = (name?: string) => (name ?? 'User').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
@@ -69,7 +69,7 @@ export default function FinanceSettingsPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div>
-        <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Settings</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Settings</h1>
         <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage your profile, notifications, and account security</p>
       </div>
 

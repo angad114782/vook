@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api, { setCsrfToken } from '../api/axios';
+import { withBotProof } from '../lib/botProof';
 
 export interface AuthUser {
   id: string;
@@ -17,7 +18,11 @@ export interface AuthUser {
 interface AuthState {
   user: AuthUser | null;
   isLoading: boolean;
-  login: (email: string, password: string, otp?: string) => Promise<void>;
+  /** `identifier` is an email address or a mobile number. */
+  login: (identifier: string, password: string, otp?: string, website?: string) => Promise<void>;
+  loginWithOtp: (mobile: string, code: string, totp?: string) => Promise<void>;
+  /** Local development only: sign in as a sample person with one click. The server refuses this anywhere else. */
+  devLogin: (role: string) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (patch: Partial<AuthUser>) => void;
   hydrate: () => Promise<void>;
@@ -28,10 +33,33 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       isLoading: false,
-      login: async (email, password, otp) => {
+      login: async (identifier, password, otp, website) => {
         set({ isLoading: true });
         try {
-          const { data } = await api.post('/auth/login', { email, password, ...(otp ? { otp } : {}) });
+          // `email` is kept for older servers and demo mode; `identifier` accepts email or mobile.
+          const { data } = await withBotProof((botProof) => api.post('/auth/login', { identifier, email: identifier, password, website, botProof, ...(otp ? { otp } : {}) }));
+          setCsrfToken(data.csrfToken ?? null);
+          set({ user: data.user, isLoading: false });
+        } catch (error) {
+          set({ isLoading: false });
+          throw error;
+        }
+      },
+      devLogin: async (role) => {
+        set({ isLoading: true });
+        try {
+          const { data } = await api.post('/auth/dev-login', { role });
+          setCsrfToken(data.csrfToken ?? null);
+          set({ user: data.user, isLoading: false });
+        } catch (error) {
+          set({ isLoading: false });
+          throw error;
+        }
+      },
+      loginWithOtp: async (mobile, code, totp) => {
+        set({ isLoading: true });
+        try {
+          const { data } = await api.post('/auth/otp/verify', { mobile, code, ...(totp ? { totp } : {}) });
           setCsrfToken(data.csrfToken ?? null);
           set({ user: data.user, isLoading: false });
         } catch (error) {

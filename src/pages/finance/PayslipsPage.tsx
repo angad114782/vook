@@ -1,7 +1,8 @@
+import { useLookup } from '../../hooks/useLookup';
 import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import type { Payslip } from '../../api/hr';
-import { Eye, Download, Loader2, Search } from 'lucide-react';
+import { Eye, Download, Search } from 'lucide-react';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import PaginationBar from '../../components/data/Pagination';
 import { useFinancePayslips } from '../../hooks/queries/useFinanceQueries';
@@ -11,6 +12,8 @@ import { financeApi } from '../../api/finance';
 import { toast } from 'sonner';
 import { extractError } from '../../utils/errorUtils';
 import AppDialog from '../../components/ui/AppDialog';
+import { statusLabel } from '../../utils/friendly';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 const fmtPay = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
@@ -21,6 +24,7 @@ const STATUS_META: Record<string, { bg: string; color: string }> = {
 };
 
 export default function PayslipsPage() {
+  const employmentTypes = useLookup('EMPLOYMENT_TYPE');
   const access = useAccess();
   const canExport = access.can('PAYSLIPS.EXPORT');
   const today = new Date();
@@ -75,7 +79,7 @@ export default function PayslipsPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div>
-        <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Payslip <span style={{ fontSize: '13px', fontWeight: 500, color: '#94a3b8', marginLeft: '6px' }}>{pagination.total} Records</span></h1>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Payslip <span style={{ fontSize: '13px', fontWeight: 500, color: '#94a3b8', marginLeft: '6px' }}>{pagination.total} Records</span></h1>
         <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Select the parameters for this payroll cycle</p>
       </div>
 
@@ -94,12 +98,12 @@ export default function PayslipsPage() {
             <option>All Departments</option>{(departments.data ?? []).map((item) => <option key={item.name}>{item.name}</option>)}
           </select>
           <select value={empType} onChange={(e) => handleEmpChange(e.target.value)} style={selStyle}>
-            <option>All Employees</option><option>Permanent</option><option>Contract</option>
+            <option>All Employees</option>{employmentTypes.items.map((t) => <option key={t}>{t}</option>)}
           </select>
         </div>
 
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /></div>
+          <TableSkeleton />
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -115,11 +119,11 @@ export default function PayslipsPage() {
                   const sm = STATUS_META[p.status] ?? STATUS_META['Pending']!;
                   return (
                     <tr key={p.id} style={{ borderBottom: i < payslips.length - 1 ? '1px solid #f8fafc' : 'none' }}>
-                      <td style={{ padding: '12px 16px' }}><span style={{ fontSize: '13px', fontWeight: 700, color: '#2563eb', fontFamily: 'monospace' }}>{p.payslipId}</span></td>
+                      <td style={{ padding: '12px 16px' }}><span style={{ fontSize: '13px', fontWeight: 700, color: '#0d7470', fontFamily: 'monospace' }}>{p.payslipId}</span></td>
                       <td style={{ padding: '12px 16px' }}><p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>{p.employee.user.name}</p></td>
                       <td style={{ padding: '12px 16px' }}><span style={{ fontSize: '13px', color: '#374151' }}>{p.period}</span></td>
                       <td style={{ padding: '12px 16px' }}><span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{fmtPay(p.netPay)}</span></td>
-                      <td style={{ padding: '12px 16px' }}><span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: sm.bg, color: sm.color }}>{p.status}</span></td>
+                      <td style={{ padding: '12px 16px' }}><span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: sm.bg, color: sm.color }}>{statusLabel(p.status)}</span></td>
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', gap: '6px' }}>
                           <button aria-label={`View ${p.payslipId}`} onClick={() => setSelected(p)} style={{ width: '32px', height: '32px', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}><Eye size={13} /></button>
@@ -140,7 +144,7 @@ export default function PayslipsPage() {
       </div>
 
       <PaginationBar page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} limit={limit} onPageChange={(p) => setPage(p)} />
-      {selected && <AppDialog open onOpenChange={(open) => !open && setSelected(null)} title={`${selected.employee.user.name} · ${selected.period}`} description={selected.payslipId} footer={<button className="admin-button admin-button--secondary" onClick={() => setSelected(null)}>Close</button>}><div className="payslip-breakdown"><div className="payslip-breakdown__net"><span>Net pay</span><strong>{fmtPay(selected.netPay)}</strong><span className="product-status">{selected.status}</span></div><dl><div><dt>Gross salary</dt><dd>{fmtPay(selected.grossSalary)}</dd></div><div><dt>Total deductions</dt><dd>{fmtPay(selected.totalDeductions)}</dd></div><div><dt>Payable days</dt><dd>{selected.snapshot?.payableDays ?? '—'}</dd></div><div><dt>Overtime pay</dt><dd>{fmtPay(selected.snapshot?.overtimePay ?? 0)}</dd></div></dl><p>This breakdown is sourced from the payroll snapshot for the selected period.</p></div></AppDialog>}
+      {selected && <AppDialog open onOpenChange={(open) => !open && setSelected(null)} title={`${selected.employee.user.name} · ${selected.period}`} description={selected.payslipId} footer={<button className="admin-button admin-button--secondary" onClick={() => setSelected(null)}>Close</button>}><div className="payslip-breakdown"><div className="payslip-breakdown__net"><span>Net pay</span><strong>{fmtPay(selected.netPay)}</strong><span className="product-status">{statusLabel(selected.status)}</span></div><dl><div><dt>Gross salary</dt><dd>{fmtPay(selected.grossSalary)}</dd></div><div><dt>Total deductions</dt><dd>{fmtPay(selected.totalDeductions)}</dd></div><div><dt>Payable days</dt><dd>{selected.snapshot?.payableDays ?? '—'}</dd></div><div><dt>Overtime pay</dt><dd>{fmtPay(selected.snapshot?.overtimePay ?? 0)}</dd></div></dl><p>This breakdown is sourced from the payroll snapshot for the selected period.</p></div></AppDialog>}
     </div>
   );
 }

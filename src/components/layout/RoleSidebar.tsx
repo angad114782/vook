@@ -109,14 +109,15 @@ export default function RoleSidebar({
     localStorage.setItem(storageKey, String(!current));
     return !current;
   });
-  const toggleMenu = (key: string) => {
+  // Opening a parent also lands on its first child; clicking a parent whose child is already active only toggles the list.
+  const toggleMenu = (key: string, firstChild: RoleNavItem, isActive: boolean) => {
     if (collapsed && window.innerWidth >= 1200) {
       setCollapsed(false);
       localStorage.setItem(storageKey, 'false');
-      setOpenMenus((current) => [...new Set([...current, key])]);
-      return;
     }
-    setOpenMenus((current) => current.includes(key) ? current.filter((item) => item !== key) : [...current, key]);
+    const opening = !openMenus.includes(key) || !isActive;
+    setOpenMenus((current) => opening ? [...new Set([...current, key])] : current.filter((item) => item !== key));
+    if (!isActive) navigate(linkTo(firstChild.to));
   };
   const closeUserMenu = (event: React.MouseEvent<HTMLElement>) => event.currentTarget.closest('details')?.removeAttribute('open');
 
@@ -137,7 +138,7 @@ export default function RoleSidebar({
             const isOpen = openMenus.includes(entry.key);
             const isActive = entry.children.some((child) => location.pathname === child.to);
             return <div className={`ca-nav-tree${isOpen ? ' is-open' : ''}`} key={entry.key}>
-              <button type="button" className={`ca-nav-parent${isActive ? ' is-active' : ''}`} aria-expanded={isOpen} aria-controls={`${portalKey}-submenu-${entry.key}`} title={collapsed ? entry.label : undefined} data-tooltip={entry.label} onClick={() => toggleMenu(entry.key)}><entry.Icon size={17} aria-hidden /><span>{entry.label}</span><ChevronDown className="ca-nav-chevron" size={14} aria-hidden /></button>
+              <button type="button" className={`ca-nav-parent${isActive ? ' is-active' : ''}`} aria-expanded={isOpen} aria-controls={`${portalKey}-submenu-${entry.key}`} title={collapsed ? entry.label : undefined} data-tooltip={entry.label} onClick={() => toggleMenu(entry.key, entry.children[0], isActive)}><entry.Icon size={17} aria-hidden /><span>{entry.label}</span><ChevronDown className="ca-nav-chevron" size={14} aria-hidden /></button>
               <div className="ca-nav-submenu" id={`${portalKey}-submenu-${entry.key}`}>{entry.children.map((child) => <NavLink key={child.to} to={linkTo(child.to)} onClick={onMobileClose} className={({ isActive: childActive }) => childActive ? 'is-active' : ''}><span>{child.label}</span></NavLink>)}</div>
             </div>;
           })}</section>;

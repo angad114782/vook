@@ -9,6 +9,7 @@ import { useEmployeeLifecycleAction } from '../../hooks/mutations/useHrMutations
 import AppDialog from '../../components/ui/AppDialog';
 import { toast } from 'sonner';
 import { extractError } from '../../utils/errorUtils';
+import { statusLabel } from '../../utils/friendly';
 
 const tabs = ['overview', 'job', 'personal', 'statutory', 'compensation', 'attendance', 'leave', 'documents', 'assets', 'timeline', 'access'] as const;
 type Tab = typeof tabs[number];
@@ -69,7 +70,7 @@ export default function EmployeeDetailPage() {
 
   return <div className="product-page employee-workspace">
     <Link className="product-back-link" to={workforcePath}><ArrowLeft size={16} aria-hidden="true" /> Back to employees</Link>
-    <PageHeader eyebrow={`${employee.employeeId} · Employee record`} title={employee.user.name} description={[employee.designation, employee.department].filter(Boolean).join(' · ') || 'Employment details are incomplete.'} actions={<><StatusBadge status={employee.status}>{employee.status}</StatusBadge>{canChangeLifecycle && <button className="admin-button admin-button--secondary" onClick={() => { setSelectedAction(availableActions[0]?.action ?? ''); setLifecycleOpen(true); }}><RefreshCw size={15} aria-hidden="true" /> Change lifecycle</button>}</>} />
+    <PageHeader eyebrow={`${employee.employeeId} · Employee record`} title={employee.user.name} description={[employee.designation, employee.department].filter(Boolean).join(' · ') || 'Employment details are incomplete.'} actions={<><StatusBadge status={employee.status}>{statusLabel(employee.status)}</StatusBadge>{canChangeLifecycle && <button className="admin-button admin-button--secondary" onClick={() => { setSelectedAction(availableActions[0]?.action ?? ''); setLifecycleOpen(true); }}><RefreshCw size={15} aria-hidden="true" /> Change lifecycle</button>}</>} />
     <section className="employee-workspace__hero admin-card">
       <div className="employee-workspace__avatar" aria-hidden="true">{employee.user.name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</div>
       <div><strong>{employee.user.name}</strong><span>{employee.user.email}</span><small>{employee.employmentType} · Joined {formatDate(employee.joiningDate)}</small></div>
@@ -105,7 +106,7 @@ function EmployeeTab({ tab, employee, portal }: { tab: Tab; employee: Employee; 
   if (tab === 'leave') return <ModuleLinkCard icon={<CalendarDays />} title="Leave record" description="Review leave requests, balances and approval history for this employee." to={`${portal}/leaves?employeeId=${employee.id}`} />;
   if (tab === 'documents') return <ModuleLinkCard icon={<FileText />} title="Employee documents" description="Employee file access will respect document category and record scope permissions." to={`${portal}/documents?employeeId=${employee.id}`} />;
   if (tab === 'assets') return <ComingModule icon={<BriefcaseBusiness />} title="Assets and clearance" description="Asset assignment is scheduled after the core employment-to-payroll lifecycle." />;
-  if (tab === 'timeline') return <section className="admin-card employee-timeline"><h2>Employment timeline</h2><ol><li><span /><div><strong>Employee record created</strong><small>{formatDate(employee.joiningDate)} · Initial employment record</small></div></li><li><span /><div><strong>Current lifecycle state</strong><small>{employee.status} · Version {employee.version ?? 1}</small></div></li></ol></section>;
+  if (tab === 'timeline') return <section className="admin-card employee-timeline"><h2>Employment timeline</h2><ol><li><span /><div><strong>Employee record created</strong><small>{formatDate(employee.joiningDate)} · Initial employment record</small></div></li><li><span /><div><strong>Current lifecycle state</strong><small>{statusLabel(employee.status)} · Version {employee.version ?? 1}</small></div></li></ol></section>;
 
   const section = fields[tab as keyof typeof fields] ?? fields.overview;
   const icon = tab === 'personal' ? <CircleUserRound /> : tab === 'statutory' ? <ShieldCheck /> : tab === 'compensation' ? <IndianRupee /> : tab === 'access' ? <KeyRound /> : tab === 'job' ? <Building2 /> : <BriefcaseBusiness />;

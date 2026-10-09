@@ -4,16 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import {
   Building2, IndianRupee, Users, AlertTriangle,
-  ArrowUpRight, Activity, AlertCircle, Loader2,
-} from 'lucide-react';
+  ArrowUpRight, Activity, AlertCircle, } from 'lucide-react';
 import { type Company } from '../../api/companies';
 import { type ActivityLog } from '../../api/activity';
 import { getPlanBadge } from '../../utils/planColors';
 import { useSaCompanies, useSaActivity, useSaPlans, useSaRevenueTrend } from '../../hooks/queries/useSaQueries';
+import { statusLabel } from '../../utils/friendly';
+import { DashboardSkeleton } from '../../components/ui/Skeleton';
 
 const ini = (name?: string) => (name ?? 'System').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
-const avatarBg = ['#eef2ff', '#f5f3ff', '#f0f9ff', '#f0fdf4', '#fffbeb', '#fdf4ff'];
-const avatarColor = ['#6366f1', '#8b5cf6', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899'];
+const avatarBg = ['#f0fdfa', '#f0fdfa', '#e6f4f1', '#f0fdf4', '#fffbeb', '#fff7ed'];
+const avatarColor = ['#0d7470', '#0d4a47', '#2f8f8a', '#4aa8a2', '#f59e0b', '#b45309'];
 const getAv = (name: string) => {
   const i = (name ?? 'A').charCodeAt(0) % avatarBg.length;
   return { bg: avatarBg[i]!, color: avatarColor[i]! };
@@ -53,14 +54,12 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-        <Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} color="#0d7470" />
-      </div>
+      <DashboardSkeleton />
     );
   }
 
   const STAT_CARDS = [
-    { label: 'Total Companies',  value: String(rawStats.total),         sub: 'Registered on platform',    icon: Building2,   iconBg: '#eff6ff', iconColor: '#3b82f6' },
+    { label: 'Total Companies',  value: String(rawStats.total),         sub: 'Registered on platform',    icon: Building2,   iconBg: '#f0fdfa', iconColor: '#0d7470' },
     { label: 'Monthly Revenue',  value: `₹${mrr.toLocaleString('en-IN')}`,     sub: 'From active subscriptions', icon: IndianRupee, iconBg: '#f0fdf4', iconColor: '#22c55e' },
     { label: 'Active Companies', value: String(rawStats.active),        sub: 'Across platform',            icon: Users,       iconBg: '#faf5ff', iconColor: '#a855f7' },
     { label: 'Expiring Soon',    value: String(rawStats.expiringSoon),  sub: 'Within 30 days',             icon: AlertTriangle,iconBg: '#fff7ed', iconColor: '#f97316' },
@@ -68,13 +67,13 @@ export default function DashboardPage() {
 
   const ALERTS = [
     ...(rawStats.expiringSoon > 0 ? [{ type: 'warning', text: `${rawStats.expiringSoon} subscription(s) expiring in 30 days`, color: '#f59e0b', bg: '#fffbeb' }] : []),
-    ...(rawStats.trial > 0 ? [{ type: 'info', text: `${rawStats.trial} company/companies on trial plan`, color: '#3b82f6', bg: '#eff6ff' }] : []),
+    ...(rawStats.trial > 0 ? [{ type: 'info', text: `${rawStats.trial} company/companies on trial plan`, color: '#0d7470', bg: '#f0fdfa' }] : []),
   ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div>
-        <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Dashboard</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Dashboard</h1>
         <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage your platform and monitor client companies</p>
       </div>
 
@@ -238,7 +237,7 @@ export default function DashboardPage() {
                   </td>
                   <td style={{ padding: '13px 22px' }}>
                     <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, backgroundColor: c.status === 'ACTIVE' ? '#dcfce7' : c.status === 'TRIAL' ? '#fef9c3' : '#f1f5f9', color: c.status === 'ACTIVE' ? '#15803d' : c.status === 'TRIAL' ? '#854d0e' : '#64748b' }}>
-                      {c.status}
+                      {statusLabel(c.status)}
                     </span>
                   </td>
                   <td style={{ padding: '13px 22px' }}>

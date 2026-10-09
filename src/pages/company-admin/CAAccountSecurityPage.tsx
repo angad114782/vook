@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { accountApi } from '../../api/account';
 import { useAuthStore } from '../../store/authStore';
+import { ListSkeleton } from '../../components/ui/Skeleton';
 
 type Session = { _id: string; createdAt: string; expiresAt: string; ipAddress?: string; userAgent?: string };
 
@@ -58,7 +59,7 @@ export default function CAAccountSecurityPage() {
 
         <section className="admin-card account-security-card">
           <header><div><h2>Active sessions</h2><p>Revoke access from devices you no longer use.</p></div><button className="admin-button admin-button--secondary" onClick={() => void revokeAll()}>Revoke all</button></header>
-          {loading ? <div className="empty-state"><Loader2 size={18} /> Loading sessions…</div> : sessions.length === 0 ? <div className="empty-state">No active sessions</div> : sessions.map((session) => (
+          {loading ? <ListSkeleton rows={3} label="Loading sessions" /> : sessions.length === 0 ? <div className="empty-state">No active sessions</div> : sessions.map((session) => (
             <div className="session-row" key={session._id}>
               {/mobile|android|iphone/i.test(session.userAgent ?? '') ? <Smartphone size={18} /> : <Laptop size={18} />}
               <div><strong>{session.ipAddress ?? 'Unknown IP'}</strong><small>{new Date(session.createdAt).toLocaleString('en-IN')} · expires {new Date(session.expiresAt).toLocaleDateString('en-IN')}</small></div>

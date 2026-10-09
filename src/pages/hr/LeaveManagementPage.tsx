@@ -1,9 +1,12 @@
+import CreatableSelect from '../../components/ui/CreatableSelect';
 import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { timeOffApi } from '../../api/timeOff';
 import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { type LeaveRequest } from '../../api/hr';
-import { Search, CheckCircle2, XCircle, Clock, CalendarDays, Loader2, Plus, X } from 'lucide-react';
+import { Search, CheckCircle2, XCircle, Clock, CalendarDays, Plus, X, Trash2 } from 'lucide-react';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import PaginationBar from '../../components/data/Pagination';
 import { extractError } from '../../utils/errorUtils';
@@ -15,6 +18,7 @@ import { useApplyLeave } from '../../hooks/mutations/useEmployeeMutations';
 import { useMyLeaves } from '../../hooks/queries/useEmployeeQueries';
 import { useAuthStore } from '../../store/authStore';
 import { ErrorState, LoadingState } from '../../components/ui/ProductPrimitives';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 const STATUS_META: Record<string, { bg: string; color: string }> = {
   Pending:  { bg: '#fef9c3', color: '#854d0e' },
@@ -22,12 +26,11 @@ const STATUS_META: Record<string, { bg: string; color: string }> = {
   Rejected: { bg: '#fee2e2', color: '#b91c1c' },
 };
 
-const LEAVE_TYPES = ['Sick Leave', 'Casual Leave', 'Annual Leave', 'Maternity Leave', 'Emergency Leave'];
 
 const avatarColors = [
-  { bg: '#eef2ff', color: '#6366f1' }, { bg: '#f0fdf4', color: '#10b981' },
-  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fdf4ff', color: '#ec4899' },
-  { bg: '#f0f9ff', color: '#0ea5e9' },
+  { bg: '#f0fdfa', color: '#0d7470' }, { bg: '#f0fdf4', color: '#10b981' },
+  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fff7ed', color: '#b45309' },
+  { bg: '#e6f4f1', color: '#2f8f8a' },
 ];
 const getAv = (name?: string) => avatarColors[(name ?? 'H').charCodeAt(0) % avatarColors.length]!;
 const initials = (name?: string) => (name ?? 'User').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
@@ -83,6 +86,48 @@ function DetailModal({ leave, onClose, onAction, canApprove, canReject }: { leav
   );
 }
 
+function LeaveTypesPanel({ types, onChanged }: { types: Array<{ type: string; total: number; paid: boolean }>; onChanged: () => Promise<unknown> }) {
+  const [name, setName] = useState('');
+  const [days, setDays] = useState('12');
+  const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const add = async () => {
+    if (name.trim().length < 2 || busy) return;
+    setBusy(true);
+    try { await timeOffApi.addLeaveType(name.trim(), Number(days) || 0); toast.success(`“${name.trim()}” added`); setName(''); await onChanged(); }
+    catch (e) { toast.error(extractError(e, 'We could not add this leave type.')); }
+    finally { setBusy(false); }
+  };
+  const remove = async (t: string) => {
+    setBusy(true);
+    try { await timeOffApi.deleteLeaveType(t); toast.success('Leave type deleted'); await onChanged(); }
+    catch (e) { toast.error(extractError(e, 'We could not delete this leave type.')); }
+    finally { setBusy(false); setConfirming(null); }
+  };
+  return (
+    <section aria-label="Leave types" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 12, padding: 16, display: 'grid', gap: 10 }}>
+      <div><strong style={{ fontSize: 14, color: '#0d4a47' }}>Leave types</strong><p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748b' }}>The kinds of leave your people can take. Add your own, or delete one nobody has used.</p></div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {types.map((t) => confirming === t.type ? (
+          <span key={t.type} role="alert" style={{ display: 'inline-flex', gap: 6, alignItems: 'center', padding: '4px 10px', borderRadius: 999, background: '#fef2f2', color: '#7f1d1d', fontSize: 12 }}>Delete “{t.type}”?
+            <button type="button" disabled={busy} onClick={() => void remove(t.type)} style={{ border: 0, borderRadius: 5, background: '#b91c1c', color: 'white', padding: '2px 8px', fontSize: 12, cursor: 'pointer' }}>Yes, delete</button>
+            <button type="button" onClick={() => setConfirming(null)} style={{ border: '1px solid #e2e8f0', borderRadius: 5, background: 'white', padding: '2px 8px', fontSize: 12, cursor: 'pointer' }}>No</button>
+          </span>
+        ) : (
+          <span key={t.type} style={{ display: 'inline-flex', gap: 6, alignItems: 'center', padding: '4px 6px 4px 12px', borderRadius: 999, background: '#dff3f1', color: '#0d4a47', fontSize: 12, fontWeight: 600 }}>{t.type}<span style={{ fontWeight: 400, color: '#2f6f6b' }}>{t.total ? `${t.total} days` : t.paid ? '' : 'unpaid'}</span>
+            <button type="button" aria-label={`Delete ${t.type}`} title="Delete" onClick={() => setConfirming(t.type)} style={{ border: 0, background: 'none', cursor: 'pointer', color: '#2f6f6b', padding: 2, display: 'flex' }}><Trash2 size={12} aria-hidden /></button>
+          </span>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') void add(); }} placeholder="New leave type, e.g. Study leave" aria-label="New leave type" style={{ padding: '8px 10px', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: 13, minWidth: 220 }} />
+        <input type="number" min={0} max={365} value={days} onChange={(e) => setDays(e.target.value)} aria-label="Days a year" style={{ width: 80, padding: '8px 10px', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: 13 }} /><span style={{ fontSize: 12, color: '#64748b' }}>days a year</span>
+        <button type="button" disabled={busy || name.trim().length < 2} onClick={() => void add()} style={{ padding: '8px 14px', border: 0, borderRadius: 8, background: '#0d7470', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>+ Add leave type</button>
+      </div>
+    </section>
+  );
+}
+
 export default function LeaveManagementPage() {
   const role = useAuthStore((state) => state.user?.role);
   const isEmployee = role === 'EMPLOYEE';
@@ -99,7 +144,13 @@ export default function LeaveManagementPage() {
   const [viewLeave, setViewLeave] = useState<LeaveRequest | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [createError, setCreateError] = useState('');
-  const [createForm, setCreateForm] = useState({ leaveType: 'Casual Leave', startDate: '', endDate: '', reason: '' });
+  const [createForm, setCreateForm] = useState({ leaveType: '', startDate: '', endDate: '', reason: '' });
+  // Leave types are configured per company on the server, so the lists below always match what it will accept.
+  const leaveTypesQuery = useQuery({ queryKey: ['leave-types'], queryFn: () => timeOffApi.listLeaveTypes().then((r) => r.data), staleTime: 300_000 });
+  const LEAVE_TYPES = (leaveTypesQuery.data ?? []).map((t) => t.type);
+  const canManageLeaveTypes = useAuthStore((state) => state.user?.role === 'COMPANY_ADMIN' || state.user?.role === 'HR');
+  const firstLeaveType = LEAVE_TYPES[0] ?? '';
+  useEffect(() => { if (!createForm.leaveType && firstLeaveType) setCreateForm((f) => ({ ...f, leaveType: firstLeaveType })); }, [firstLeaveType, createForm.leaveType]);
 
   const debouncedSearch = useDebouncedValue(search, 500);
 
@@ -150,7 +201,7 @@ export default function LeaveManagementPage() {
     applyLeave.mutate(createForm, {
       onSuccess: () => {
         setShowCreate(false);
-        setCreateForm({ leaveType: 'Casual Leave', startDate: '', endDate: '', reason: '' });
+        setCreateForm({ leaveType: firstLeaveType, startDate: '', endDate: '', reason: '' });
         toast.success('Leave request created successfully');
       },
       onError: (error) => setCreateError(extractError(error, 'Failed to create leave request')),
@@ -158,7 +209,7 @@ export default function LeaveManagementPage() {
   };
 
   const statCards = [
-    { label: 'Total Requests', value: stats.total,    icon: CalendarDays,  color: '#3b82f6', bg: '#eff6ff' },
+    { label: 'Total Requests', value: stats.total,    icon: CalendarDays,  color: '#0d7470', bg: '#f0fdfa' },
     { label: 'Pending',        value: stats.pending,  icon: Clock,         color: '#f59e0b', bg: '#fffbeb' },
     { label: 'Approved',       value: stats.approved, icon: CheckCircle2,  color: '#10b981', bg: '#f0fdf4' },
     { label: 'Rejected',       value: stats.rejected, icon: XCircle,       color: '#ef4444', bg: '#fef2f2' },
@@ -170,11 +221,13 @@ export default function LeaveManagementPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Leave Management</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Leave Management</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Review and manage employee leave requests</p>
         </div>
         {canCreate && <button onClick={() => setShowCreate(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', backgroundColor: '#0d7470', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}><Plus size={14} /> Create request</button>}
       </div>
+
+      {canManageLeaveTypes && <LeaveTypesPanel types={leaveTypesQuery.data ?? []} onChanged={() => leaveTypesQuery.refetch()} />}
 
       {isEmployee && (ownLeaveQuery.isLoading ? <LoadingState label="Loading leave balances…" /> : ownLeaveQuery.isError ? <ErrorState description="Your leave balances could not be loaded." onRetry={() => void ownLeaveQuery.refetch()} /> : <section className="leave-balance-panel" aria-labelledby="leave-balance-title">
         <div className="leave-balance-panel__heading"><div><h2 id="leave-balance-title">Your leave balances</h2><p>Balances include approved leave. Pending requests are shown separately.</p></div><Link to="/employee/calendar" className="admin-button ghost"><CalendarDays size={16} aria-hidden="true" /> Open team calendar</Link></div>
@@ -209,7 +262,7 @@ export default function LeaveManagementPage() {
         </div>
 
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /><span style={{ fontSize: '14px' }}>Loading...</span></div>
+          <TableSkeleton />
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -261,7 +314,7 @@ export default function LeaveManagementPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}><div><h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>Create leave request</h3><p style={{ fontSize: '12px', color: '#64748b', marginTop: '3px' }}>Submit a leave request for your own employee record.</p></div><button aria-label="Close create leave form" onClick={() => { setShowCreate(false); setCreateError(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button></div>
           {createError && <div role="alert" style={{ padding: '10px 14px', backgroundColor: '#fef2f2', borderRadius: '8px', color: '#dc2626', fontSize: '12px', marginBottom: '14px' }}>{createError}</div>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>Leave type<select value={createForm.leaveType} onChange={(event) => setCreateForm((current) => ({ ...current, leaveType: event.target.value }))} style={{ ...selectStyle, display: 'block', width: '100%', marginTop: '5px', boxSizing: 'border-box' }}>{LEAVE_TYPES.map((type) => <option key={type}>{type}</option>)}</select></label>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>Leave type<div style={{ marginTop: '5px' }}><CreatableSelect value={createForm.leaveType} onChange={(v) => setCreateForm((current) => ({ ...current, leaveType: v }))} options={LEAVE_TYPES.map((t) => ({ value: t, label: t }))} loading={leaveTypesQuery.isLoading} entityLabel="leave type" placeholder="Choose a leave type" /></div></label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>From<input type="date" value={createForm.startDate} onChange={(event) => setCreateForm((current) => ({ ...current, startDate: event.target.value }))} style={{ ...selectStyle, display: 'block', width: '100%', marginTop: '5px', boxSizing: 'border-box' }} /></label>
               <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>To<input type="date" value={createForm.endDate} onChange={(event) => setCreateForm((current) => ({ ...current, endDate: event.target.value }))} style={{ ...selectStyle, display: 'block', width: '100%', marginTop: '5px', boxSizing: 'border-box' }} /></label>

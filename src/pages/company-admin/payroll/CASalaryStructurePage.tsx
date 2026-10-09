@@ -1,6 +1,6 @@
 import { ResponsiveTable } from '../../../components/data/ResponsiveDataView';
 import { useState } from 'react';
-import { Search, Edit2, X, Loader2 } from 'lucide-react';
+import { Search, Edit2, X } from 'lucide-react';
 import { type SalaryRow } from '../../../api/hr';
 import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
 import PaginationBar from '../../../components/data/Pagination';
@@ -9,6 +9,7 @@ import { hrApi } from '../../../api/hr';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import LegacyDrawer from '../../../components/ui/LegacyDrawer';
+import { TableSkeleton } from '../../../components/ui/Skeleton';
 
 const fmtCtc = (n: number | null) => n ? `INR ${n.toLocaleString('en-IN')}` : 'Not configured';
 const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : '—';
@@ -71,7 +72,7 @@ export default function CASalaryStructurePage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div>
-        <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Salary Structure</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Salary Structure</h1>
         <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>View and update employee CTC and salary components.</p>
       </div>
 
@@ -89,7 +90,7 @@ export default function CASalaryStructurePage() {
       {/* Table */}
       <div style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#2563eb" /></div>
+          <TableSkeleton />
         ) : (
           <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -108,14 +109,14 @@ export default function CASalaryStructurePage() {
                   </td>
                   <td style={{ padding: '12px 16px', fontSize: '12px', color: '#374151', borderBottom: '1px solid #f1f5f9' }}>{e.designation ?? '—'}</td>
                   <td style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
-                    <span style={{ padding: '2px 9px', borderRadius: '12px', fontSize: '10px', fontWeight: 600, border: `1px solid ${e.employmentType === 'Permanent' ? '#2563eb' : '#d97706'}`, color: e.employmentType === 'Permanent' ? '#2563eb' : '#d97706', backgroundColor: 'white' }}>
+                    <span style={{ padding: '2px 9px', borderRadius: '12px', fontSize: '10px', fontWeight: 600, border: `1px solid ${e.employmentType === 'Permanent' ? '#0d7470' : '#d97706'}`, color: e.employmentType === 'Permanent' ? '#0d7470' : '#d97706', backgroundColor: 'white' }}>
                       {e.employmentType}
                     </span>
                   </td>
                   <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700, color: e.annualCtc && e.annualCtc > 0 ? '#0f172a' : '#dc2626', borderBottom: '1px solid #f1f5f9' }}>{fmtCtc(e.annualCtc)}</td>
-                  <td style={{ padding: '12px 16px', fontSize: '12px', color: '#2563eb', fontWeight: 600, borderBottom: '1px solid #f1f5f9' }}>{fmtDate(e.lastRevised)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '12px', color: '#0d7470', fontWeight: 600, borderBottom: '1px solid #f1f5f9' }}>{fmtDate(e.lastRevised)}</td>
                   <td style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
-                    <button aria-label={`Revise salary for ${e.name}`} onClick={() => openEdit(e)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb', display: 'flex', alignItems: 'center' }}>
+                    <button aria-label={`Revise salary for ${e.name}`} onClick={() => openEdit(e)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0d7470', display: 'flex', alignItems: 'center' }}>
                       <Edit2 size={14} aria-hidden="true" />
                     </button>
                   </td>
@@ -142,7 +143,7 @@ export default function CASalaryStructurePage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '5px' }}>Annual CTC (₹)</label>
-                <input type="number" value={editCTC} onChange={(e) => setEditCTC(e.target.value)} style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#374151', boxSizing: 'border-box' }} onFocus={(e) => (e.target.style.borderColor = '#2563eb')} onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')} />
+                <input type="number" value={editCTC} onChange={(e) => setEditCTC(e.target.value)} style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#374151', boxSizing: 'border-box' }} onFocus={(e) => (e.target.style.borderColor = '#0d7470')} onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')} />
                 {editCTC && <p style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Monthly: ₹{Math.round(Number(editCTC) / 12).toLocaleString('en-IN')}</p>}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -154,12 +155,12 @@ export default function CASalaryStructurePage() {
               <div style={{ backgroundColor: '#f8fafc', borderRadius: '8px', padding: '10px 12px' }}>
                 <p style={{ fontSize: '11px', color: '#64748b' }}>Role: <strong style={{ color: '#374151' }}>{editEmp.designation ?? '—'}</strong></p>
                 <p style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>Type: <strong style={{ color: '#374151' }}>{editEmp.employmentType}</strong></p>
-                <p style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>Last Revised: <strong style={{ color: '#2563eb' }}>{fmtDate(editEmp.lastRevised)}</strong></p>
+                <p style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>Last Revised: <strong style={{ color: '#0d7470' }}>{fmtDate(editEmp.lastRevised)}</strong></p>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
               <button onClick={() => setEditEmp(null)} style={{ flex: 1, padding: '9px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', color: '#374151', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Cancel</button>
-              <button onClick={() => void saveSalary()} disabled={saving} style={{ flex: 1, padding: '9px', border: 'none', borderRadius: '8px', backgroundColor: saving ? '#94a3b8' : '#2563eb', color: 'white', fontSize: '12px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif' }}>{saving ? 'Saving…' : 'Save Changes'}</button>
+              <button onClick={() => void saveSalary()} disabled={saving} style={{ flex: 1, padding: '9px', border: 'none', borderRadius: '8px', backgroundColor: saving ? '#94a3b8' : '#0d7470', color: 'white', fontSize: '12px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif' }}>{saving ? 'Saving…' : 'Save Changes'}</button>
             </div>
           </div>
         </LegacyDrawer>

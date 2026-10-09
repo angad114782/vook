@@ -1,24 +1,27 @@
+import { useLookup } from '../../hooks/useLookup';
 import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import type { SalaryRow } from '../../api/hr';
-import { Edit2, Loader2, Download, Eye, Search } from 'lucide-react';
+import { Edit2, Download, Eye, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import PaginationBar from '../../components/data/Pagination';
 import { useFinanceSalary } from '../../hooks/queries/useFinanceQueries';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 const fmtCtc = (n: number | null) => n ? `₹${(n / 100000).toFixed(2)}L` : '—';
 const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : '—';
 
 const avatarColors = [
-  { bg: '#eef2ff', color: '#6366f1' }, { bg: '#f0fdf4', color: '#16a34a' },
-  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fdf4ff', color: '#ec4899' },
-  { bg: '#f0f9ff', color: '#0284c7' },
+  { bg: '#f0fdfa', color: '#0d7470' }, { bg: '#f0fdf4', color: '#16a34a' },
+  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fff7ed', color: '#b45309' },
+  { bg: '#e6f4f1', color: '#2f8f8a' },
 ];
 const getAv = (name?: string) => avatarColors[(name ?? 'F').charCodeAt(0) % avatarColors.length]!;
 const initials = (name?: string) => (name ?? 'User').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
 export default function SalaryStructurePage() {
+  const employmentTypes = useLookup('EMPLOYMENT_TYPE');
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [empFilter, setEmpFilter] = useState('All Employees');
@@ -49,7 +52,7 @@ export default function SalaryStructurePage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div>
-        <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Salary Structure</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Salary Structure</h1>
         <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Select the parameters for this payroll cycle</p>
       </div>
 
@@ -61,12 +64,12 @@ export default function SalaryStructurePage() {
             <input value={search} onChange={(e) => handleSearchChange(e.target.value)} placeholder="Search employee..." style={{ width: '100%', paddingLeft: '32px', paddingRight: '10px', paddingTop: '7px', paddingBottom: '7px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', outline: 'none', fontFamily: 'Inter, sans-serif', color: '#374151', backgroundColor: '#f8fafc' }} />
           </div>
           <select value={empFilter} onChange={(e) => handleEmpChange(e.target.value)} style={selStyle}>
-            <option>All Employees</option><option>Permanent</option><option>Contract</option>
+            <option>All Employees</option>{employmentTypes.items.map((t) => <option key={t}>{t}</option>)}
           </select>
         </div>
 
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /></div>
+          <TableSkeleton />
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -93,7 +96,7 @@ export default function SalaryStructurePage() {
                       </td>
                       <td style={{ padding: '12px 16px' }}><span style={{ fontSize: '13px', color: '#374151' }}>{s.designation ?? 'Line Supervisor'}</span></td>
                       <td style={{ padding: '12px 16px' }}>
-                        <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: s.employmentType === 'Permanent' ? '#dbeafe' : '#fef9c3', color: s.employmentType === 'Permanent' ? '#1d4ed8' : '#854d0e' }}>{s.employmentType}</span>
+                        <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: s.employmentType === 'Permanent' ? '#dff3f1' : '#fef9c3', color: s.employmentType === 'Permanent' ? '#0d4a47' : '#854d0e' }}>{s.employmentType}</span>
                       </td>
                       <td style={{ padding: '12px 16px' }}><span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{fmtCtc(s.annualCtc)}</span></td>
                       <td style={{ padding: '12px 16px' }}><span style={{ fontSize: '12px', color: '#64748b' }}>{fmtDate(s.lastRevised)}</span></td>
@@ -117,9 +120,9 @@ export default function SalaryStructurePage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
             {QUICK.map(({ label, icon: Icon, path }) => (
               <button key={label} onClick={() => navigate(path)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: 'white', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
-                onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#2563eb'; el.style.backgroundColor = '#eff6ff'; }}
+                onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#0d7470'; el.style.backgroundColor = '#f0fdfa'; }}
                 onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#e2e8f0'; el.style.backgroundColor = 'white'; }}>
-                <Icon size={18} color="#2563eb" />
+                <Icon size={18} color="#0d7470" />
                 <span style={{ fontSize: '11px', fontWeight: 600, color: '#374151', textAlign: 'center' }}>{label}</span>
               </button>
             ))}

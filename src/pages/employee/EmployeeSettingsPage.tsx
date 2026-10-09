@@ -10,10 +10,10 @@ type Tab = "Profile" | "Bank Details" | "Security";
 const TABS: Tab[] = ["Profile", "Bank Details", "Security"];
 
 const avatarColors = [
-  { bg: "#eef2ff", color: "#6366f1" },
+  { bg: "#f0fdfa", color: "#0d7470" },
   { bg: "#f0fdf4", color: "#10b981" },
   { bg: "#fffbeb", color: "#f59e0b" },
-  { bg: "#fdf4ff", color: "#ec4899" },
+  { bg: "#fff7ed", color: "#b45309" },
 ];
 const getAv = (name?: string) =>
   avatarColors[(name ?? "E").charCodeAt(0) % avatarColors.length]!;
@@ -103,7 +103,7 @@ export default function EmployeeSettingsPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       <div>
-        <h1 style={{ fontSize: "20px", fontWeight: 700, color: "#0f172a" }}>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>
           Settings
         </h1>
         <p style={{ fontSize: "13px", color: "#64748b", marginTop: "2px" }}>

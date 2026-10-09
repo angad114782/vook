@@ -6,6 +6,7 @@ import { caApi } from '../../api/companyAdmin';
 import { onboardingApi } from '../../api/onboarding';
 import { paymentsApi } from '../../api/payments';
 import { openPaymentCheckout } from '../../payments/checkout';
+import { statusLabel } from '../../utils/friendly';
 
 export default function CAPlanPage() {
   const client = useQueryClient();
@@ -59,7 +60,7 @@ export default function CAPlanPage() {
         {payments.data.map((payment) => <div key={payment.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(110px, .8fr) minmax(100px, .7fr) auto', alignItems: 'center', gap: 12, padding: '11px 0', borderTop: '1px solid #e2e8f0', fontSize: 12 }}>
           <div><strong style={{ display: 'block', color: '#0f172a' }}>{payment.plan} · {payment.billingCycle}</strong><span style={{ color: '#64748b' }}>{payment.reference ?? payment.razorpayPaymentId ?? 'Payment record'} · {new Date(payment.paidAt ?? payment.createdAt).toLocaleDateString('en-IN')}</span></div>
           <span style={{ color: '#475569' }}>{payment.source}</span>
-          <span style={{ fontWeight: 700, color: payment.status === 'PAID' ? '#15803d' : '#a16207' }}>{payment.status}</span>
+          <span style={{ fontWeight: 700, color: payment.status === 'PAID' ? '#15803d' : '#a16207' }}>{statusLabel(payment.status)}</span>
           <strong style={{ textAlign: 'right', color: '#0f172a' }}>{payment.currency} {payment.amount.toLocaleString('en-IN')}</strong>
         </div>)}
       </div> : <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>No billing history is available yet.</p>}

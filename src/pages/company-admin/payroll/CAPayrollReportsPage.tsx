@@ -70,7 +70,7 @@ export default function CAPayrollReportsPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div>
-        <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Generate Reports</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Generate Reports</h1>
         <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Select parameters to export payroll data.</p>
       </div>
 
@@ -85,9 +85,9 @@ export default function CAPayrollReportsPage() {
                 <button
                   key={id}
                   onClick={() => setSelectedType(id)}
-                  style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '11px 14px', border: `1.5px solid ${selectedType === id ? '#2563eb' : '#e2e8f0'}`, borderRadius: '9px', backgroundColor: selectedType === id ? '#eff6ff' : 'white', cursor: 'pointer', textAlign: 'left', fontFamily: 'Inter, sans-serif' }}
+                  style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '11px 14px', border: `1.5px solid ${selectedType === id ? '#0d7470' : '#e2e8f0'}`, borderRadius: '9px', backgroundColor: selectedType === id ? '#f0fdfa' : 'white', cursor: 'pointer', textAlign: 'left', fontFamily: 'Inter, sans-serif' }}
                 >
-                  <div style={{ width: '14px', height: '14px', borderRadius: '50%', border: `2px solid ${selectedType === id ? '#2563eb' : '#d1d5db'}`, backgroundColor: selectedType === id ? '#2563eb' : 'white', flexShrink: 0, marginTop: '1px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: '14px', height: '14px', borderRadius: '50%', border: `2px solid ${selectedType === id ? '#0d7470' : '#d1d5db'}`, backgroundColor: selectedType === id ? '#0d7470' : 'white', flexShrink: 0, marginTop: '1px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {selectedType === id && <div style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: 'white' }} />}
                   </div>
                   <div>
@@ -135,7 +135,7 @@ export default function CAPayrollReportsPage() {
             <button
               onClick={() => void handleGenerate()}
               disabled={loading}
-              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '9px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', backgroundColor: '#0d7470', color: 'white', border: 'none', borderRadius: '9px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
             >
               {loading ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={14} />} Download Report
             </button>

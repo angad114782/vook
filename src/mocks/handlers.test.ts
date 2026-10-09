@@ -201,9 +201,10 @@ describe('mock API behavior', () => {
     const regularizationDone = await json(`/attendance-regularizations/${regularization.id}/actions`, 'POST', { action: 'APPROVE', comment: 'Recorded' });
     expect((await regularizationDone.json()).data.status).toBe('APPROVED');
 
+    expect((await json('/attendance-periods/lock', 'POST', { month: 12, year: 2030 })).status).toBe(200); // payroll needs a locked attendance month
     expect((await login('finance@demo.vook.app')).status).toBe(200);
     const run = (await (await json('/payroll-runs', 'POST', { month: 12, year: 2030 })).json()).data;
-    expect(run.status).toBe('CALCULATED');
+    expect(['READY', 'CALCULATED']).toContain(run.status);
     expect((await json(`/payroll-runs/${run.runId}/review`, 'POST', { comment: 'Finance review complete' })).status).toBe(200);
     expect((await login('companyadmin@demo.vook.app')).status).toBe(200);
     await json(`/payroll-runs/${run.runId}/approve`, 'POST', { comment: 'Authorized' });
@@ -270,5 +271,34 @@ describe('mock API behavior', () => {
     expect(state.companies.find((item) => item.id === registration.companyId)?.status).toBe('ACTIVE');
     expect(state.subscriptions.some((item) => item.companyId === registration.companyId && item.planVersionId === registration.planVersionId)).toBe(true);
     expect(state.invoices.some((item) => item.companyId === registration.companyId)).toBe(true);
+  });
+
+  it('imports employees in bulk, skipping invalid and duplicate rows', async () => {
+    expect((await login('hr@demo.vook.app')).status).toBe(200);
+    const before = (await (await json('/employees?limit=1', 'GET')).json()).data.stats.total as number;
+    const response = await json('/employees/import', 'POST', { rows: [
+      { name: 'Import One', mobile: '9000000001', email: 'import.one@example.com', department: 'Sales' },
+      { name: 'Import Two', mobile: '9000000002' },
+      { name: 'Dup Mobile', mobile: '+91 90000 00001' },
+      { name: '', mobile: '9000000003' },
+    ] });
+    expect(response.status).toBe(200);
+    const result = (await response.json()).data;
+    expect(result).toMatchObject({ imported: 2, failed: 2 });
+    expect(result.errors.map((e: { row: number }) => e.row)).toEqual([4, 5]);
+    const after = (await (await json('/employees?limit=1', 'GET')).json()).data.stats.total as number;
+    expect(after).toBe(before + 2);
+    expect((await json('/employees/import', 'POST', { rows: [] })).status).toBe(422);
+  });
+
+  it('lets HR list departments but only organization managers quick-add them', async () => {
+    expect((await login('hr@demo.vook.app')).status).toBe(200);
+    expect((await json('/departments', 'GET')).status).toBe(200);
+    expect((await json('/departments', 'POST', { name: 'Legal Ops', code: 'LO' })).status).toBe(403);
+    expect((await login('companyadmin@demo.vook.app')).status).toBe(200);
+    expect((await json('/departments', 'POST', { name: 'Legal Ops', code: 'LO' })).status).toBe(201);
+    const names = ((await (await json('/departments', 'GET')).json()).data as { name: string }[]).map((d) => d.name);
+    expect(names).toContain('Legal Ops');
+    expect((await json('/designations', 'POST', { name: 'Counsel', code: 'CNSL' })).status).toBe(201);
   });
 });

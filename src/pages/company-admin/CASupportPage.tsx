@@ -1,3 +1,4 @@
+import LookupSelect from '../../components/ui/LookupSelect';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useSearchParams } from 'react-router-dom';
@@ -6,11 +7,11 @@ import { supportApi, type SupportTicket } from '../../api/support';
 import TicketConversationModal from '../../components/support/TicketConversationModal';
 import type { AppNotification } from '../../api/notifications';
 import AppDrawer from '../../components/ui/AppDrawer';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 const statusName: Record<string, string> = { PENDING: 'Open', IN_PROGRESS: 'In progress', RESOLVED: 'Resolved', CLOSED: 'Closed' };
-const categories = ['General', 'Payroll', 'Attendance', 'Account', 'Bug report'];
 const formatDate = (value: string) => new Date(value).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-const statusStyle: Record<string, { bg: string; color: string; dot: string }> = { PENDING: { bg: '#fffbeb', color: '#a16207', dot: '#eab308' }, IN_PROGRESS: { bg: '#eff6ff', color: '#2563eb', dot: '#3b82f6' }, RESOLVED: { bg: '#f0fdf4', color: '#15803d', dot: '#22c55e' }, CLOSED: { bg: '#f1f5f9', color: '#64748b', dot: '#94a3b8' } };
+const statusStyle: Record<string, { bg: string; color: string; dot: string }> = { PENDING: { bg: '#fffbeb', color: '#a16207', dot: '#eab308' }, IN_PROGRESS: { bg: '#f0fdfa', color: '#0d7470', dot: '#0d7470' }, RESOLVED: { bg: '#f0fdf4', color: '#15803d', dot: '#22c55e' }, CLOSED: { bg: '#f1f5f9', color: '#64748b', dot: '#94a3b8' } };
 
 export default function CASupportPage() {
   const [params, setParams] = useSearchParams();
@@ -62,8 +63,8 @@ export default function CASupportPage() {
   const create = async () => { if (!form.subject.trim() || !form.description.trim() || createMutation.isPending) return; await createMutation.mutateAsync(); setShowNew(false); setForm({ category: 'General', subject: '', description: '', priority: 'MEDIUM' }); };
 
   return <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}><div><h1 style={{ fontSize: 20, margin: 0 }}>Help &amp; Support</h1><p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>Track support requests and chat with the support team.</p></div><button style={primary} onClick={() => setShowNew(true)}><Plus size={15} /> New ticket</button></div>
-    <div style={card}><div style={listHeader}><div><h2 style={listTitle}>Your support tickets</h2><p style={listHint}>{tickets.length ? `${tickets.length} request${tickets.length === 1 ? '' : 's'} · Select a ticket to view the conversation` : 'Create a ticket and our support team will get back to you.'}</p></div><span style={countBadge}>{tickets.length}</span></div>{ticketsQuery.isLoading ? <div style={{ padding: 52, display: 'grid', placeItems: 'center', gap: 8, color: '#94a3b8' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /><span style={{ fontSize: 12 }}>Loading your tickets…</span></div> : tickets.length ? <div>{tickets.map((ticket) => { const state = statusStyle[ticket.status]!; return <button key={ticket.id} onClick={() => setSelected(ticket)} style={ticketRow}><div style={ticketIcon}><MessageSquare size={15} /></div><span style={ticketMain}><span style={ticketTop}><b style={ticketSubject}>{ticket.subject}</b><span style={{ ...statusPill, background: state.bg, color: state.color }}><span style={{ ...statusDot, background: state.dot }} />{statusName[ticket.status]}</span></span><span style={ticketMeta}><span>{ticket.ticketNo}</span><span>·</span><span>{ticket.category}</span><span>·</span><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><CalendarDays size={11} />{formatDate(ticket.createdAt)}</span></span></span><ChevronRight size={16} color="#94a3b8" /></button>; })}</div> : <div style={emptyState}><div style={emptyIcon}><LifeBuoy size={20} /></div><b>No tickets yet</b><p>Need help? Create your first support request.</p><button style={primary} onClick={() => setShowNew(true)}><Plus size={14} /> Create ticket</button></div>}</div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}><div><h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Help &amp; Support</h1><p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>Track support requests and chat with the support team.</p></div><button style={primary} onClick={() => setShowNew(true)}><Plus size={15} /> New ticket</button></div>
+    <div style={card}><div style={listHeader}><div><h2 style={listTitle}>Your support tickets</h2><p style={listHint}>{tickets.length ? `${tickets.length} request${tickets.length === 1 ? '' : 's'} · Select a ticket to view the conversation` : 'Create a ticket and our support team will get back to you.'}</p></div><span style={countBadge}>{tickets.length}</span></div>{ticketsQuery.isLoading ? <TableSkeleton /> : tickets.length ? <div>{tickets.map((ticket) => { const state = statusStyle[ticket.status]!; return <button key={ticket.id} onClick={() => setSelected(ticket)} style={ticketRow}><div style={ticketIcon}><MessageSquare size={15} /></div><span style={ticketMain}><span style={ticketTop}><b style={ticketSubject}>{ticket.subject}</b><span style={{ ...statusPill, background: state.bg, color: state.color }}><span style={{ ...statusDot, background: state.dot }} />{statusName[ticket.status]}</span></span><span style={ticketMeta}><span>{ticket.ticketNo}</span><span>·</span><span>{ticket.category}</span><span>·</span><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><CalendarDays size={11} />{formatDate(ticket.createdAt)}</span></span></span><ChevronRight size={16} color="#94a3b8" /></button>; })}</div> : <div style={emptyState}><div style={emptyIcon}><LifeBuoy size={20} /></div><b>No tickets yet</b><p>Need help? Create your first support request.</p><button style={primary} onClick={() => setShowNew(true)}><Plus size={14} /> Create ticket</button></div>}</div>
     {showNew && <NewTicketModal form={form} setForm={setForm} loading={createMutation.isPending} onClose={() => setShowNew(false)} onSubmit={() => void create()} />}
     {selected && <TicketConversationModal ticket={selected} onClose={() => setSelected(null)} onStatusChange={handleTicketUpdate} />}
   </div>;
@@ -73,7 +74,7 @@ function NewTicketModal({ form, setForm, loading, onClose, onSubmit }: { form: {
   return (
     <AppDrawer open onOpenChange={(open) => { if (!open) onClose(); }} title="Submit support ticket" description="Tell us what you need help with." size="md">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} style={input}>{categories.map((category) => <option key={category}>{category}</option>)}</select>
+        <LookupSelect type="SUPPORT_CATEGORY" value={form.category} onChange={(v) => setForm({ ...form, category: v })} entityLabel="category" placeholder="Choose a topic" />
         <input placeholder="Subject" value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value })} style={input} />
         <textarea placeholder="Describe the issue" rows={5} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} style={input} />
         <button style={{ ...primary, opacity: loading ? .6 : 1 }} disabled={loading} onClick={onSubmit}>{loading ? <Loader2 size={14} /> : 'Submit ticket'}</button>

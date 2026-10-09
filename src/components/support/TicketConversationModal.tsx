@@ -135,7 +135,7 @@ type Props = {
 const statusMeta: Record<string, { label: string; bg: string; color: string }> =
   {
     PENDING: { label: "Open", bg: "#fef3c7", color: "#92400e" },
-    IN_PROGRESS: { label: "In progress", bg: "#dbeafe", color: "#1d4ed8" },
+    IN_PROGRESS: { label: "In progress", bg: "#dff3f1", color: "#0d4a47" },
     RESOLVED: { label: "Resolved", bg: "#dcfce7", color: "#166534" },
     CLOSED: { label: "Closed", bg: "#e2e8f0", color: "#475569" },
   };

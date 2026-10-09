@@ -2,10 +2,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { CalendarCheck, Plane, FileText, Receipt, TrendingUp, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useMyProfile, useMyAttendance, useMyLeaves, useMyPayslips, useMyExpenses } from '../../hooks/queries/useEmployeeQueries';
+import { statusLabel } from '../../utils/friendly';
+import { DashboardSkeleton } from '../../components/ui/Skeleton';
 
 const avatarColors = [
-  { bg: '#eef2ff', color: '#6366f1' }, { bg: '#f0fdf4', color: '#10b981' },
-  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fdf4ff', color: '#ec4899' },
+  { bg: '#f0fdfa', color: '#0d7470' }, { bg: '#f0fdf4', color: '#10b981' },
+  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fff7ed', color: '#b45309' },
 ];
 const getAv = (name?: string) => avatarColors[(name ?? 'E').charCodeAt(0) % avatarColors.length]!;
 const initials = (name?: string) => (name ?? 'Employee').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
@@ -48,12 +50,7 @@ export default function EmployeeDashboardPage() {
 
   if (dashboardLoading) {
     return (
-      <div style={{ minHeight: '55vh', display: 'grid', placeItems: 'center', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: '30px', height: '30px', margin: '0 auto 12px', border: '3px solid #dbeafe', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-          <p style={{ fontSize: '13px', color: '#64748b' }}>Loading your live dashboard data…</p>
-        </div>
-      </div>
+      <DashboardSkeleton label="Loading your dashboard" />
     );
   }
 
@@ -73,7 +70,7 @@ export default function EmployeeDashboardPage() {
           <AlertCircle size={34} color="#dc2626" style={{ marginBottom: '12px' }} />
           <h2 style={{ fontSize: '18px', color: '#0f172a', margin: 0 }}>Dashboard data could not be loaded</h2>
           <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.6, margin: '8px 0 18px' }}>Your dashboard uses live profile, attendance, leave, payslip, and expense data. Check your connection and try again.</p>
-          <button onClick={retry} style={{ border: 0, borderRadius: '8px', padding: '10px 18px', backgroundColor: '#2563eb', color: 'white', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>Retry</button>
+          <button onClick={retry} style={{ border: 0, borderRadius: '8px', padding: '10px 18px', backgroundColor: '#0d7470', color: 'white', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>Retry</button>
         </div>
       </div>
     );
@@ -108,7 +105,7 @@ export default function EmployeeDashboardPage() {
       <div className="dashboard-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
         {[
           { label: 'Days Present',   value: String(attStats.present + attStats.late), sub: `${attendancePct}% this month`, icon: CalendarCheck, iconBg: '#f0fdf4', iconColor: '#16a34a' },
-          { label: 'Leave Balance',  value: String(leaveBalance.reduce((s, b) => s + b.remaining, 0)), sub: 'Days remaining', icon: Plane, iconBg: '#eff6ff', iconColor: '#2563eb' },
+          { label: 'Leave Balance',  value: String(leaveBalance.reduce((s, b) => s + b.remaining, 0)), sub: 'Days remaining', icon: Plane, iconBg: '#f0fdfa', iconColor: '#0d7470' },
           { label: 'Hours Logged',   value: String(attStats.totalHours) + 'h', sub: 'This month',   icon: Clock,         iconBg: '#fff7ed', iconColor: '#ea580c' },
           { label: 'Pending Claims', value: String(pendingExpenses), sub: 'Awaiting approval', icon: Receipt,       iconBg: '#fef9c3', iconColor: '#854d0e' },
         ].map(({ label, value, sub, icon: Icon, iconBg, iconColor }) => (
@@ -192,7 +189,7 @@ export default function EmployeeDashboardPage() {
                   <p style={{ fontSize: '22px', fontWeight: 800, color: '#0d7470', marginTop: '2px' }}>{fmtPay(latestPayslip.netPay)}</p>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
-                  <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: ['Finalized', 'Paid'].includes(latestPayslip.status) ? '#dcfce7' : '#fef9c3', color: ['Finalized', 'Paid'].includes(latestPayslip.status) ? '#15803d' : '#854d0e' }}>{latestPayslip.status}</span>
+                  <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: ['Finalized', 'Paid'].includes(latestPayslip.status) ? '#dcfce7' : '#fef9c3', color: ['Finalized', 'Paid'].includes(latestPayslip.status) ? '#15803d' : '#854d0e' }}>{statusLabel(latestPayslip.status)}</span>
                   <button onClick={() => navigate('/employee/payslips')} style={{ padding: '7px 14px', backgroundColor: '#0d7470', color: 'white', border: 'none', borderRadius: '7px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>View All</button>
                 </div>
               </div>
@@ -206,7 +203,7 @@ export default function EmployeeDashboardPage() {
           <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '14px' }}>Quick Actions</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             {[
-              { label: 'Apply Leave',      icon: Plane,         path: '/employee/leaves',     color: '#2563eb', bg: '#eff6ff' },
+              { label: 'Apply Leave',      icon: Plane,         path: '/employee/leaves',     color: '#0d7470', bg: '#f0fdfa' },
               { label: 'Submit Expense',   icon: Receipt,       path: '/employee/expenses',   color: '#ea580c', bg: '#fff7ed' },
               { label: 'View Payslips',    icon: FileText,      path: '/employee/payslips',   color: '#0d7470', bg: '#f0fdfa' },
               { label: 'My Attendance',    icon: CalendarCheck, path: '/employee/attendance', color: '#16a34a', bg: '#f0fdf4' },
@@ -235,8 +232,8 @@ export default function EmployeeDashboardPage() {
             </div>
           )}
           {latestPayslip && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', backgroundColor: '#eff6ff', borderRadius: '8px' }}>
-              <CheckCircle2 size={16} color="#2563eb" style={{ flexShrink: 0 }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', backgroundColor: '#f0fdfa', borderRadius: '8px' }}>
+              <CheckCircle2 size={16} color="#0d7470" style={{ flexShrink: 0 }} />
               <span style={{ fontSize: '12px', color: '#374151' }}>Payslip for {latestPayslip.period} is available. Download from Payslips section.</span>
             </div>
           )}

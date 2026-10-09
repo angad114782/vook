@@ -1,8 +1,10 @@
+import LookupSelect from '../../components/ui/LookupSelect';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, UserCheck, UserX, ClipboardList, X, ChevronDown, Send, Loader2 } from 'lucide-react';
+import { Users, UserCheck, UserX, ClipboardList, X, ChevronDown, Send } from 'lucide-react';
 import { useSupAttendanceSummary, useSupApprovals } from '../../hooks/queries/useSupQueries';
 import LegacyDrawer from '../../components/ui/LegacyDrawer';
+import { DashboardSkeleton } from '../../components/ui/Skeleton';
 
 interface DashData {
   totalWorkforce: number;
@@ -13,7 +15,6 @@ interface DashData {
   depts: { department: string; total: number; present: number; percentage: number }[];
 }
 
-const ISSUE_CATS = ['Attendance Issue', 'Workforce Shortage Issue', 'Logistics/Rotations Issue', 'Shift Assignment Issue', 'System Error Issue', 'Others'];
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
 
 function HelpModal({ onClose }: { onClose: () => void }) {
@@ -34,13 +35,7 @@ function HelpModal({ onClose }: { onClose: () => void }) {
         <div style={{ padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>
             <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '5px', display: 'block' }}>Issue Category</label>
-            <div style={{ position: 'relative' }}>
-              <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ ...inputStyle, appearance: 'none', paddingRight: '28px' }}>
-                <option value="">Select</option>
-                {ISSUE_CATS.map((c) => <option key={c}>{c}</option>)}
-              </select>
-              <ChevronDown size={13} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
-            </div>
+            <LookupSelect type="SUPPORT_CATEGORY" value={category} onChange={setCategory} entityLabel="category" placeholder="Select" />
           </div>
           <div>
             <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '5px', display: 'block' }}>Subject</label>
@@ -97,24 +92,22 @@ export default function SupervisorDashboardPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-        <Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} color="#0d7470" />
-      </div>
+      <DashboardSkeleton />
     );
   }
 
   const STAT_CARDS = [
-    { label: 'Total Workforce',   value: d?.totalWorkforce ?? 0,   icon: Users,         iconBg: '#f0f9ff', iconColor: '#0ea5e9' },
+    { label: 'Total Workforce',   value: d?.totalWorkforce ?? 0,   icon: Users,         iconBg: '#e6f4f1', iconColor: '#2f8f8a' },
     { label: 'Present Today',     value: d?.presentToday ?? 0,     icon: UserCheck,     iconBg: '#f0fdf4', iconColor: '#16a34a' },
     { label: 'Absent Today',      value: d?.absentToday ?? 0,      icon: UserX,         iconBg: '#fef2f2', iconColor: '#dc2626' },
-    { label: 'Pending Approvals', value: d?.pendingApprovals ?? 0, icon: ClipboardList, iconBg: '#eff6ff', iconColor: '#2563eb' },
+    { label: 'Pending Approvals', value: d?.pendingApprovals ?? 0, icon: ClipboardList, iconBg: '#f0fdfa', iconColor: '#0d7470' },
   ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Dashboard</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Dashboard</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Track team attendance and workforce status</p>
         </div>
         <button onClick={() => setShowHelp(true)} style={{ padding: '8px 16px', border: '1.5px solid #0d7470', borderRadius: '8px', backgroundColor: 'white', color: '#0d7470', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>

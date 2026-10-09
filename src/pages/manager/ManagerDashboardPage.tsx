@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { Clock, UserCheck, UserX, ClipboardList, Loader2 } from 'lucide-react';
+import { Clock, UserCheck, UserX, ClipboardList } from 'lucide-react';
 import { useHrAttendance, useApprovals, useLeaves } from '../../hooks/queries/useHrQueries';
+import { DashboardSkeleton } from '../../components/ui/Skeleton';
 
 export default function ManagerDashboardPage() {
   const navigate = useNavigate();
@@ -13,9 +14,7 @@ export default function ManagerDashboardPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-        <Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} color="#0d7470" />
-      </div>
+      <DashboardSkeleton />
     );
   }
 
@@ -28,13 +27,13 @@ export default function ManagerDashboardPage() {
     { label: 'Late Arrivals',     value: att?.lateArrivals ?? 0,    icon: Clock,         iconBg: '#fff7ed', iconColor: '#ea580c', sub: 'Today' },
     { label: 'Present Today',     value: att?.presentToday ?? 0,    icon: UserCheck,     iconBg: '#f0fdf4', iconColor: '#16a34a', sub: 'Active now' },
     { label: 'Absent Today',      value: att?.absent ?? 0,          icon: UserX,         iconBg: '#fef2f2', iconColor: '#dc2626', sub: 'Not checked in' },
-    { label: 'Pending Approvals', value: pendingApprovals,          icon: ClipboardList, iconBg: '#eff6ff', iconColor: '#2563eb', sub: 'Awaiting action' },
+    { label: 'Pending Approvals', value: pendingApprovals,          icon: ClipboardList, iconBg: '#f0fdfa', iconColor: '#0d7470', sub: 'Awaiting action' },
   ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div>
-        <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Dashboard</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Dashboard</h1>
         <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Monitor your team's attendance and workforce status</p>
       </div>
 

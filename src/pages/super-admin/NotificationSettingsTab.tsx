@@ -29,6 +29,8 @@ import {
   type NotificationSettings,
   type WhatsAppTemplate,
 } from "../../utils/notificationSettings";
+import { statusLabel } from '../../utils/friendly';
+import { FormSkeleton } from '../../components/ui/Skeleton';
 
 type InnerTab = "rules" | "whatsapp";
 type Toast = (message: string, type: "success" | "error") => void;
@@ -849,7 +851,7 @@ function WhatsAppSettings({
                   className="notification-settings__template-status"
                   data-status={template.status}
                 >
-                  {template.status}
+                  {statusLabel(template.status)}
                 </span>
               </div>
             );
@@ -964,9 +966,7 @@ export default function NotificationSettingsTab({
       </div>
 
       {settingsQuery.isLoading ? (
-        <div className="notification-settings__loading">
-          <Loader2 size={17} className="spin" /> Loading notification settings…
-        </div>
+        <FormSkeleton fields={6} label="Loading notification settings" />
       ) : settingsQuery.isError ? (
         <div className="notification-settings__error">
           Notification settings could not be loaded. Refresh and try again.

@@ -1,3 +1,4 @@
+import LookupSelect from '../../components/ui/LookupSelect';
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuthStore } from "../../store/authStore";
@@ -9,6 +10,7 @@ import { extractError } from "../../utils/errorUtils";
 import { useCaCompany } from "../../hooks/queries/useCaQueries";
 import { useUpdateCompany } from "../../hooks/mutations/useCaMutations";
 import { paymentsApi, type Payment } from "../../api/payments";
+import { statusLabel } from '../../utils/friendly';
 
 type Tab = "Company Profile" | "Subscription" | "Security";
 
@@ -124,7 +126,7 @@ export default function CASettingsPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       <div>
-        <h1 style={{ fontSize: "20px", fontWeight: 700, color: "#0f172a" }}>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>
           Settings
         </h1>
         <p style={{ fontSize: "13px", color: "#64748b", marginTop: "2px" }}>
@@ -151,7 +153,7 @@ export default function CASettingsPage() {
             <Loader2
               size={20}
               style={{ animation: "spin 1s linear infinite" }}
-              color="#6366f1"
+              color="#0d7470"
             />
           </div>
         ) : (
@@ -170,9 +172,9 @@ export default function CASettingsPage() {
                 alignItems: "center",
                 gap: "16px",
                 padding: "14px 18px",
-                backgroundColor: "#eef2ff",
+                backgroundColor: "#f0fdfa",
                 borderRadius: "10px",
-                border: "1px solid #c7d2fe",
+                border: "1px solid #b7e0dc",
               }}
             >
               <div
@@ -180,7 +182,7 @@ export default function CASettingsPage() {
                   width: "52px",
                   height: "52px",
                   borderRadius: "12px",
-                  backgroundColor: "#6366f1",
+                  backgroundColor: "#0d7470",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -219,7 +221,7 @@ export default function CASettingsPage() {
                     {pm.label || plan}
                   </span>
                   <span style={{ fontSize: "11px", color: "#64748b" }}>
-                    · {company?.status}
+                    · {statusLabel(company?.status)}
                   </span>
                   <span style={{ fontSize: "11px", color: "#64748b" }}>
                     · Max {company?.maxUsers} users
@@ -247,14 +249,7 @@ export default function CASettingsPage() {
               </div>
               <div>
                 <label style={labelStyle}>Industry</label>
-                <input
-                  value={form.industry}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, industry: e.target.value }))
-                  }
-                  placeholder="e.g. Manufacturing"
-                  style={fieldStyle}
-                />
+                <LookupSelect type="INDUSTRY" value={form.industry} onChange={(v) => setForm((p) => ({ ...p, industry: v }))} entityLabel="industry" placeholder="Choose your industry" />
               </div>
               <div>
                 <label style={labelStyle}>Email</label>
@@ -306,8 +301,8 @@ export default function CASettingsPage() {
                 style={{
                   padding: "9px 20px",
                   backgroundColor: updateCompany.isPending
-                    ? "#a5b4fc"
-                    : "#6366f1",
+                    ? "#8cc4c1"
+                    : "#0d7470",
                   color: "white",
                   border: "none",
                   borderRadius: "8px",
@@ -349,7 +344,7 @@ export default function CASettingsPage() {
                 <Loader2
                   size={20}
                   style={{ animation: "spin 1s linear infinite" }}
-                  color="#6366f1"
+                  color="#0d7470"
                 />
               </div>
             ) : (
@@ -362,9 +357,9 @@ export default function CASettingsPage() {
               >
                 <div
                   style={{
-                    backgroundColor: "#eef2ff",
+                    backgroundColor: "#f0fdfa",
                     borderRadius: "12px",
-                    border: "1px solid #c7d2fe",
+                    border: "1px solid #b7e0dc",
                     padding: "20px",
                   }}
                 >
@@ -389,7 +384,7 @@ export default function CASettingsPage() {
                         style={{
                           fontSize: "24px",
                           fontWeight: 800,
-                          color: "#6366f1",
+                          color: "#0d7470",
                         }}
                       >
                         {pm.label || plan}
@@ -418,7 +413,7 @@ export default function CASettingsPage() {
                           company?.status === "ACTIVE" ? "#15803d" : "#854d0e",
                       }}
                     >
-                      {company?.status}
+                      {statusLabel(company?.status)}
                     </span>
                   </div>
                 </div>
@@ -524,7 +519,7 @@ export default function CASettingsPage() {
                               payment.status === "PAID" ? "#15803d" : "#a16207",
                           }}
                         >
-                          {payment.status} · ₹
+                          {statusLabel(payment.status)} · ₹
                           {payment.amount.toLocaleString("en-IN")}
                         </span>
                       </div>
@@ -685,7 +680,7 @@ export default function CASettingsPage() {
                   style={{
                     alignSelf: "flex-end",
                     padding: "9px 20px",
-                    backgroundColor: pwSaving ? "#a5b4fc" : "#6366f1",
+                    backgroundColor: pwSaving ? "#8cc4c1" : "#0d7470",
                     color: "white",
                     border: "none",
                     borderRadius: "8px",

@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { Download, Shield, FileText, BarChart2, Loader2 } from "lucide-react";
+import { Download, Shield, FileText, BarChart2 } from "lucide-react";
 import { useCaDashboard } from "../../hooks/queries/useCaQueries";
 import { useHrAttendance } from "../../hooks/queries/useHrQueries";
+import { DashboardSkeleton } from '../../components/ui/Skeleton';
 
 function DonutChart({ active, total }: { active: number; total: number }) {
   const absent = total - active;
@@ -104,20 +105,7 @@ export default function CADashboardPage() {
 
   if (loading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "200px",
-        }}
-      >
-        <Loader2
-          size={22}
-          style={{ animation: "spin 1s linear infinite" }}
-          color="#0d7470"
-        />
-      </div>
+      <DashboardSkeleton />
     );
   }
 
@@ -144,8 +132,8 @@ export default function CADashboardPage() {
     {
       label: "Present Today",
       value: totalPresent,
-      color: "#2563eb",
-      bg: "#eff6ff",
+      color: "#0d7470",
+      bg: "#f0fdfa",
       sub: `${attendancePct}% of total`,
     },
     {

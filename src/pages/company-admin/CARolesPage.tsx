@@ -18,6 +18,7 @@ import {
   type RoleDefinition,
 } from "../../api/organization";
 import { extractError } from "../../utils/errorUtils";
+import { ListSkeleton, PageSkeleton } from '../../components/ui/Skeleton';
 
 const permissionName = (permission: string) =>
   permission
@@ -202,9 +203,7 @@ function AssignmentManager({ roles }: { roles: RoleDefinition[] }) {
       </div>
       <div className="assignment-list">
         {assignments.isLoading ? (
-          <div className="admin-loading">
-            <Loader2 className="spin" size={17} /> Loading assignments…
-          </div>
+          <ListSkeleton rows={4} label="Loading assignments" />
         ) : (
           assignments.data?.map((assignment) => (
             <div key={assignment.id ?? assignment._id}>
@@ -349,9 +348,7 @@ export default function CARolesPage() {
 
   if (rolesQuery.isLoading || modulesQuery.isLoading)
     return (
-      <div className="admin-loading">
-        <Loader2 className="spin" size={22} /> Loading tenant access model…
-      </div>
+      <PageSkeleton cards={0} rows={6} label="Loading roles" />
     );
 
   const accessModelError = rolesQuery.error ?? modulesQuery.error;

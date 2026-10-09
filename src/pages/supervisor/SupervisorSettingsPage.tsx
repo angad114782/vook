@@ -75,7 +75,7 @@ export default function SupervisorSettingsPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div>
-        <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Settings</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Settings</h1>
         <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage your account and application preferences</p>
       </div>
 

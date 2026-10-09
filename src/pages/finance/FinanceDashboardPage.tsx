@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import { UserCheck, UserX, Receipt, DollarSign, Loader2 } from 'lucide-react';
+import { UserCheck, UserX, Receipt, DollarSign } from 'lucide-react';
 import { useFinanceAttendance, useFinanceExpenses } from '../../hooks/queries/useFinanceQueries';
+import { statusLabel } from '../../utils/friendly';
+import { DashboardSkeleton } from '../../components/ui/Skeleton';
 
 interface DashStats {
   presentToday: number;
@@ -46,9 +48,7 @@ export default function FinanceDashboardPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-        <Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} color="#0d7470" />
-      </div>
+      <DashboardSkeleton />
     );
   }
 
@@ -82,13 +82,13 @@ export default function FinanceDashboardPage() {
     { label: 'Present Today',  value: s.presentToday,    icon: UserCheck, iconBg: '#f0fdf4', iconColor: '#16a34a' },
     { label: 'Absent Today',   value: s.absentToday,     icon: UserX,     iconBg: '#fef2f2', iconColor: '#dc2626' },
     { label: 'Pending Expenses', value: s.pendingExpenses, icon: Receipt,  iconBg: '#fff7ed', iconColor: '#ea580c' },
-    { label: 'Total Payroll',  value: s.totalPayroll,    icon: DollarSign,iconBg: '#eff6ff', iconColor: '#2563eb' },
+    { label: 'Total Payroll',  value: s.totalPayroll,    icon: DollarSign,iconBg: '#f0fdfa', iconColor: '#0d7470' },
   ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div>
-        <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Dashboard</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Dashboard</h1>
         <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Overview of today's attendance and financial status</p>
       </div>
 
@@ -155,7 +155,7 @@ export default function FinanceDashboardPage() {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>₹{t.amount.toLocaleString('en-IN')}</p>
-                  <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: 700, backgroundColor: sc.bg, color: sc.color }}>{t.status}</span>
+                  <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: 700, backgroundColor: sc.bg, color: sc.color }}>{statusLabel(t.status)}</span>
                 </div>
               </div>
             );

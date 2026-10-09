@@ -23,7 +23,7 @@ export default function NotFoundPage() {
       <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '32px' }}>The page you're looking for doesn't exist or you don't have access to it.</p>
       <button
         onClick={() => navigate(home)}
-        style={{ padding: '10px 24px', backgroundColor: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+        style={{ padding: '10px 24px', backgroundColor: '#0d7470', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
       >
         Go to Dashboard
       </button>

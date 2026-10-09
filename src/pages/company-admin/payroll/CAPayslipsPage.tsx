@@ -1,3 +1,4 @@
+import { useLookup } from '../../../hooks/useLookup';
 import { ResponsiveTable } from '../../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { Search, Download, Loader2, X, CheckCircle2, RefreshCw, AlertTriangle } from 'lucide-react';
@@ -9,11 +10,12 @@ import { hrApi } from '../../../api/hr';
 import { useQueryClient } from '@tanstack/react-query';
 import { extractError } from '../../../utils/errorUtils';
 import LegacyDrawer from '../../../components/ui/LegacyDrawer';
+import { statusLabel } from '../../../utils/friendly';
+import { TableSkeleton } from '../../../components/ui/Skeleton';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = [CURRENT_YEAR - 2, CURRENT_YEAR - 1, CURRENT_YEAR, CURRENT_YEAR + 1].map(String);
-const TYPES  = ['All Employees','Permanent','Contract'];
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Paid:       { bg: '#dcfce7', color: '#15803d' },
@@ -30,6 +32,7 @@ const fmt = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 const ini = (n: string) => n.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
 export default function CAPayslipsPage() {
+  const employmentTypes = useLookup('EMPLOYMENT_TYPE');
   const today = new Date();
   const [search,      setSearch]      = useState('');
   const [month,       setMonth]       = useState(MONTHS[today.getMonth()]!);
@@ -117,12 +120,12 @@ export default function CAPayslipsPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Payslip History</h1>
-            <span style={{ padding: '2px 10px', backgroundColor: '#eff6ff', color: '#2563eb', borderRadius: '12px', fontSize: '11px', fontWeight: 700 }}>{pagination.total} Records</span>
+            <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Payslip History</h1>
+            <span style={{ padding: '2px 10px', backgroundColor: '#f0fdfa', color: '#0d7470', borderRadius: '12px', fontSize: '11px', fontWeight: 700 }}>{pagination.total} Records</span>
           </div>
           <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>View and download payslips for all employees.</p>
         </div>
-        <button onClick={() => void bulkDownload()} disabled={bulkDownloading || loading} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: bulkDownloading ? 'wait' : 'pointer', fontFamily: 'Inter, sans-serif' }}>
+        <button onClick={() => void bulkDownload()} disabled={bulkDownloading || loading} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', backgroundColor: '#0d7470', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: bulkDownloading ? 'wait' : 'pointer', fontFamily: 'Inter, sans-serif' }}>
           {bulkDownloading ? <Loader2 size={13} className="spin" /> : <Download size={13} />} {bulkDownloading ? 'Downloading…' : 'Bulk Download'}
         </button>
       </div>
@@ -140,7 +143,7 @@ export default function CAPayslipsPage() {
           {YEARS.map((y) => <option key={y}>{y}</option>)}
         </select>
         <select value={type} onChange={(e) => handleTypeChange(e.target.value)} style={selectStyle}>
-          {TYPES.map((t) => <option key={t}>{t}</option>)}
+          {['All Employees', ...employmentTypes.items].map((t) => <option key={t}>{t}</option>)}
         </select>
         <select value={dept} onChange={(e) => handleDeptChange(e.target.value)} style={selectStyle}>
           <option>All Departments</option>{(departments.data ?? []).map((item) => <option key={item.name}>{item.name}</option>)}
@@ -150,7 +153,7 @@ export default function CAPayslipsPage() {
       {/* Table */}
       <div style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#2563eb" /></div>
+          <TableSkeleton />
         ) : (
           <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -168,21 +171,21 @@ export default function CAPayslipsPage() {
                     <td style={{ padding: '11px 14px', fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace', borderBottom: '1px solid #f1f5f9' }}>{p.payslipId}</td>
                     <td style={{ padding: '11px 14px', borderBottom: '1px solid #f1f5f9' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: '#2563eb', flexShrink: 0 }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#f0fdfa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: '#0d7470', flexShrink: 0 }}>
                           {ini(p.employee.user.name)}
                         </div>
                         <p style={{ fontSize: '12px', fontWeight: 600, color: '#0f172a' }}>{p.employee.user.name}</p>
                       </div>
                     </td>
                     <td style={{ padding: '11px 14px', fontSize: '12px', color: '#374151', borderBottom: '1px solid #f1f5f9' }}>{p.period}</td>
-                    <td style={{ padding: '11px 14px', fontSize: '13px', fontWeight: 700, color: '#2563eb', borderBottom: '1px solid #f1f5f9' }}>{fmt(p.netPay)}</td>
+                    <td style={{ padding: '11px 14px', fontSize: '13px', fontWeight: 700, color: '#0d7470', borderBottom: '1px solid #f1f5f9' }}>{fmt(p.netPay)}</td>
                     <td style={{ padding: '11px 14px', borderBottom: '1px solid #f1f5f9' }}>
-                      <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '10px', fontWeight: 700, backgroundColor: sc.bg, color: sc.color }}>{p.status}</span>
+                      <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '10px', fontWeight: 700, backgroundColor: sc.bg, color: sc.color }}>{statusLabel(p.status)}</span>
                     </td>
                     <td style={{ padding: '11px 14px', borderBottom: '1px solid #f1f5f9' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <button aria-label={`Download ${p.payslipId}`} onClick={(e) => { e.stopPropagation(); if (canDownload(p.status)) void download(p.id, p.payslipId); }} disabled={!canDownload(p.status)} style={{ background: 'none', border: 'none', cursor: canDownload(p.status) ? 'pointer' : 'not-allowed', color: '#2563eb', opacity: canDownload(p.status) ? 1 : 0.5 }} title="Download published payslip"><Download size={15} /></button>
-                        {p.grossSalary === 0 && p.totalDeductions === 0 && p.netPay === 0 && <button onClick={(e) => { e.stopPropagation(); void recalculate(p); }} disabled={recalculatingId === p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', border: '1px solid #bfdbfe', background: '#eff6ff', color: '#2563eb', borderRadius: '6px', padding: '4px 7px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }} title="Recalculate zero-value payslip">{recalculatingId === p.id ? <Loader2 size={12} /> : <RefreshCw size={12} />} Fix</button>}
+                        <button aria-label={`Download ${p.payslipId}`} onClick={(e) => { e.stopPropagation(); if (canDownload(p.status)) void download(p.id, p.payslipId); }} disabled={!canDownload(p.status)} style={{ background: 'none', border: 'none', cursor: canDownload(p.status) ? 'pointer' : 'not-allowed', color: '#0d7470', opacity: canDownload(p.status) ? 1 : 0.5 }} title="Download published payslip"><Download size={15} /></button>
+                        {p.grossSalary === 0 && p.totalDeductions === 0 && p.netPay === 0 && <button onClick={(e) => { e.stopPropagation(); void recalculate(p); }} disabled={recalculatingId === p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', border: '1px solid #b7e0dc', background: '#f0fdfa', color: '#0d7470', borderRadius: '6px', padding: '4px 7px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }} title="Recalculate zero-value payslip">{recalculatingId === p.id ? <Loader2 size={12} /> : <RefreshCw size={12} />} Fix</button>}
                         {p.status.toUpperCase() === 'PUBLISHED' && <button onClick={(e) => { e.stopPropagation(); void markPaid(p.id); }} disabled={payingId === p.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', border: '1px solid #bbf7d0', background: '#f0fdf4', color: '#15803d', borderRadius: '6px', padding: '4px 7px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }} title="Mark as paid">{payingId === p.id ? <Loader2 size={12} /> : <CheckCircle2 size={12} />} Pay</button>}
                       </div>
                     </td>
@@ -227,11 +230,11 @@ export default function CAPayslipsPage() {
               ] as [string, string][]).map(([k, v]) => (
                 <div key={k} style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>{k}</span>
-                  <span style={{ fontSize: '13px', color: k === 'Net Pay' ? '#2563eb' : '#0f172a', fontWeight: k === 'Net Pay' ? 700 : 500 }}>{v}</span>
+                  <span style={{ fontSize: '13px', color: k === 'Net Pay' ? '#0d7470' : '#0f172a', fontWeight: k === 'Net Pay' ? 700 : 500 }}>{v}</span>
                 </div>
               ))}
             </div>
-            {viewPayslip.grossSalary === 0 && viewPayslip.totalDeductions === 0 && viewPayslip.netPay === 0 && <div style={{ padding: '0 22px 20px' }}><button onClick={() => void recalculate(viewPayslip)} disabled={recalculatingId === viewPayslip.id} style={{ width: '100%', padding: '10px', border: 'none', borderRadius: '8px', background: '#2563eb', color: 'white', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>{recalculatingId === viewPayslip.id ? 'Recalculating...' : 'Fix and recalculate payslip'}</button></div>}
+            {viewPayslip.grossSalary === 0 && viewPayslip.totalDeductions === 0 && viewPayslip.netPay === 0 && <div style={{ padding: '0 22px 20px' }}><button onClick={() => void recalculate(viewPayslip)} disabled={recalculatingId === viewPayslip.id} style={{ width: '100%', padding: '10px', border: 'none', borderRadius: '8px', background: '#0d7470', color: 'white', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>{recalculatingId === viewPayslip.id ? 'Recalculating...' : 'Fix and recalculate payslip'}</button></div>}
           </div>
         </LegacyDrawer>
       )}

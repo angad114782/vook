@@ -18,11 +18,11 @@ import {
 import { useCaActivity } from "../../hooks/queries/useCaQueries";
 
 const avatarColors = [
-  { bg: "#eef2ff", color: "#6366f1" },
+  { bg: "#f0fdfa", color: "#0d7470" },
   { bg: "#f0fdf4", color: "#10b981" },
   { bg: "#fffbeb", color: "#f59e0b" },
-  { bg: "#fdf4ff", color: "#ec4899" },
-  { bg: "#f0f9ff", color: "#0ea5e9" },
+  { bg: "#fff7ed", color: "#b45309" },
+  { bg: "#e6f4f1", color: "#2f8f8a" },
 ];
 const getAv = (name?: string) =>
   avatarColors[(name ?? "H").charCodeAt(0) % avatarColors.length]!;
@@ -91,8 +91,8 @@ export default function HRDashboardPage() {
       label: "Pending Approvals",
       value: stats.pendingApprovals,
       icon: CheckSquare,
-      color: "#3b82f6",
-      bg: "#eff6ff",
+      color: "#0d7470",
+      bg: "#f0fdfa",
     },
   ];
 

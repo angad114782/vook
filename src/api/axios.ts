@@ -38,7 +38,7 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
-    const authEndpoint = ['/auth/login', '/auth/session', '/auth/refresh'].includes(error.config?.url);
+    const authEndpoint = ['/auth/login', '/auth/session', '/auth/refresh', '/auth/otp/request', '/auth/otp/verify'].includes(error.config?.url);
     if (import.meta.env.DEV && !(authEndpoint && error.response?.status === 401)) {
       console.error(
         `[API] ${error.config?.method?.toUpperCase()} ${error.config?.url} →`,

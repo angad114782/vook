@@ -1,8 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { extractError } from '../../utils/errorUtils';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { Eye, EyeOff, Loader2, CheckCircle2 } from 'lucide-react';
 import { isMockMode } from '../../config/runtime';
+import { authApi, isLocalDev, PASSWORD_ONLY, type DevAccount } from '../../api/auth';
+import { prepareBotProof } from '../../lib/botProof';
+import OtpLogin from './OtpLogin';
 import type { DemoAccount } from '../../api/demo';
 import { useDemoAccounts, useResetDemoData } from '../../hooks/queries/useDemo';
 import './LoginPage.css';
@@ -16,12 +21,23 @@ const features = [
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, isLoading } = useAuthStore();
+  const { login, devLogin, isLoading } = useAuthStore();
+  const [devAccounts, setDevAccounts] = useState<DevAccount[]>([]);
+  useEffect(() => {
+    if (isMockMode || !isLocalDev) return;
+    authApi.devAccounts().then((r) => setDevAccounts(r.data.accounts)).catch(() => setDevAccounts([])); // 404 anywhere that is not local development
+  }, []);
   const demoAccountsQuery = useDemoAccounts();
   const resetDemo = useResetDemoData();
   const demoAccounts = demoAccountsQuery.data?.accounts ?? [];
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(''); // email address or mobile number
+  const [mode, setMode] = useState<'password' | 'otp'>('password');
+  const [trap, setTrap] = useState(''); // hidden field only bots fill in
+  // Which ways of signing in the server offers right now (falls back to password-only in demo mode / when unreachable).
+  const optionsQuery = useQuery({ queryKey: ['login-options'], queryFn: () => authApi.loginOptions().then((r) => r.data), retry: false, staleTime: 300_000, enabled: !isMockMode });
+  const options = optionsQuery.data ?? PASSWORD_ONLY;
+  useEffect(() => { if (!isMockMode) void prepareBotProof(); }, []);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState('');
@@ -43,7 +59,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     try {
-      await login(email, password, needsOtp ? otp : undefined);
+      await login(email, password, needsOtp ? otp : undefined, trap);
       const { user } = useAuthStore.getState();
       if (user?.role === 'SUPER_ADMIN' && user.twoFactorEnrollmentRequired) navigate('/security');
       else navigateForRole(user?.role);
@@ -55,12 +71,14 @@ export default function LoginPage() {
         setError('');
         return;
       }
-      if (!e.response) {
-        setError(`Network/CORS error: ${e.message || 'request could not reach the server'} (check browser console)`);
-      } else {
-        setError(e.response.data?.error?.message || `Login failed (HTTP ${e.response.status})`);
-      }
+      setError(e.response?.status === 401 && e.response.data?.error?.code !== 'INVALID_OTP' ? 'Email, mobile number or password is not correct. Please try again.' : extractError(err, 'We could not sign you in. Please try again.'));
     }
+  };
+
+  const quickSignIn = async (account: DevAccount) => {
+    setError('');
+    try { await devLogin(account.role); navigateForRole(account.role); }
+    catch (reason) { setError(extractError(reason, 'Quick sign-in did not work. Is the sample data seeded?')); }
   };
 
   const selectDemoAccount = async (account: DemoAccount) => {
@@ -149,6 +167,16 @@ export default function LoginPage() {
               </p>
             </div>
 
+            {devAccounts.length > 0 && (
+              <section aria-label="Quick sign-in for this computer" style={{ marginBottom: 20, padding: 12, borderRadius: 10, background: '#f0fdfa', border: '1px dashed #5eead4' }}>
+                <strong style={{ fontSize: 12, color: '#115e59', display: 'block', marginBottom: 8 }}>This computer only · sign in with one click</strong>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 6 }}>
+                  {devAccounts.map((a) => <button key={a.role} type="button" disabled={isLoading} onClick={() => void quickSignIn(a)} title={`${a.name} · ${a.email}`} style={{ border: '1px solid #99f6e4', borderRadius: 7, background: 'white', color: '#134e4a', padding: '8px 8px', fontSize: 12, fontWeight: 700, cursor: isLoading ? 'wait' : 'pointer', textAlign: 'left' }}>{a.role === 'HR' ? 'HR' : a.role.split('_').map((w) => w[0] + w.slice(1).toLowerCase()).join(' ')}<span style={{ display: 'block', fontSize: 10, fontWeight: 500, color: '#0f766e' }}>{a.name}</span></button>)}
+                </div>
+                <small style={{ display: 'block', marginTop: 8, color: '#0f766e' }}>Never shown on a real website. Switch it off with DEV_QUICK_LOGIN=off.</small>
+              </section>
+            )}
+
             {isMockMode && (
               <section className="login-demo" aria-label="Demo accounts" style={{ marginBottom: 20, padding: 12, borderRadius: 10, background: '#f0fdfa', border: '1px solid #99f6e4' }}>
                 <div className="login-demo__header" style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 8 }}>
@@ -177,21 +205,35 @@ export default function LoginPage() {
               </div>
             )}
 
+            {options.otp.enabled && (
+              <div role="tablist" aria-label="Sign-in method" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, padding: 4, marginBottom: 22, background: '#f1f5f9', borderRadius: 10 }}>
+                {([['password', 'Password'], ['otp', 'Mobile code']] as const).map(([key, text]) => (
+                  <button key={key} type="button" role="tab" aria-selected={mode === key} onClick={() => { setMode(key); setError(''); }} style={{ padding: '9px 10px', border: 0, borderRadius: 8, background: mode === key ? 'white' : 'transparent', boxShadow: mode === key ? '0 1px 3px rgba(15,23,42,.12)' : 'none', color: mode === key ? '#0d4a47' : '#64748b', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>{text}</button>
+                ))}
+              </div>
+            )}
+
+            {mode === 'otp' && options.otp.enabled ? (
+              <OtpLogin options={options.otp} onError={setError} onSignedIn={() => navigateForRole(useAuthStore.getState().user?.role)} />
+            ) : (
             <form className="login-form" onSubmit={handleSubmit} aria-busy={isLoading}>
+              <input name="website" value={trap} onChange={(e) => setTrap(e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
               {/* Email */}
               <div style={{ marginBottom: '18px' }}>
                 <label htmlFor="login-email" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-                  Email Address
+                  Email or mobile number
                 </label>
                 <input
                   id="login-email"
                   name="email"
-                  type="email"
+                  type="text"
                   inputMode="email"
-                  autoComplete="email"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@workmgmt.com"
+                  placeholder="you@company.com or 98765 43210"
                   required
                   style={{
                     width: '100%',
@@ -284,7 +326,7 @@ export default function LoginPage() {
                   <input type="checkbox" style={{ accentColor: '#0d7470', width: '14px', height: '14px' }} />
                   <span style={{ fontSize: '13px', color: '#64748b' }}>Remember me</span>
                 </label>
-                <Link to="/forgot-password" style={{ fontSize: '13px', color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>
+                <Link to="/forgot-password" style={{ fontSize: '13px', color: '#0d7470', fontWeight: 600, textDecoration: 'none' }}>
                   Forgot password?
                 </Link>
               </div>
@@ -315,6 +357,7 @@ export default function LoginPage() {
                 {isLoading ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Signing in...</> : 'Sign In'}
               </button>
             </form>
+            )}
             <p className="login-signup" style={{ textAlign: 'center', marginTop: 18, fontSize: 13, color: '#64748b' }}>New company? <Link to="/register" style={{ color: '#0d7470', fontWeight: 700 }}>Create an account</Link></p>
           </div>
 

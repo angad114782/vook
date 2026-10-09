@@ -16,13 +16,15 @@ import { useMyRegularizations } from '../../hooks/queries/useEmployeeQueries';
 import { useRequestRegularization } from '../../hooks/mutations/useEmployeeMutations';
 import { EmptyState, ErrorState, LoadingState, StatusBadge } from '../../components/ui/ProductPrimitives';
 import AppDialog from '../../components/ui/AppDialog';
+import { statusLabel } from '../../utils/friendly';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Present: { bg: '#f0fdf4', color: '#15803d' },
   Late:    { bg: '#fff7ed', color: '#c2410c' },
   Absent:  { bg: '#fef2f2', color: '#b91c1c' },
-  Leave:   { bg: '#eff6ff', color: '#1d4ed8' },
-  Holiday: { bg: '#f5f3ff', color: '#7c3aed' },
+  Leave:   { bg: '#f0fdfa', color: '#0d4a47' },
+  Holiday: { bg: '#f0fdfa', color: '#2f8f8a' },
 };
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -81,9 +83,7 @@ function AddRecordModal({ onClose }: { onClose: () => void }) {
             <div>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '5px' }}>Employee *</label>
               {empLoading ? (
-                <div style={{ ...inp, display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8' }}>
-                  <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Loading…
-                </div>
+                <TableSkeleton />
               ) : (
                 <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} style={{ ...inp, appearance: 'none', cursor: 'pointer' }}>
                   <option value="">Select employee…</option>
@@ -220,7 +220,7 @@ export default function AttendancePage() {
 
   const s = overviewData?.stats;
   const statCards = [
-    { label: 'Total Workforce', value: s?.totalWorkforce ?? 0, sub: `${s?.perm ?? 0} Perm | ${s?.cont ?? 0} Cont`, icon: Users,     color: '#3b82f6', bg: '#eff6ff' },
+    { label: 'Total Workforce', value: s?.totalWorkforce ?? 0, sub: `${s?.perm ?? 0} Perm | ${s?.cont ?? 0} Cont`, icon: Users,     color: '#0d7470', bg: '#f0fdfa' },
     { label: 'Present Today',   value: s?.presentToday ?? 0,   sub: `${s?.presentPct ?? 0}% of total`,              icon: UserCheck, color: '#10b981', bg: '#f0fdf4' },
     { label: 'Absent',          value: s?.absent ?? 0,          sub: `${s?.absentPct ?? 0}% impact`,                 icon: UserX,     color: '#ef4444', bg: '#fef2f2' },
     { label: 'Late Arrivals',   value: s?.lateArrivals ?? 0,    sub: 'Checked in after 09:00',                       icon: Clock,     color: '#f59e0b', bg: '#fffbeb' },
@@ -232,7 +232,7 @@ export default function AttendancePage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Attendance</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Attendance</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Company-wide attendance overview and daily records</p>
         </div>
         {tab === 'records' && !isEmployee && <div className="attendance-period-actions"><StatusBadge status={periodQuery.data?.status ?? 'OPEN'}>{periodQuery.data?.status === 'LOCKED' ? 'Attendance locked' : 'Attendance open'}</StatusBadge>{canCreate && periodQuery.data?.status !== 'LOCKED' && <><button className="admin-button admin-button--secondary" disabled={lockPeriod.isPending || periodQuery.isLoading} onClick={handleLockPeriod}><LockKeyhole size={15} aria-hidden="true" /> {lockPeriod.isPending ? 'Locking…' : 'Lock period'}</button><button className="admin-button" onClick={() => setShowAddModal(true)}><Plus size={15} aria-hidden="true" /> Add record</button></>}</div>}
@@ -252,9 +252,7 @@ export default function AttendancePage() {
       {tab === 'overview' && (
         <>
           {overviewLoading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '80px', gap: '10px', color: '#64748b' }}>
-              <Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} /><span style={{ fontSize: '14px' }}>Loading...</span>
-            </div>
+            <TableSkeleton />
           ) : (
             <>
               <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
@@ -321,9 +319,7 @@ export default function AttendancePage() {
 
           {/* Table */}
           {recordsLoading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}>
-              <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /><span style={{ fontSize: '14px' }}>Loading records...</span>
-            </div>
+            <TableSkeleton />
           ) : records.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 24px' }}>
               <UserCheck size={40} color="#e2e8f0" style={{ margin: '0 auto 12px' }} />
@@ -355,7 +351,7 @@ export default function AttendancePage() {
                         <td style={{ padding: '11px 16px', fontSize: '13px', color: '#374151' }}>{fmtTime(r.checkIn)}</td>
                         <td style={{ padding: '11px 16px', fontSize: '13px', color: '#374151' }}>{fmtTime(r.checkOut)}</td>
                         <td style={{ padding: '11px 16px' }}>
-                          <span style={{ padding: '3px 9px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: sm.bg, color: sm.color }}>{r.status}</span>
+                          <span style={{ padding: '3px 9px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: sm.bg, color: sm.color }}>{statusLabel(r.status)}</span>
                         </td>
                         <td style={{ padding: '11px 16px', fontSize: '11px', color: '#94a3b8' }}>{r.source}</td>
                       </tr>

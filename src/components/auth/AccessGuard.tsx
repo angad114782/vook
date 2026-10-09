@@ -1,11 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { PageSkeleton } from '../ui/Skeleton';
 import { useAccess } from '../../hooks/queries/useAccess';
 
 export default function AccessGuard({ permission, module, children }: { permission?: string; module?: string; children: React.ReactNode }) {
   const location = useLocation();
   const access = useAccess();
-  if (access.isLoading) return <div style={{ display: 'grid', placeItems: 'center', minHeight: 180 }}><Loader2 size={20} /></div>;
+  if (access.isLoading) return <div style={{ padding: 24 }}><PageSkeleton label="Checking access" /></div>;
   const permissionMissing = !!permission && !access.can(permission);
   const moduleMissing = !!module && !access.moduleEnabled(module);
   if (permissionMissing || moduleMissing) {
@@ -25,7 +25,7 @@ export default function AccessGuard({ permission, module, children }: { permissi
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 6, marginBottom: 18 }}>
             {permissionMissing && <span style={{ padding: '4px 8px', borderRadius: 5, background: '#fff7ed', color: '#9a3412', fontSize: 11 }}>Permission: {permission}</span>}
-            {moduleMissing && <span style={{ padding: '4px 8px', borderRadius: 5, background: '#eff6ff', color: '#1d4ed8', fontSize: 11 }}>Module: {module}</span>}
+            {moduleMissing && <span style={{ padding: '4px 8px', borderRadius: 5, background: '#f0fdfa', color: '#0d4a47', fontSize: 11 }}>Module: {module}</span>}
             <span style={{ padding: '4px 8px', borderRadius: 5, background: '#f1f5f9', color: '#475569', fontSize: 11 }}>Reason: {reason ?? 'SCOPE'}</span>
           </div>
           <Link to={portalPath} style={{ display: 'inline-block', padding: '8px 14px', borderRadius: 7, background: '#0d4a47', color: 'white', textDecoration: 'none', fontSize: 12, fontWeight: 600 }}>

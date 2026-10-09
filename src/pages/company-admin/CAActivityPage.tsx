@@ -1,9 +1,11 @@
 import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { type CALog } from '../../api/companyAdmin';
-import { Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock } from 'lucide-react';
 import PaginationBar from '../../components/data/Pagination';
 import { useCaActivity } from '../../hooks/queries/useCaQueries';
+import { statusLabel } from '../../utils/friendly';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 const STATUS_META: Record<string, { bg: string; color: string; icon: typeof CheckCircle2 }> = {
   Success: { bg: '#f0fdf4', color: '#15803d', icon: CheckCircle2 },
@@ -12,8 +14,8 @@ const STATUS_META: Record<string, { bg: string; color: string; icon: typeof Chec
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  HR: '#0d7470', MANAGER: '#2563eb', SUPERVISOR: '#7c3aed',
-  FINANCE: '#ea580c', EMPLOYEE: '#16a34a', COMPANY_ADMIN: '#6366f1', SUPER_ADMIN: '#0f172a',
+  HR: '#0d7470', MANAGER: '#0d7470', SUPERVISOR: '#2f8f8a',
+  FINANCE: '#ea580c', EMPLOYEE: '#16a34a', COMPANY_ADMIN: '#0d7470', SUPER_ADMIN: '#0f172a',
 };
 
 const fmtTime = (d: string) => new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -36,19 +38,19 @@ export default function CAActivityPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Activity Log</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Activity Log</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>All user actions and system events in your company</p>
         </div>
         <div style={{ display: 'flex', gap: '4px' }}>
           {(['All', 'Success', 'Failed'] as const).map((f) => (
-            <button key={f} onClick={() => handleFilter(f)} style={{ padding: '7px 14px', border: 'none', borderRadius: '7px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: 'Inter, sans-serif', backgroundColor: filter === f ? '#6366f1' : '#f1f5f9', color: filter === f ? 'white' : '#64748b', transition: 'all 0.15s' }}>{f}</button>
+            <button key={f} onClick={() => handleFilter(f)} style={{ padding: '7px 14px', border: 'none', borderRadius: '7px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: 'Inter, sans-serif', backgroundColor: filter === f ? '#0d7470' : '#f1f5f9', color: filter === f ? 'white' : '#64748b', transition: 'all 0.15s' }}>{f}</button>
           ))}
         </div>
       </div>
 
       <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#6366f1" /></div>
+          <TableSkeleton />
         ) : (
           <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -72,7 +74,7 @@ export default function CAActivityPage() {
                     <td style={{ padding: '11px 16px' }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '20px', backgroundColor: sm.bg }}>
                         <Icon size={11} color={sm.color} />
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: sm.color }}>{log.status}</span>
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: sm.color }}>{statusLabel(log.status)}</span>
                       </div>
                     </td>
                     <td style={{ padding: '11px 16px' }}><span style={{ fontSize: '11px', color: '#94a3b8', whiteSpace: 'nowrap' }}>{fmtTime(log.createdAt)}</span></td>

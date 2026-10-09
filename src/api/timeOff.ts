@@ -8,7 +8,12 @@ export interface HolidayCalendarInput {
   employeeGroupIds: string[];
 }
 
+export interface LeaveTypeOption { type: string; total: number; paid: boolean }
+
 export const timeOffApi = {
+  listLeaveTypes: () => api.get<LeaveTypeOption[]>('/leave-types'),
+  addLeaveType: (type: string, total = 12) => api.post<LeaveTypeOption>('/leave-types', { type, total }),
+  deleteLeaveType: (type: string) => api.delete(`/leave-types/${encodeURIComponent(type)}`),
   listHolidayCalendars: (year?: number) =>
     api.get<{ calendars: HolidayCalendar[] }>('/holiday-calendars', { params: year ? { year } : undefined }),
   createHolidayCalendar: (data: HolidayCalendarInput) =>

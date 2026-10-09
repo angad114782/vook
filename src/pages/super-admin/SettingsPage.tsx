@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { extractError } from "../../utils/errorUtils";
 import {
   Settings,
   Shield,
@@ -569,16 +570,33 @@ function SecurityTab({
 }) {
   const [twoFA, setTwoFA] = useState(true);
   const [sessionTimeout, setSessionTimeout] = useState(true);
+  const [blockedIps, setBlockedIps] = useState("");
+  const [adminIps, setAdminIps] = useState("");
   const [saving, setSaving] = useState(false);
   const [showPwModal, setShowPwModal] = useState(false);
+
+  // Show what is really saved on the server, not defaults.
+  useEffect(() => {
+    platformApi.getSettings<{ security?: { twoFA?: boolean; sessionTimeout?: boolean | number; blockedIps?: string[]; adminAllowedIps?: string[] } }>()
+      .then(({ data }) => {
+        const s = data.security ?? {};
+        setTwoFA(Boolean(s.twoFA));
+        setSessionTimeout(Boolean(s.sessionTimeout));
+        setBlockedIps((s.blockedIps ?? []).join("\n"));
+        setAdminIps((s.adminAllowedIps ?? []).join("\n"));
+      })
+      .catch(() => undefined);
+  }, []);
+
+  const lines = (text: string) => text.split(/[\n,]+/).map((l) => l.trim()).filter(Boolean);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await platformApi.updateSettings("security", { twoFA, sessionTimeout });
+      await platformApi.updateSettings("security", { twoFA, sessionTimeout, blockedIps: lines(blockedIps), adminAllowedIps: lines(adminIps) });
       showToast("Security settings saved successfully", "success");
-    } catch {
-      showToast("Unable to save security settings", "error");
+    } catch (error) {
+      showToast(extractError(error, "Unable to save security settings"), "error");
     } finally {
       setSaving(false);
     }
@@ -630,6 +648,19 @@ function SecurityTab({
           value={sessionTimeout}
           onChange={setSessionTimeout}
         />
+
+        <div style={{ display: "grid", gap: "16px", marginTop: "20px" }}>
+          <label style={{ display: "grid", gap: "6px", fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+            Block these networks from signing in
+            <textarea value={blockedIps} onChange={(e) => setBlockedIps(e.target.value)} rows={3} placeholder={"One per line, for example\n203.0.113.7\n198.51.100.0/24"} style={{ padding: "10px 12px", border: "1.5px solid #e2e8f0", borderRadius: "8px", fontSize: "13px", fontFamily: "monospace", fontWeight: 400 }} />
+            <span style={{ fontSize: "12px", fontWeight: 400, color: "#64748b" }}>People on these addresses cannot sign in at all. Handy for blocking attackers.</span>
+          </label>
+          <label style={{ display: "grid", gap: "6px", fontSize: "13px", fontWeight: 600, color: "#374151" }}>
+            Platform admins can sign in only from
+            <textarea value={adminIps} onChange={(e) => setAdminIps(e.target.value)} rows={3} placeholder={"Leave empty to allow from anywhere\n203.0.113.0/24"} style={{ padding: "10px 12px", border: "1.5px solid #e2e8f0", borderRadius: "8px", fontSize: "13px", fontFamily: "monospace", fontWeight: 400 }} />
+            <span style={{ fontSize: "12px", fontWeight: 400, color: "#64748b" }}>If you fill this in, include your own address or you will lock yourself out (we will warn you).</span>
+          </label>
+        </div>
 
         <div
           style={{
@@ -870,7 +901,7 @@ export default function SettingsPage() {
     >
       {/* Header */}
       <div>
-        <h1 style={{ fontSize: "20px", fontWeight: 700, color: "#0f172a" }}>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>
           Settings
         </h1>
         <p style={{ fontSize: "13px", color: "#64748b", marginTop: "2px" }}>

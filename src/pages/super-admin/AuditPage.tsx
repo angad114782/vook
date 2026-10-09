@@ -2,6 +2,7 @@ import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useQuery } from '@tanstack/react-query';
 import { FileClock, ShieldCheck } from 'lucide-react';
 import { auditApi } from '../../api/integrations';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 export default function AuditPage() {
   const query = useQuery({
@@ -22,7 +23,7 @@ export default function AuditPage() {
 
       <section className="admin-card admin-table-card">
         {query.isLoading ? (
-          <div className="empty-state">Loading audit events…</div>
+          <TableSkeleton rows={8} cols={4} label="Loading audit events" />
         ) : logs.length === 0 ? (
           <div className="empty-state"><FileClock size={26} /><strong>No audit events</strong><p>Sensitive platform actions will appear here.</p></div>
         ) : (

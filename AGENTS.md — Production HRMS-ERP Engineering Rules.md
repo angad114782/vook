@@ -16,6 +16,27 @@ Follow **SOLID, KISS, DRY, YAGNI, SoC, high cohesion/low coupling, explicit depe
 - Prefer composition + DI over tight coupling.
 - Design integrations behind interfaces/adapters so providers can be replaced.
 
+## User-Friendly UI (mandatory for every UI change)
+The users are non-technical HR/finance/ops staff. Full rules: `docs/RULES.md` → "User-friendly first".
+- Every action must be **visible** with a plain label — never hidden behind type-to-reveal, hover-only or keyboard-only tricks.
+- **Plain words** only: no field names, enums, codes, date formats or permission keys in the UI.
+- Create-what-you-need **inline** (e.g. "+ Add new department" inside the dropdown); do not send users to another page.
+- Errors explain **what to do**, naming the field/row. Accept real-world input formats (15/01/2026, ₹12,00,000).
+- Preview before bulk changes; confirm destructive ones; never lose typed input.
+- Always provide helper text and an empty state. Explain missing permissions ("Ask your admin…").
+- Self-check: *can a new HR assistant do this without help?* If not, simplify before finishing.
+
+## Scale & Stability (mandatory)
+The system must serve **1,000+ simultaneous users** with no crashes and no noticeable slowdown. Full rules and budgets: `docs/RULES.md` → "Scale & stability".
+- Everything bounded: pagination, query limits/timeouts, payload and upload caps.
+- Heavy work in background jobs; API returns `202 + jobId`.
+- Rate limits, backpressure, timeouts, circuit breakers; overload returns a polite `429`, never a crash.
+- Retries and polling always use backoff **with jitter**; prefer realtime push over polling.
+- No N+1, indexed queries (`tenantId` first), cached read-heavy data with correct invalidation.
+- Loading states use **skeleton shimmer placeholders** (`components/ui/Skeleton.tsx`), never a bare spinner or "Loading…" text; spinners only inside saving buttons.
+- Frontend: code-split routes, lazy-load heavy libs, debounce search, virtualize big tables.
+- Prove it: load/spike/soak/failure tests before release (p95 < 500 ms, errors < 0.1%).
+
 ## Before Changing Code
 1. Inspect existing architecture, conventions, dependencies and call/data flow.
 2. Identify **root cause**, not symptoms.
@@ -123,7 +144,7 @@ For every task:
 
 Priority:
 
-**Correctness → Security/Data Integrity → Simplicity → Reliability → Performance → Maintainability → Extensibility**
+**Correctness → Security/Data Integrity → User-friendliness → Simplicity → Reliability → Performance → Maintainability → Extensibility**
 
 Do not sacrifice correctness or maintainability for theoretical performance.
 

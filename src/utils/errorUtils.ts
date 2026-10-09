@@ -1,3 +1,5 @@
+import { friendlyErrorMessage } from './friendly';
+
 type PayrollIssue = {
   employeeId?: string;
   name?: string;
@@ -33,15 +35,21 @@ function formatIssues(value: unknown): string | undefined {
     .join(' ');
 }
 
-export function extractError(err: unknown, fallback = 'Something went wrong'): string {
+export function extractError(err: unknown, fallback = 'Something went wrong. Please try again.'): string {
   if (typeof err !== 'object' || err === null) return fallback;
 
   const e = err as {
-    response?: { data?: ErrorPayload };
+    response?: { status?: number; data?: ErrorPayload & { error?: { code?: string } } };
     message?: string;
   };
   const data = e.response?.data;
-  const message = data?.error?.message ?? data?.message ?? e.message ?? fallback;
+  const message = friendlyErrorMessage({
+    code: data?.error?.code,
+    status: e.response?.status,
+    serverMessage: data?.error?.message ?? data?.message ?? (e.response ? undefined : e.message),
+    hasResponse: !!e.response,
+    fallback,
+  });
   const details = formatIssues(data?.issues) ?? formatIssues(data?.error?.details);
 
   return details ? `${message} ${details}` : message;

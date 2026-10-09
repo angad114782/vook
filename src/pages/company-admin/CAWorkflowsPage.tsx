@@ -5,6 +5,7 @@ import { ArrowRight, Plus, Trash2, Loader2, Check } from 'lucide-react';
 import { extractError } from '../../utils/errorUtils';
 import { useWorkflows } from '../../hooks/queries/useCaQueries';
 import { useSaveWorkflow } from '../../hooks/mutations/useCaMutations';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 type WorkflowType = 'leave' | 'expense' | 'correction';
 
@@ -13,8 +14,8 @@ const ACTIONS = ['Review & Approve', 'Final Approval', 'Acknowledge', 'Notify On
 
 const ROLE_COLORS: Record<string, { bg: string; color: string }> = {
   SUPERVISOR:    { bg: '#fff7ed', color: '#d97706' },
-  MANAGER:       { bg: '#f5f3ff', color: '#6366f1' },
-  HR:            { bg: '#eff6ff', color: '#2563eb' },
+  MANAGER:       { bg: '#f0fdfa', color: '#0d7470' },
+  HR:            { bg: '#f0fdfa', color: '#0d7470' },
   COMPANY_ADMIN: { bg: '#f0fdfa', color: '#0d7470' },
 };
 
@@ -80,17 +81,14 @@ export default function CAWorkflowsPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px', gap: '10px', color: '#64748b' }}>
-        <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
-        <span style={{ fontSize: '14px' }}>Loading workflows…</span>
-      </div>
+      <TableSkeleton />
     );
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div>
-        <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Approval Workflows</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Approval Workflows</h1>
         <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Define multi-step approval chains for leave, expense, and attendance requests.</p>
       </div>
 

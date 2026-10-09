@@ -14,6 +14,7 @@ import {
   getNotificationCategory, getNotificationCategoryLabel, getNotificationDestination,
   isNotificationUnread, type NotificationCategory, type NotificationRole,
 } from '../utils/notificationInbox';
+import { ListSkeleton } from '../components/ui/Skeleton';
 
 const inboxQueryKey = ['notifications', 'inbox'] as const;
 const categoryChoices: Array<{ key: NotificationCategory | 'all'; label: string }> = [
@@ -254,7 +255,7 @@ export default function NotificationInboxPage() {
           </div>
 
           {query.isLoading ? (
-            <div className="notification-state"><LoaderCircle size={20} className="notification-spin" /><span>Loading your notifications…</span></div>
+            <ListSkeleton rows={6} label="Loading your notifications" />
           ) : query.isError ? (
             <div className="notification-state notification-state--error">
               <Bell size={21} /><strong>We couldn’t load your inbox</strong><span>Check your connection and try again.</span>

@@ -17,7 +17,8 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: isMockMode,
       refetchOnReconnect: 'always',
       retry: shouldRetryQuery,
-      retryDelay: (attemptIndex) => Math.min(250 * 2 ** attemptIndex, 1_000),
+      // Exponential backoff with full jitter: a server hiccup must not make every client retry at the same instant.
+      retryDelay: (attemptIndex) => Math.random() * Math.min(250 * 2 ** attemptIndex, 5_000),
     },
     mutations: {
       retry: 0,

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { hrApi } from '../../api/hr';
+import { organizationApi } from '../../api/organization';
 
 export const useCreateEmployee = () => {
   const qc = useQueryClient();
@@ -185,6 +186,22 @@ export const useUpdateShift = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['hr', 'shifts'] });
       qc.invalidateQueries({ queryKey: ['sup', 'shifts'] });
+    },
+  });
+};
+
+export interface EmployeeImportResult { imported: number; failed: number; errors: { row: number; message: string }[] }
+
+export const useImportEmployees = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (rows: Record<string, unknown>[]) => organizationApi.importEmployees(rows).then((r) => r.data as EmployeeImportResult),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['hr', 'employees'] });
+      qc.invalidateQueries({ queryKey: ['hr', 'departments'] });
+      qc.invalidateQueries({ queryKey: ['ca', 'dashboard'] });
+      qc.invalidateQueries({ queryKey: ['ca', 'departments'] });
+      qc.invalidateQueries({ queryKey: ['ca', 'users'] });
     },
   });
 };

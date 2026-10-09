@@ -16,13 +16,14 @@ import {
   Search, Check, Loader2, ChevronLeft, ChevronRight,
   Pencil, Trash2, Ban, CalendarX,
 } from 'lucide-react';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 // Section.
 
 const avatarColors = [
-  { bg: '#eef2ff', color: '#6366f1' }, { bg: '#f5f3ff', color: '#8b5cf6' },
-  { bg: '#f0f9ff', color: '#0ea5e9' }, { bg: '#f0fdf4', color: '#10b981' },
-  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fdf4ff', color: '#ec4899' },
+  { bg: '#f0fdfa', color: '#0d7470' }, { bg: '#f0fdfa', color: '#2f8f8a' },
+  { bg: '#e6f4f1', color: '#2f8f8a' }, { bg: '#f0fdf4', color: '#10b981' },
+  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fff7ed', color: '#b45309' },
 ];
 const getAvatarColor = (name?: string) => avatarColors[(name ?? 'S').charCodeAt(0) % avatarColors.length];
 const initials = (name?: string) => (name ?? 'Subscription').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
@@ -175,7 +176,7 @@ export default function SubscriptionsPage() {
 
   const statsRow = [
     { label: 'Monthly Revenue',      value: fmtINR(stats.monthlyRevenue), icon: IndianRupee,   iconBg: '#f0fdf4', iconColor: '#22c55e' },
-    { label: 'Active Subscriptions', value: String(stats.active),          icon: Users,         iconBg: '#eff6ff', iconColor: '#3b82f6' },
+    { label: 'Active Subscriptions', value: String(stats.active),          icon: Users,         iconBg: '#f0fdfa', iconColor: '#0d7470' },
     { label: 'On Trial',             value: String(stats.trial),           icon: Clock,         iconBg: '#fffbeb', iconColor: '#d97706' },
     { label: 'Expiring Soon',        value: String(stats.expiringSoon),    icon: AlertTriangle, iconBg: '#fef2f2', iconColor: '#dc2626' },
   ];
@@ -188,7 +189,7 @@ export default function SubscriptionsPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Plan & subscriptions</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Plan & subscriptions</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage plan versions and support existing subscriptions. Customers purchase and renew plans online.</p>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
@@ -260,10 +261,7 @@ export default function SubscriptionsPage() {
 
             {/* Table */}
             {loading ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}>
-                <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
-                <span style={{ fontSize: '14px' }}>Loading subscriptions...</span>
-              </div>
+              <TableSkeleton />
             ) : subscriptions.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 24px' }}>
                 <IndianRupee size={40} color="#e2e8f0" style={{ margin: '0 auto 12px' }} />

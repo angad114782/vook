@@ -3139,3 +3139,20 @@ button, [role="button"], a, summary { touch-action: manipulation; }
   .compliance-card__fields, .compliance-scope > div { grid-template-columns: 1fr; }
   .compliance-scope > div > span { grid-column: auto; }
 }
+
+/* ── Skeleton loaders (YouTube/Instagram style shimmer) ── */
+.sk { display: block; position: relative; overflow: hidden; background: #e8edf3; flex-shrink: 0; }
+.sk::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.65), transparent); animation: sk-shimmer 1.4s ease-in-out infinite; }
+.sk-card { background: var(--surface, #fff); border: 1px solid var(--line, #e2e8f0); border-radius: var(--radius, 12px); padding: 16px; }
+.sk-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@keyframes sk-shimmer { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .sk::after { animation: none; } }
+
+/* Attendance devices: one connection per row, readable text, actions that wrap on narrow screens */
+.attendance-connection-grid--list { grid-template-columns: 1fr; gap: 0; border-top: 1px solid #eef2f2; }
+.attendance-device-row small { font-size: 12px; line-height: 1.45; display: block; }
+.attendance-device-row .attendance-device-row__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+@media (max-width: 760px) {
+  .attendance-connection-grid article.attendance-device-row { grid-template-columns: auto minmax(0, 1fr); }
+  .attendance-device-row .admin-status, .attendance-device-row .attendance-device-row__actions { grid-column: 2; justify-self: start; }
+}

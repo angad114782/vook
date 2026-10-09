@@ -16,6 +16,7 @@ export const organizationApi = {
   createDepartment: (data: Record<string, unknown>) => api.post('/company-admin/departments', data),
   updateDepartment: (id: string, data: Record<string, unknown>) => api.patch(`/company-admin/departments/${id}`, data),
   createDesignation: (data: Record<string, unknown>) => api.post('/company-admin/designations', data),
+  deleteDesignation: (id: string) => api.delete(`/company-admin/designations/${id}`),
   updateDesignation: (id: string, data: Record<string, unknown>) => api.patch(`/company-admin/designations/${id}`, data),
   getRoleAssignments: <T>() => api.get<T[]>('/company-admin/role-assignments'),
   createRoleAssignment: (data: Record<string, unknown>) => api.post('/company-admin/role-assignments', data),

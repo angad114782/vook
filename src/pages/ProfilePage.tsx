@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { accountApi } from "../api/account";
 import { useAuthStore } from "../store/authStore";
 import "./profilePage.css";
+import { FormSkeleton, ListSkeleton } from '../components/ui/Skeleton';
 
 type RoleKey =
   | "SUPER_ADMIN"
@@ -759,10 +760,7 @@ export default function ProfilePage() {
                   <UsersRound size={19} />
                 </div>
                 {profileLoading ? (
-                  <div className="profile-loading">
-                    <Loader2 size={18} className="profile-spin" /> Loading
-                    employment record…
-                  </div>
+                  <FormSkeleton fields={4} label="Loading employment record" />
                 ) : (
                   <div className="profile-detail-grid">
                     <div>
@@ -1069,10 +1067,7 @@ export default function ProfilePage() {
                 <Clock3 size={19} />
               </div>
               {sessionsLoading ? (
-                <div className="profile-loading">
-                  <Loader2 size={18} className="profile-spin" /> Loading
-                  sessions…
-                </div>
+                <ListSkeleton rows={3} label="Loading sessions" />
               ) : sessions.length === 0 ? (
                 <div className="profile-empty">No active sessions found.</div>
               ) : (

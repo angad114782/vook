@@ -1,3 +1,4 @@
+import { useLookup } from '../../hooks/useLookup';
 import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -11,6 +12,7 @@ import { useAttendancePeriod, useAttendanceRecords } from '../../hooks/queries/u
 import AppDialog from '../../components/ui/AppDialog';
 import { StatusBadge } from '../../components/ui/ProductPrimitives';
 import { Link, useLocation } from 'react-router-dom';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -22,9 +24,9 @@ const STEPS = [
 ];
 
 const avatarColors = [
-  { bg: '#eef2ff', color: '#6366f1' }, { bg: '#f0fdf4', color: '#16a34a' },
-  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fdf4ff', color: '#ec4899' },
-  { bg: '#f0f9ff', color: '#0284c7' },
+  { bg: '#f0fdfa', color: '#0d7470' }, { bg: '#f0fdf4', color: '#16a34a' },
+  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fff7ed', color: '#b45309' },
+  { bg: '#e6f4f1', color: '#2f8f8a' },
 ];
 const getAv = (name?: string) => avatarColors[(name ?? 'F').charCodeAt(0) % avatarColors.length]!;
 const initials = (name?: string) => (name ?? 'User').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
@@ -39,13 +41,13 @@ function StepBar({ step }: { step: Step }) {
         return (
           <div key={s.n} style={{ display: 'flex', alignItems: 'center', flex: i < STEPS.length - 1 ? 1 : 'none' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, backgroundColor: done ? '#2563eb' : active ? '#2563eb' : '#e2e8f0', color: done || active ? 'white' : '#94a3b8', transition: 'all 0.2s' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, backgroundColor: done ? '#0d7470' : active ? '#0d7470' : '#e2e8f0', color: done || active ? 'white' : '#94a3b8', transition: 'all 0.2s' }}>
                 {done ? <Check size={13} /> : s.n}
               </div>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: active ? '#2563eb' : done ? '#16a34a' : '#94a3b8', whiteSpace: 'nowrap' }}>{s.label}</span>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: active ? '#0d7470' : done ? '#16a34a' : '#94a3b8', whiteSpace: 'nowrap' }}>{s.label}</span>
             </div>
             {i < STEPS.length - 1 && (
-              <div style={{ flex: 1, height: '2px', backgroundColor: done ? '#2563eb' : '#e2e8f0', margin: '0 10px', minWidth: '20px', transition: 'background 0.2s' }} />
+              <div style={{ flex: 1, height: '2px', backgroundColor: done ? '#0d7470' : '#e2e8f0', margin: '0 10px', minWidth: '20px', transition: 'background 0.2s' }} />
             )}
           </div>
         );
@@ -57,6 +59,7 @@ function StepBar({ step }: { step: Step }) {
 interface EmpRow { emp: Employee; selected: boolean; daysPresent: number; leaves: number; ot: number }
 
 export default function FinancePayrollPage() {
+  const employmentTypes = useLookup('EMPLOYMENT_TYPE');
   const location = useLocation();
   const access = useAccess();
   const canProcess = access.can('PAYROLL.PROCESS');
@@ -163,7 +166,7 @@ export default function FinancePayrollPage() {
   const generating = runPayroll.isPending;
 
   const btnStyle = (disabled = false): React.CSSProperties => ({
-    padding: '9px 22px', backgroundColor: disabled ? '#e2e8f0' : '#2563eb', border: 'none', borderRadius: '8px',
+    padding: '9px 22px', backgroundColor: disabled ? '#e2e8f0' : '#0d7470', border: 'none', borderRadius: '8px',
     color: disabled ? '#94a3b8' : 'white', fontSize: '13px', fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer',
     fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: '6px',
   });
@@ -171,7 +174,7 @@ export default function FinancePayrollPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div>
-        <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Payroll Management</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Payroll Management</h1>
         <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Process salary for all employees for a selected period</p>
       </div>
 
@@ -191,22 +194,22 @@ export default function FinancePayrollPage() {
                   {[today.getFullYear() - 1, today.getFullYear(), today.getFullYear() + 1].map((year) => <option key={year} value={year}>{year}</option>)}
                 </select>
                 <div style={{ display: 'flex', border: '1.5px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                  {['All Types', 'Permanent', 'Contract'].map((t) => (
-                    <button key={t} onClick={() => setTypeFilter(t)} style={{ padding: '5px 12px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: 'Inter, sans-serif', backgroundColor: typeFilter === t ? '#2563eb' : 'white', color: typeFilter === t ? 'white' : '#374151' }}>{t}</button>
+                  {['All Types', ...employmentTypes.items].map((t) => (
+                    <button key={t} onClick={() => setTypeFilter(t)} style={{ padding: '5px 12px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: 'Inter, sans-serif', backgroundColor: typeFilter === t ? '#0d7470' : 'white', color: typeFilter === t ? 'white' : '#374151' }}>{t}</button>
                   ))}
                 </div>
               </div>
             </div>
 
             {loading || attendanceLoading || attendancePeriod.isLoading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#2563eb" /></div>
+              <TableSkeleton />
             ) : (
               <div style={{ overflowX: 'auto' }}>
                 <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#f8fafc' }}>
                       <th style={{ padding: '10px 14px', textAlign: 'left', width: '32px' }}>
-                        <input type="checkbox" checked={filtered.every((r) => r.selected)} onChange={(e) => toggleAll(e.target.checked)} style={{ accentColor: '#2563eb' }} />
+                        <input type="checkbox" checked={filtered.every((r) => r.selected)} onChange={(e) => toggleAll(e.target.checked)} style={{ accentColor: '#0d7470' }} />
                       </th>
                       {['Employee', 'Type', 'Department', 'Status'].map((h) => (
                         <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', borderBottom: '1px solid #f1f5f9' }}>{h}</th>
@@ -219,7 +222,7 @@ export default function FinancePayrollPage() {
                       return (
                         <tr key={r.emp.id} style={{ borderBottom: i < filtered.length - 1 ? '1px solid #f8fafc' : 'none' }}>
                           <td style={{ padding: '11px 14px' }}>
-                            <input type="checkbox" checked={r.selected} onChange={() => toggleRow(r.emp.id)} style={{ accentColor: '#2563eb' }} />
+                            <input type="checkbox" checked={r.selected} onChange={() => toggleRow(r.emp.id)} style={{ accentColor: '#0d7470' }} />
                           </td>
                           <td style={{ padding: '11px 14px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -231,7 +234,7 @@ export default function FinancePayrollPage() {
                             </div>
                           </td>
                           <td style={{ padding: '11px 14px' }}>
-                            <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: r.emp.employmentType === 'Permanent' ? '#dbeafe' : '#fef9c3', color: r.emp.employmentType === 'Permanent' ? '#1d4ed8' : '#854d0e' }}>{r.emp.employmentType}</span>
+                            <span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: r.emp.employmentType === 'Permanent' ? '#dff3f1' : '#fef9c3', color: r.emp.employmentType === 'Permanent' ? '#0d4a47' : '#854d0e' }}>{r.emp.employmentType}</span>
                           </td>
                           <td style={{ padding: '11px 14px' }}><span style={{ fontSize: '13px', color: '#374151' }}>{r.emp.department ?? '—'}</span></td>
                           <td style={{ padding: '11px 14px' }}><span style={{ padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, backgroundColor: '#fff7ed', color: '#ea580c' }}>Pending</span></td>
@@ -255,7 +258,7 @@ export default function FinancePayrollPage() {
               </div>
             )}
             {noPayableDays.length > 0 && (
-              <div style={{ marginTop: '12px', padding: '11px 14px', borderRadius: '8px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: '12px' }}>
+              <div style={{ marginTop: '12px', padding: '11px 14px', borderRadius: '8px', backgroundColor: '#f0fdfa', border: '1px solid #b7e0dc', color: '#0d4a47', fontSize: '12px' }}>
                 {noPayableDays.map((r) => `${r.emp.user.name} (${r.emp.employeeId})`).join(', ')} joined after this payroll period. Select the employee&apos;s joining month or a later period.
               </div>
             )}
@@ -295,9 +298,9 @@ export default function FinancePayrollPage() {
                 <tfoot>
                   <tr style={{ backgroundColor: '#f8fafc' }}>
                     <td style={{ padding: '10px 14px', fontSize: '12px', fontWeight: 700, color: '#374151' }}>Total</td>
-                    <td style={{ padding: '10px 14px', fontSize: '12px', fontWeight: 700, color: '#2563eb' }}>{selected.reduce((s, r) => s + r.daysPresent, 0)}</td>
-                    <td style={{ padding: '10px 14px', fontSize: '12px', fontWeight: 700, color: '#2563eb' }}>{selected.reduce((s, r) => s + r.leaves, 0)}</td>
-                    <td style={{ padding: '10px 14px', fontSize: '12px', fontWeight: 700, color: '#2563eb' }}>{selected.reduce((s, r) => s + r.ot, 0)}</td>
+                    <td style={{ padding: '10px 14px', fontSize: '12px', fontWeight: 700, color: '#0d7470' }}>{selected.reduce((s, r) => s + r.daysPresent, 0)}</td>
+                    <td style={{ padding: '10px 14px', fontSize: '12px', fontWeight: 700, color: '#0d7470' }}>{selected.reduce((s, r) => s + r.leaves, 0)}</td>
+                    <td style={{ padding: '10px 14px', fontSize: '12px', fontWeight: 700, color: '#0d7470' }}>{selected.reduce((s, r) => s + r.ot, 0)}</td>
                     <td style={{ padding: '10px 14px', fontSize: '12px', fontWeight: 700, color: '#ea580c' }}>{selected.filter((r) => r.leaves > 2).length} pending</td>
                   </tr>
                 </tfoot>
@@ -336,7 +339,7 @@ export default function FinancePayrollPage() {
                         <td style={{ padding: '11px 14px' }}><span style={{ fontSize: '13px', color: '#16a34a', fontWeight: 600 }}>+{fmtPay(Math.round(allowance))}</span></td>
                         <td style={{ padding: '11px 14px' }}><span style={{ fontSize: '13px', color: '#dc2626', fontWeight: 600 }}>-{fmtPay(Math.round(deduction))}</span></td>
                         <td style={{ padding: '11px 14px' }}><span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{fmtPay(Math.round(net))}</span></td>
-                        <td style={{ padding: '11px 14px' }}><button onClick={() => setCalculationRow(r)} style={{ fontSize: '12px', color: '#2563eb', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>View breakdown →</button></td>
+                        <td style={{ padding: '11px 14px' }}><button onClick={() => setCalculationRow(r)} style={{ fontSize: '12px', color: '#0d7470', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>View breakdown →</button></td>
                       </tr>
                     );
                   })}
@@ -393,7 +396,7 @@ export default function FinancePayrollPage() {
               </div>
               <div style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', textAlign: 'center' }}>
                 <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Total Amount</p>
-                <p style={{ fontSize: '17px', fontWeight: 800, color: '#2563eb', marginTop: '4px' }}>{fmtPay(Math.round(totalNet - holdAmt))}</p>
+                <p style={{ fontSize: '17px', fontWeight: 800, color: '#0d7470', marginTop: '4px' }}>{fmtPay(Math.round(totalNet - holdAmt))}</p>
               </div>
               <div style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#fff7ed', border: '1px solid #fed7aa', textAlign: 'center' }}>
                 <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Holding</p>

@@ -9,19 +9,21 @@ import { extractError } from '../../utils/errorUtils';
 import { useCaUsers } from '../../hooks/queries/useCaQueries';
 import { useCreateCaUser, useUpdateCaUser } from '../../hooks/mutations/useCaMutations';
 import LegacyDrawer from '../../components/ui/LegacyDrawer';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 const ROLES = ['HR', 'MANAGER', 'SUPERVISOR', 'FINANCE', 'COMPANY_ADMIN'];
 
+// Role chips stay inside the brand family (teal tints) with one warm accent for Finance, so the page matches the rest of Vook.
 const ROLE_COLORS: Record<string, { bg: string; color: string }> = {
-  HR:            { bg: '#f0fdfa', color: '#0d7470' },
-  MANAGER:       { bg: '#eff6ff', color: '#2563eb' },
-  SUPERVISOR:    { bg: '#ede9fe', color: '#7c3aed' },
-  FINANCE:       { bg: '#fff7ed', color: '#ea580c' },
-  EMPLOYEE:      { bg: '#f0fdf4', color: '#16a34a' },
-  COMPANY_ADMIN: { bg: '#eef2ff', color: '#6366f1' },
+  COMPANY_ADMIN: { bg: '#0d4a47', color: '#ffffff' },
+  HR:            { bg: '#dff3f1', color: '#0d4a47' },
+  MANAGER:       { bg: '#e6f0ef', color: '#2f6f6b' },
+  SUPERVISOR:    { bg: '#eef3f3', color: '#4b6563' },
+  FINANCE:       { bg: '#fdf3e1', color: '#8a5a00' },
+  EMPLOYEE:      { bg: '#f0fdfa', color: '#0d7470' },
 };
 
-const avatarColors = ['#6366f1', '#0d7470', '#7c3aed', '#ea580c', '#2563eb', '#16a34a'];
+const avatarColors = ['#0d7470', '#0d4a47', '#2f8f8a', '#4aa8a2', '#1f6f6b', '#5b8f8c'];
 const getColor = (n?: string) => avatarColors[(n ?? 'U').charCodeAt(0) % avatarColors.length]!;
 const ini = (n: string) => n.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -111,10 +113,10 @@ export default function CAUsersPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>User Access</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>User access</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage all users in your company — assign roles, activate or deactivate accounts</p>
         </div>
-        <button onClick={() => setShowAdd(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', backgroundColor: '#6366f1', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+        <button onClick={() => setShowAdd(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', backgroundColor: '#0d7470', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
           <Plus size={14} /> Add admin account
         </button>
       </div>
@@ -128,7 +130,7 @@ export default function CAUsersPage() {
           </div>
           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
             {['ALL', ...ROLES].map((r) => (
-              <button key={r} onClick={() => handleRoleFilter(r)} style={{ padding: '5px 11px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: 600, fontFamily: 'Inter, sans-serif', backgroundColor: roleFilter === r ? '#6366f1' : '#f1f5f9', color: roleFilter === r ? 'white' : '#64748b', whiteSpace: 'nowrap' }}>
+              <button key={r} onClick={() => handleRoleFilter(r)} style={{ padding: '5px 11px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: 600, fontFamily: 'Inter, sans-serif', backgroundColor: roleFilter === r ? '#0d7470' : '#f1f5f9', color: roleFilter === r ? 'white' : '#64748b', whiteSpace: 'nowrap' }}>
                 {r === 'ALL' ? 'All Roles' : r.replace('_', ' ')}
               </button>
             ))}
@@ -136,7 +138,7 @@ export default function CAUsersPage() {
         </div>
 
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} color="#6366f1" /></div>
+          <TableSkeleton />
         ) : (
           <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -176,7 +178,7 @@ export default function CAUsersPage() {
                         <button
                           onClick={() => { setEditModalUser(u); setEditForm({ role: u.role, isActive: u.isActive }); }}
                           title="Edit user"
-                          style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6366f1' }}
+                          style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#0d7470' }}
                         >
                           <Edit2 size={12} />
                         </button>
@@ -218,11 +220,11 @@ export default function CAUsersPage() {
                   {ROLES.map((r) => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
                 </select>
               </div>
-              <div style={{ padding: '10px 12px', borderRadius: 8, background: '#eff8ff', color: '#145d84', fontSize: 12 }}>A 48-hour invitation will be emailed. The user verifies their address and creates their own password.</div>
+              <div style={{ padding: '10px 12px', borderRadius: 8, background: '#f0fdfa', color: '#0d4a47', fontSize: 12 }}>A 48-hour invitation will be emailed. The user verifies their address and creates their own password.</div>
             </div>
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
               <button onClick={() => { setShowAdd(false); setFormError(''); }} style={{ flex: 1, padding: '10px', border: '1.5px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', color: '#374151', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Cancel</button>
-              <button onClick={handleAdd} disabled={createUser.isPending} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: '8px', backgroundColor: createUser.isPending ? '#a5b4fc' : '#6366f1', color: 'white', fontSize: '13px', fontWeight: 600, cursor: createUser.isPending ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <button onClick={handleAdd} disabled={createUser.isPending} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: '8px', backgroundColor: createUser.isPending ? '#8cc4c1' : '#0d7470', color: 'white', fontSize: '13px', fontWeight: 600, cursor: createUser.isPending ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                 {createUser.isPending ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Creating...</> : 'Create User'}
               </button>
             </div>
@@ -287,7 +289,7 @@ export default function CAUsersPage() {
             {/* Footer */}
             <div style={{ padding: '0 24px 24px', display: 'flex', gap: '10px' }}>
               <button onClick={() => setEditModalUser(null)} style={{ flex: 1, padding: '10px', border: '1.5px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', color: '#374151', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Cancel</button>
-              <button onClick={handleEditSave} disabled={updateUser.isPending} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: '8px', backgroundColor: updateUser.isPending ? '#a5b4fc' : '#6366f1', color: 'white', fontSize: '13px', fontWeight: 600, cursor: updateUser.isPending ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              <button onClick={handleEditSave} disabled={updateUser.isPending} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: '8px', backgroundColor: updateUser.isPending ? '#8cc4c1' : '#0d7470', color: 'white', fontSize: '13px', fontWeight: 600, cursor: updateUser.isPending ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                 {updateUser.isPending ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Saving...</> : 'Save Changes'}
               </button>
             </div>
@@ -320,7 +322,7 @@ export default function CAUsersPage() {
               ))}
             </div>
             <div style={{ padding: '0 24px 24px' }}>
-              <button onClick={() => setCredentials(null)} style={{ width: '100%', padding: '11px', backgroundColor: '#6366f1', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Done</button>
+              <button onClick={() => setCredentials(null)} style={{ width: '100%', padding: '11px', backgroundColor: '#0d7470', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>Done</button>
             </div>
           </div>
         </LegacyDrawer>

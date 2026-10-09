@@ -2,14 +2,14 @@ import type { PlanData } from '../api/subscriptions';
 
 // Palette indexed by price rank (cheapest = 0). Grows as needed.
 const PALETTE: { bg: string; color: string; border: string }[] = [
-  { bg: '#f1f5f9', color: '#475569', border: '#e2e8f0' }, // gray  – cheapest
-  { bg: '#dbeafe', color: '#1d4ed8', border: '#bfdbfe' }, // blue
-  { bg: '#ede9fe', color: '#6d28d9', border: '#ddd6fe' }, // purple
+  { bg: '#f1f5f9', color: '#475569', border: '#e2e8f0' }, // slate – cheapest
+  { bg: '#dff3f1', color: '#0d4a47', border: '#b7e0dc' }, // brand teal
   { bg: '#fef9c3', color: '#854d0e', border: '#fde68a' }, // amber
+  { bg: '#0d4a47', color: '#ffffff', border: '#0d4a47' }, // deep teal
   { bg: '#dcfce7', color: '#166534', border: '#bbf7d0' }, // green
   { bg: '#ffedd5', color: '#9a3412', border: '#fed7aa' }, // orange
-  { bg: '#fce7f3', color: '#9d174d', border: '#fbcfe8' }, // pink
-  { bg: '#e0f2fe', color: '#075985', border: '#bae6fd' }, // sky
+  { bg: '#fce7f3', color: '#9d174d', border: '#fbcfe8' }, // rose
+  { bg: '#e6f4f1', color: '#2f6f6b', border: '#b7e0dc' }, // soft teal
 ];
 
 export interface PlanBadge {

@@ -9,6 +9,7 @@ import {
   ChevronDown, Loader2,
   BookOpen,
 } from 'lucide-react';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -23,13 +24,13 @@ const MODULE_ICON: Record<string, React.ComponentType<{ size?: number; color?: s
 };
 
 const MODULE_COLOR: Record<string, string> = {
-  'Employee Management': '#3b82f6',
+  'Employee Management': '#0d7470',
   'Attendance': '#f59e0b',
-  'Shift Management': '#8b5cf6',
+  'Shift Management': '#2f8f8a',
   'Payroll': '#10b981',
-  'Leave Management': '#ec4899',
-  'Expense Management': '#0ea5e9',
-  'Reports & Analytics': '#6366f1',
+  'Leave Management': '#b45309',
+  'Expense Management': '#2f8f8a',
+  'Reports & Analytics': '#0d7470',
 };
 
 const ROLES = ['COMPANY_ADMIN', 'HR', 'MANAGER', 'SUPERVISOR', 'FINANCE', 'EMPLOYEE'];
@@ -148,10 +149,7 @@ function ModuleAccessTab() {
       </div>
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}>
-          <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
-          <span style={{ fontSize: '14px' }}>Loading modules...</span>
-        </div>
+        <TableSkeleton />
       ) : (
         Object.entries(groupedModules).map(([groupName, groupMods]) => {
           if (!groupMods.length) return null;
@@ -232,9 +230,7 @@ function ModuleCatalogueTab() {
 
       {/* Table */}
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-          <Loader2 size={20} color="#94a3b8" style={{ animation: 'spin 1s linear infinite' }} />
-        </div>
+        <TableSkeleton />
       ) : (
         <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -308,7 +304,7 @@ function RolePermissionsTab() {
   };
 
   const roleAvatarColor = (role: string) => {
-    const colors = ['#6366f1', '#10b981', '#f59e0b', '#3b82f6', '#ec4899'];
+    const colors = ['#0d7470', '#0d4a47', '#f59e0b', '#4aa8a2', '#b45309'];
     return colors[ROLES.indexOf(role) % colors.length]!;
   };
 
@@ -388,7 +384,7 @@ export default function ModulesPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Modules & Access</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Modules & Access</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Control what each company can use and who can access what</p>
         </div>
         {/* Tab switcher */}

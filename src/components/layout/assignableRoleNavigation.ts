@@ -5,6 +5,7 @@ import {
   Clock,
   CreditCard,
   FileText,
+  Fingerprint,
   FolderOpen,
   Receipt,
   Users,
@@ -38,6 +39,7 @@ export function assignableRoleGroups(basePath: string, paths: AssignableRolePath
       entries: [
         { to: path('workforce', 'workforce'), label: 'Employee management', Icon: Users },
         { to: path('attendance', 'attendance'), label: 'Attendance', Icon: Clock },
+        ...(basePath === '/hr' ? [{ to: '/hr/devices', label: 'Attendance devices', Icon: Fingerprint }] : []),
         { to: path('shifts', 'shifts'), label: 'Shift management', Icon: CalendarDays },
         { to: path('leaves', 'leaves'), label: 'Leave management', Icon: CalendarDays },
         { to: path('calendar', 'calendar'), label: 'Holiday calendar', Icon: CalendarDays },

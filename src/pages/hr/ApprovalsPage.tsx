@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { type Approval } from '../../api/hr';
-import { Search, CheckCircle2, XCircle, AlertTriangle, Clock, Loader2, X } from 'lucide-react';
+import { Search, CheckCircle2, XCircle, AlertTriangle, Clock, X } from 'lucide-react';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import PaginationBar from '../../components/data/Pagination';
 import { extractError } from '../../utils/errorUtils';
@@ -11,6 +11,7 @@ import { useApprovals } from '../../hooks/queries/useHrQueries';
 import { useUpdateApproval } from '../../hooks/mutations/useHrMutations';
 import LegacyDrawer from '../../components/ui/LegacyDrawer';
 import { useAccess } from '../../hooks/queries/useAccess';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 const TYPES = ['Leave', 'Expense', 'Attendance Corrections', 'Overtime', 'Shift Change Request'];
 const PRIORITY_COLOR: Record<string, { bg: string; color: string }> = {
@@ -21,9 +22,9 @@ const PRIORITY_COLOR: Record<string, { bg: string; color: string }> = {
 };
 
 const avatarColors = [
-  { bg: '#eef2ff', color: '#6366f1' }, { bg: '#f0fdf4', color: '#10b981' },
-  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fdf4ff', color: '#ec4899' },
-  { bg: '#f0f9ff', color: '#0ea5e9' },
+  { bg: '#f0fdfa', color: '#0d7470' }, { bg: '#f0fdf4', color: '#10b981' },
+  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fff7ed', color: '#b45309' },
+  { bg: '#e6f4f1', color: '#2f8f8a' },
 ];
 const getAv = (name?: string) => avatarColors[(name ?? 'H').charCodeAt(0) % avatarColors.length]!;
 const initials = (name?: string) => (name ?? 'User').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
@@ -83,7 +84,7 @@ export default function ApprovalsPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div>
-        <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Approvals</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Approvals</h1>
         <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage and monitor all approval requests</p>
       </div>
 
@@ -121,7 +122,7 @@ export default function ApprovalsPage() {
         </div>
 
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /><span style={{ fontSize: '14px' }}>Loading...</span></div>
+          <TableSkeleton />
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>

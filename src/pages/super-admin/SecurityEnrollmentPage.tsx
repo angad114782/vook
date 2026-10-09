@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { accountApi } from '../../api/account';
 import { useAuthStore } from '../../store/authStore';
+import { FormSkeleton } from '../../components/ui/Skeleton';
 
 type Status = { enabled: boolean; required: boolean; enrollmentDeadline?: string };
 type Setup = { secret: string; otpauthUri: string };
@@ -46,7 +47,7 @@ export default function SecurityEnrollmentPage() {
     <div className="admin-page">
       <header className="admin-page__header"><div><h1>Secure your account</h1><p>Super Admin accounts require an authenticator code in addition to a password.</p></div><div className="health-chip"><ShieldCheck size={15} /> Required protection</div></header>
       <section className="admin-card security-enrollment-card">
-        {!status ? <div className="empty-state"><Loader2 size={20} /> Loading security status…</div> : status.enabled ? (
+        {!status ? <FormSkeleton fields={2} label="Loading security status" /> : status.enabled ? (
           <div><h2>Two-factor authentication is active</h2><p>Your account is protected. You can continue to the dashboard.</p><button className="admin-button admin-button--primary" onClick={() => navigate('/dashboard')}>Open dashboard</button></div>
         ) : !setup ? (
           <div>

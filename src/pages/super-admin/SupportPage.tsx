@@ -1,3 +1,4 @@
+import LookupSelect from '../../components/ui/LookupSelect';
 import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -28,6 +29,7 @@ import LegacyDrawer from "../../components/ui/LegacyDrawer";
 import { useSaSupport } from "../../hooks/queries/useSaQueries";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import { extractError } from "../../utils/errorUtils";
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 // ── badge configs ──────────────────────────────────────────────────────────────
 
@@ -36,7 +38,7 @@ const STATUS_META: Record<
   { label: string; bg: string; color: string }
 > = {
   PENDING: { label: "Open", bg: "#fef9c3", color: "#854d0e" },
-  IN_PROGRESS: { label: "In Progress", bg: "#dbeafe", color: "#1d4ed8" },
+  IN_PROGRESS: { label: "In Progress", bg: "#dff3f1", color: "#0d4a47" },
   RESOLVED: { label: "Resolved", bg: "#dcfce7", color: "#15803d" },
   CLOSED: { label: "Closed", bg: "#f1f5f9", color: "#475569" },
 };
@@ -50,17 +52,6 @@ const PRIORITY_META: Record<
   HIGH: { label: "High", bg: "#fff7ed", color: "#c2410c" },
   CRITICAL: { label: "Critical", bg: "#fef2f2", color: "#b91c1c" },
 };
-
-const CATEGORIES = [
-  "Attendance Issue",
-  "Employee Management",
-  "Leave Management",
-  "Payroll",
-  "Documents & Policies",
-  "Access & Permissions",
-  "Technical Issue",
-  "Others",
-];
 
 const KNOWLEDGE_BASE = [
   {
@@ -82,38 +73,38 @@ const KNOWLEDGE_BASE = [
     category: "Payroll",
     views: "530 views",
     icon: BarChart3,
-    color: "#6366f1",
+    color: "#0d7470",
   },
   {
     title: "Managing employee roles and permissions",
     category: "Access & Permissions",
     views: "920 views",
     icon: Shield,
-    color: "#3b82f6",
+    color: "#0d7470",
   },
   {
     title: "Bulk employee data import guide",
     category: "Employee Management",
     views: "234 views",
     icon: Users,
-    color: "#ec4899",
+    color: "#b45309",
   },
   {
     title: "Document upload and policy management",
     category: "Documents & Policies",
     views: "156 views",
     icon: Layers,
-    color: "#0ea5e9",
+    color: "#2f8f8a",
   },
 ];
 
 const avatarColors = [
-  { bg: "#eef2ff", color: "#6366f1" },
-  { bg: "#f5f3ff", color: "#8b5cf6" },
-  { bg: "#f0f9ff", color: "#0ea5e9" },
+  { bg: "#f0fdfa", color: "#0d7470" },
+  { bg: "#f0fdfa", color: "#2f8f8a" },
+  { bg: "#e6f4f1", color: "#2f8f8a" },
   { bg: "#f0fdf4", color: "#10b981" },
   { bg: "#fffbeb", color: "#f59e0b" },
-  { bg: "#fdf4ff", color: "#ec4899" },
+  { bg: "#fff7ed", color: "#b45309" },
 ];
 const getAv = (name?: string) =>
   avatarColors[(name ?? "S").charCodeAt(0) % avatarColors.length]!;
@@ -279,35 +270,7 @@ function NewTicketModal({
 
           <div>
             <label style={labelStyle}>Issue Category *</label>
-            <div style={{ position: "relative" }}>
-              <select
-                value={form.category}
-                onChange={(e) => set("category", e.target.value)}
-                style={{
-                  ...inputStyle,
-                  appearance: "none",
-                  paddingRight: "32px",
-                }}
-              >
-                <option value="">Select category</option>
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                size={14}
-                style={{
-                  position: "absolute",
-                  right: "10px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: "#94a3b8",
-                  pointerEvents: "none",
-                }}
-              />
-            </div>
+            <LookupSelect type="SUPPORT_CATEGORY" value={form.category} onChange={(v) => set("category", v)} entityLabel="category" placeholder="Select category" />
           </div>
 
           <div>
@@ -651,21 +614,7 @@ function TicketsTab() {
 
         {/* Table */}
         {loading ? (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              padding: "60px",
-              gap: "10px",
-              color: "#64748b",
-            }}
-          >
-            <Loader2
-              size={20}
-              style={{ animation: "spin 1s linear infinite" }}
-            />
-            <span style={{ fontSize: "14px" }}>Loading tickets...</span>
-          </div>
+          <TableSkeleton />
         ) : tickets.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px" }}>
             <TicketCheck
@@ -1078,8 +1027,8 @@ export default function SupportPage() {
       label: "Total Tickets",
       value: stats.total,
       icon: TicketCheck,
-      bg: "#eff6ff",
-      color: "#3b82f6",
+      bg: "#f0fdfa",
+      color: "#0d7470",
     },
     {
       label: "Open",
@@ -1092,8 +1041,8 @@ export default function SupportPage() {
       label: "In Progress",
       value: stats.inProgress,
       icon: Clock,
-      bg: "#dbeafe",
-      color: "#1d4ed8",
+      bg: "#dff3f1",
+      color: "#0d4a47",
     },
     {
       label: "Resolved",
@@ -1115,7 +1064,7 @@ export default function SupportPage() {
         }}
       >
         <div>
-          <h1 style={{ fontSize: "20px", fontWeight: 700, color: "#0f172a" }}>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>
             Support & Issues
           </h1>
           <p style={{ fontSize: "13px", color: "#64748b", marginTop: "2px" }}>

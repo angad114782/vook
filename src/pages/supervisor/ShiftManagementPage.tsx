@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import LegacyDrawer from '../../components/ui/LegacyDrawer';
 import { useAccess } from '../../hooks/queries/useAccess';
 import { isMockMode } from '../../config/runtime';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 type ShiftTab = 'Shift Assignment' | 'Workforce Planning' | 'Shortage Alerts';
 const SHIFT_TABS: ShiftTab[] = ['Shift Assignment', 'Workforce Planning', 'Shortage Alerts'];
@@ -58,7 +59,7 @@ export default function ShiftManagementPage() {
   }, [form.date, department]);
 
   const { data: shiftData, isLoading: shiftsLoading } = useSupShifts(shiftsParams, !isMockMode);
-  const { data: empData, isLoading: workforceLoading } = useSupWorkforce({ limit: '200' });
+  const { data: empData, isLoading: workforceLoading } = useSupWorkforce({ limit: '200' }, access.can('EMPLOYEE_MANAGEMENT.VIEW')); // people without the employee directory (e.g. employees) only see their own shift
 
   const fallbackShiftData = useMemo(() => {
     if (!isMockMode) return undefined;
@@ -141,7 +142,7 @@ export default function ShiftManagementPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Shift Management</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Shift Management</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage shift assignments and workforce planning</p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -193,7 +194,7 @@ export default function ShiftManagementPage() {
               <div key={label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>{label}</p>
-                  {badge && <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: badge === 'green' ? '#16a34a' : badge === 'yellow' ? '#f59e0b' : '#3b82f6' }} />}
+                  {badge && <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: badge === 'green' ? '#16a34a' : badge === 'yellow' ? '#f59e0b' : '#0d7470' }} />}
                 </div>
                 <p style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>{value}</p>
                 <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{sub}</p>
@@ -203,12 +204,12 @@ export default function ShiftManagementPage() {
 
           {/* Shift cards */}
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '50px' }}><Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} color="#0d7470" /></div>
+            <TableSkeleton />
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
               <ShiftCard label="Morning Shift  06:00 - 14:00" color="#0d7470" employees={shifts.Morning} />
               <ShiftCard label="Evening Shift  14:00 - 22:00" color="#f59e0b" employees={shifts.Evening} />
-              <ShiftCard label="Night Shift    22:00 - 06:00" color="#6366f1" employees={shifts.Night} />
+              <ShiftCard label="Night Shift    22:00 - 06:00" color="#0d7470" employees={shifts.Night} />
             </div>
           )}
 
@@ -277,7 +278,7 @@ export default function ShiftManagementPage() {
               { label: 'Total Plans', value: String(plans.length), color: '#374151', sub: 'Active planning rows' },
               { label: 'Understaffed', value: String(shortages.length), color: '#dc2626', sub: 'Need workers' },
               { label: 'Fully Staffed', value: String(plans.filter((p) => p.shortage === 0).length), color: '#16a34a', sub: 'Requirement met' },
-              { label: 'Critical', value: String(shortages.filter((s) => s.severity === 'critical').length), color: '#7c3aed', sub: 'High shortage' },
+              { label: 'Critical', value: String(shortages.filter((s) => s.severity === 'critical').length), color: '#2f8f8a', sub: 'High shortage' },
             ].map(({ label, value, color, sub }) => (
               <div key={label} className="responsive-stat-card" style={{ backgroundColor: 'white', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '14px 18px' }}>
                 <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>{label}</p>

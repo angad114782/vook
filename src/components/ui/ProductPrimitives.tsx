@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
-import { AlertCircle, CheckCircle2, Inbox, Loader2, RefreshCw } from 'lucide-react';
+import { PageSkeleton } from './Skeleton';
+import { statusLabel } from '../../utils/friendly';
+import { AlertCircle, CheckCircle2, Inbox, RefreshCw } from 'lucide-react';
 
 export function PageHeader({ eyebrow, title, description, actions }: { eyebrow?: string; title: string; description?: string; actions?: ReactNode }) {
   return <header className="product-page-header">
@@ -14,7 +16,7 @@ export function PageHeader({ eyebrow, title, description, actions }: { eyebrow?:
 
 export function StatusBadge({ status, children }: { status: string; children?: ReactNode }) {
   const normalized = status.toUpperCase().replaceAll(' ', '_');
-  return <span className="product-status" data-tone={statusTone(normalized)}><span aria-hidden="true" />{children ?? titleCase(status)}</span>;
+  return <span className="product-status" data-tone={statusTone(normalized)}><span aria-hidden="true" />{children ?? statusLabel(status)}</span>;
 }
 
 function statusTone(status: string) {
@@ -24,12 +26,9 @@ function statusTone(status: string) {
   return 'neutral';
 }
 
-function titleCase(value: string) {
-  return value.toLowerCase().replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
+/** Slow data shows a shimmering placeholder shaped like the page, never a bare spinner. */
 export function LoadingState({ label = 'Loading…' }: { label?: string }) {
-  return <div className="product-state" role="status"><Loader2 className="spin" size={22} aria-hidden="true" /><strong>{label}</strong></div>;
+  return <PageSkeleton cards={0} rows={5} label={label} />;
 }
 
 export function EmptyState({ title, description, action }: { title: string; description: string; action?: ReactNode }) {

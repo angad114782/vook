@@ -30,7 +30,7 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
     <button
       onClick={onToggle}
-      style={{ width: '44px', height: '24px', borderRadius: '12px', border: 'none', backgroundColor: on ? '#2563eb' : '#cbd5e1', cursor: 'pointer', position: 'relative', transition: 'background-color 0.2s', flexShrink: 0 }}
+      style={{ width: '44px', height: '24px', borderRadius: '12px', border: 'none', backgroundColor: on ? '#0d7470' : '#cbd5e1', cursor: 'pointer', position: 'relative', transition: 'background-color 0.2s', flexShrink: 0 }}
     >
       <div style={{ position: 'absolute', top: '3px', left: on ? '22px' : '3px', width: '18px', height: '18px', borderRadius: '50%', backgroundColor: 'white', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
     </button>
@@ -75,10 +75,10 @@ export default function CACompliancePage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Statutory Configuration</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Statutory Configuration</h1>
           <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Select the parameters for this payroll cycle.</p>
         </div>
-        <button onClick={handleSave} style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 18px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '9px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+        <button onClick={handleSave} style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 18px', backgroundColor: '#0d7470', color: 'white', border: 'none', borderRadius: '9px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
           💾 Save Changes
         </button>
       </div>
@@ -190,9 +190,9 @@ export default function CACompliancePage() {
                 </p>
               </div>
               <div style={{ display: 'flex', gap: '16px' }}>
-                <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#2563eb', fontWeight: 600, fontFamily: 'Inter, sans-serif', padding: 0 }}>View Tax Slabs</button>
+                <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#0d7470', fontWeight: 600, fontFamily: 'Inter, sans-serif', padding: 0 }}>View Tax Slabs</button>
                 <span style={{ color: '#e2e8f0' }}>•</span>
-                <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#2563eb', fontWeight: 600, fontFamily: 'Inter, sans-serif', padding: 0 }}>Manage Exemptions</button>
+                <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#0d7470', fontWeight: 600, fontFamily: 'Inter, sans-serif', padding: 0 }}>Manage Exemptions</button>
               </div>
             </>
           )}

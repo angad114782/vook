@@ -10,6 +10,9 @@ import { toast } from "sonner";
 import { organizationApi } from "../../api/organization";
 import { caApi } from "../../api/companyAdmin";
 import AppDrawer from "../../components/ui/AppDrawer";
+import CreatableSelect from "../../components/ui/CreatableSelect";
+import { useAccess } from "../../hooks/queries/useAccess";
+import { makeOrgCode } from "../../utils/orgCode";
 
 type Department = {
   id: string;
@@ -35,6 +38,7 @@ export default function CADepartmentsPage({
   section?: OrganizationSection;
 }) {
   const client = useQueryClient();
+  const { can } = useAccess();
   const departments = useQuery({
     queryKey: ["ca", "departments", "organization"],
     queryFn: () =>
@@ -383,28 +387,23 @@ export default function CADepartmentsPage({
                     }
                   />
                 </label>
-                <label className="admin-label">
+                <div className="admin-label">
                   Department
-                  <select
-                    className="admin-input"
+                  <CreatableSelect
                     value={designationForm.departmentId}
-                    onChange={(e) =>
-                      setDesignationForm({
-                        ...designationForm,
-                        departmentId: e.target.value,
-                      })
-                    }
-                  >
-                    <option value="">Any department</option>
-                    {departments.data
-                      ?.filter((item) => item.isActive)
-                      .map((item) => (
-                        <option value={item.id} key={item.id}>
-                          {item.name}
-                        </option>
-                      ))}
-                  </select>
-                </label>
+                    onChange={(v) => setDesignationForm({ ...designationForm, departmentId: v })}
+                    options={(departments.data ?? []).filter((item) => item.isActive).map((item) => ({ value: item.id, label: item.name }))}
+                    loading={departments.isLoading}
+                    entityLabel="department"
+                    placeholder="Any department"
+                    onCreate={can("ORGANIZATION.CREATE") ? async (name) => {
+                      const row = (await organizationApi.createDepartment({ name, code: makeOrgCode(name, (departments.data ?? []).map((d) => d.code)) })).data as { id?: string; _id?: string; name: string };
+                      await invalidate();
+                      return { value: String(row.id ?? row._id), label: row.name };
+                    } : undefined}
+                    onDelete={can("ORGANIZATION.EDIT") ? async (id) => { await caApi.deleteDepartment(id); await invalidate(); } : undefined}
+                  />
+                </div>
               </>
             ) : null}
           </div>

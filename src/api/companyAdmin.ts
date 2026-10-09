@@ -86,6 +86,7 @@ export const caApi = {
     return api.get<CADept[]>('/company-admin/departments', { params: cid ? { companyId: cid } : undefined });
   },
   createDepartment: (d: { name: string; code: string }) => api.post<CADept>('/company-admin/departments', d),
+  deleteDepartment: (id: string) => api.delete(`/company-admin/departments/${id}`),
   updateDepartment: (id: string, d: { name?: string; isActive?: boolean }) => api.patch<CADept>(`/company-admin/departments/${id}`, d),
   provisionEmployeeAccount: (id: string, d: { email?: string; role?: string }) => api.post(`/company-admin/employees/${id}/account`, d),
   getCompany:     () => {

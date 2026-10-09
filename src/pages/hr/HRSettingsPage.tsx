@@ -5,6 +5,7 @@ import { useAuthStore } from '../../store/authStore';
 import { accountApi } from '../../api/account';
 import { extractError } from '../../utils/errorUtils';
 import { hrApi } from '../../api/hr';
+import { FormSkeleton } from '../../components/ui/Skeleton';
 
 type Tab = 'profile' | 'notifications' | 'security' | 'attendance';
 
@@ -60,7 +61,7 @@ export default function HRSettingsPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div>
-        <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Settings</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Settings</h1>
         <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage your account preferences and security</p>
       </div>
 
@@ -142,7 +143,7 @@ export default function HRSettingsPage() {
         <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '22px' }}>
           <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Attendance Policy</h3>
           <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '20px' }}>Configure the company defaults used for late arrival and overtime calculations.</p>
-          {policyLoading ? <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /> : <>
+          {policyLoading ? <FormSkeleton fields={4} label="Loading attendance policy" /> : <>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div><label style={labelStyle}>Standard start</label><input type="time" value={attendancePolicy.standardStart} onChange={(e) => setAttendancePolicy((p) => ({ ...p, standardStart: e.target.value }))} style={inputStyle} /></div>
               <div><label style={labelStyle}>Standard end</label><input type="time" value={attendancePolicy.standardEnd} onChange={(e) => setAttendancePolicy((p) => ({ ...p, standardEnd: e.target.value }))} style={inputStyle} /></div>

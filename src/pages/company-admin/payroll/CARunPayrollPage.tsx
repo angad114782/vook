@@ -12,19 +12,19 @@ const YEARS = [CURRENT_YEAR - 2, CURRENT_YEAR - 1, CURRENT_YEAR, CURRENT_YEAR + 
 function StepCircle({ n, label, active, done }: { n: number; label: string; active: boolean; done: boolean }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-      <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: `2px solid ${done || active ? '#2563eb' : '#e2e8f0'}`, backgroundColor: done ? '#2563eb' : active ? 'white' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: `2px solid ${done || active ? '#0d7470' : '#e2e8f0'}`, backgroundColor: done ? '#0d7470' : active ? 'white' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {done
-          ? <CheckCircle2 size={18} color="white" fill="#2563eb" />
-          : <span style={{ fontSize: '13px', fontWeight: 700, color: active ? '#2563eb' : '#94a3b8' }}>{n}</span>
+          ? <CheckCircle2 size={18} color="white" fill="#0d7470" />
+          : <span style={{ fontSize: '13px', fontWeight: 700, color: active ? '#0d7470' : '#94a3b8' }}>{n}</span>
         }
       </div>
-      <span style={{ fontSize: '10px', fontWeight: active ? 700 : 500, color: active ? '#2563eb' : '#94a3b8', whiteSpace: 'nowrap' }}>{label}</span>
+      <span style={{ fontSize: '10px', fontWeight: active ? 700 : 500, color: active ? '#0d7470' : '#94a3b8', whiteSpace: 'nowrap' }}>{label}</span>
     </div>
   );
 }
 
 function StepLine({ done }: { done: boolean }) {
-  return <div style={{ flex: 1, height: '2px', backgroundColor: done ? '#2563eb' : '#e2e8f0', marginBottom: '18px' }} />;
+  return <div style={{ flex: 1, height: '2px', backgroundColor: done ? '#0d7470' : '#e2e8f0', marginBottom: '18px' }} />;
 }
 
 export default function CARunPayrollPage() {
@@ -92,7 +92,7 @@ export default function CARunPayrollPage() {
           <div style={{ display: 'flex', gap: '10px', marginTop: '28px' }}>
             <button
               onClick={() => navigate('/company-admin/payroll/payslips')}
-              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', backgroundColor: '#0d7470', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
             >
               <Download size={15} /> Generate Payslips
             </button>
@@ -111,7 +111,7 @@ export default function CARunPayrollPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div>
-        <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Configure Payroll Run</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Configure Payroll Run</h1>
         <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Select the parameters for this payroll cycle.</p>
       </div>
 

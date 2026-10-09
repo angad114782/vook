@@ -2,10 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { hrApi } from '../../api/hr';
 import { qk } from '../../lib/queryKeys';
 
-export const useSupWorkforce = (params?: Record<string, string>) =>
+export const useSupWorkforce = (params?: Record<string, string>, enabled = true) =>
   useQuery({
     queryKey: qk.sup.workforce(params),
     queryFn: () => hrApi.getEmployees(params).then((r) => r.data),
+    enabled,
   });
 
 /** Returns summary stats + department breakdown (hrApi.getAttendance) */

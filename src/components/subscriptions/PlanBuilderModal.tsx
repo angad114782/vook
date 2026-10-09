@@ -7,6 +7,7 @@ import {
 } from "../../api/subscriptions";
 import { extractError } from "../../utils/errorUtils";
 import AppDrawer from "../ui/AppDrawer";
+import { ListSkeleton } from '../ui/Skeleton';
 
 type Props = {
   plan?: PlanData | null;
@@ -249,9 +250,7 @@ export default function PlanBuilderModal({ plan, onClose, onSave }: Props) {
               />
             </div>
             {loadingCatalog ? (
-              <div className="admin-loading">
-                <Loader2 className="spin" size={18} /> Loading module catalogue…
-              </div>
+              <ListSkeleton rows={5} label="Loading module catalogue" />
             ) : (
               <div className="plan-module-groups">
                 {groups.map(([category, modules]) => (

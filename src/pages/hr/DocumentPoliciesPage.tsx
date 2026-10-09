@@ -1,3 +1,5 @@
+import LookupSelect from '../../components/ui/LookupSelect';
+import { useLookup } from '../../hooks/useLookup';
 import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState, useRef } from 'react';
 import { toast } from 'sonner';
@@ -10,12 +12,12 @@ import { useDocuments } from '../../hooks/queries/useHrQueries';
 import { useCreateDocument, useDeleteDocument } from '../../hooks/mutations/useHrMutations';
 import LegacyDrawer from '../../components/ui/LegacyDrawer';
 import { useAccess } from '../../hooks/queries/useAccess';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
-const CATEGORIES = ['Safety', 'HR Policy', 'Compliance', 'IT Policy', 'Finance'];
 const CAT_COLOR: Record<string, { bg: string; color: string }> = {
   Safety:    { bg: '#fef2f2', color: '#b91c1c' },
-  'HR Policy':{ bg: '#dbeafe', color: '#1d4ed8' },
-  Compliance:{ bg: '#ede9fe', color: '#6d28d9' },
+  'HR Policy':{ bg: '#dff3f1', color: '#0d4a47' },
+  Compliance:{ bg: '#e6f4f1', color: '#0d4a47' },
   'IT Policy':{ bg: '#dcfce7', color: '#15803d' },
   Finance:   { bg: '#fff7ed', color: '#c2410c' },
 };
@@ -104,13 +106,7 @@ function CreateDocModal({ onClose }: { onClose: () => void }) {
           <div><label style={labelStyle}>Document Name *</label><input value={form.name} onChange={(e) => set('name', e.target.value)} style={inputStyle} /></div>
           <div>
             <label style={labelStyle}>Category *</label>
-            <div style={{ position: 'relative' }}>
-              <select value={form.category} onChange={(e) => set('category', e.target.value)} style={{ ...inputStyle, appearance: 'none', paddingRight: '28px' }}>
-                <option value="">Select category</option>
-                {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-              </select>
-              <ChevronDown size={13} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
-            </div>
+            <LookupSelect type="DOCUMENT_CATEGORY" value={form.category} onChange={(v) => set('category', v)} entityLabel="category" placeholder="Select category" />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div><label style={labelStyle}>Version</label><input value={form.version} onChange={(e) => set('version', e.target.value)} style={inputStyle} /></div>
@@ -139,6 +135,7 @@ function CreateDocModal({ onClose }: { onClose: () => void }) {
 }
 
 export default function DocumentPoliciesPage() {
+  const categories = useLookup('DOCUMENT_CATEGORY');
   const access = useAccess();
   const canCreate = access.can('DOCUMENTS.CREATE');
   const canDelete = access.can('DOCUMENTS.DELETE');
@@ -188,7 +185,7 @@ export default function DocumentPoliciesPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Document & Policies</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Document & Policies</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage company documents, policies, and compliance files</p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -209,14 +206,14 @@ export default function DocumentPoliciesPage() {
           </div>
           <select value={categoryFilter} onChange={(e) => handleCategoryChange(e.target.value)} style={selectStyle}>
             <option value="ALL">All Categories</option>
-            {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+            {categories.items.map((c) => <option key={c}>{c}</option>)}
           </select>
           <select style={selectStyle}><option>All Visibility</option><option>All Employees</option><option>Management</option></select>
           <button onClick={() => { setSearch(''); handleCategoryChange('ALL'); }} style={{ padding: '7px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', backgroundColor: 'white', cursor: 'pointer', fontSize: '12px', color: '#374151', fontFamily: 'Inter, sans-serif' }}>Clear Filters</button>
         </div>
 
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /><span style={{ fontSize: '14px' }}>Loading...</span></div>
+          <TableSkeleton />
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -240,7 +237,7 @@ export default function DocumentPoliciesPage() {
                       <td style={{ padding: '13px 18px' }}><span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: cc.bg, color: cc.color }}>{d.category}</span></td>
                       <td style={{ padding: '13px 18px' }}><span style={{ fontSize: '13px', color: '#374151' }}>{d.uploadedBy}</span></td>
                       <td style={{ padding: '13px 18px' }}><span style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>{fmtDate(d.createdAt)}</span></td>
-                      <td style={{ padding: '13px 18px' }}><span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: '#dbeafe', color: '#1d4ed8' }}>{d.visibility}</span></td>
+                      <td style={{ padding: '13px 18px' }}><span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: '#dff3f1', color: '#0d4a47' }}>{d.visibility}</span></td>
                       <td style={{ padding: '13px 18px' }}>
                         <div style={{ display: 'flex', gap: '6px' }}>
                           <button onClick={() => void openDocument(d)} disabled={!d.fileUrl} style={{ opacity: d.fileUrl ? 1 : 0.4, width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: d.fileUrl ? 'pointer' : 'not-allowed', color: '#64748b' }} title="View document"><Eye size={13} /></button>

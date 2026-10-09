@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Download, Loader2 } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { useFinancePayrollReport, useFinanceAttendanceReport, useFinanceWorkforceReport } from '../../hooks/queries/useFinanceQueries';
 import { useAccess } from '../../hooks/queries/useAccess';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 type Tab = 'Payroll Report' | 'Attendance Inputs' | 'Workforce';
 const TABS: Tab[] = ['Payroll Report', 'Attendance Inputs', 'Workforce'];
@@ -75,23 +76,23 @@ export default function FinanceReportsPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Reports</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Reports</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Financial summaries and analytics across payroll, expenses, and costs</p>
         </div>
-        {canExport && <button onClick={exportReport} disabled={loading} style={{ padding: '8px 16px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: loading ? 'wait' : 'pointer', fontFamily: 'Inter, sans-serif', display: 'inline-flex', alignItems: 'center', gap: 7 }}><Download size={15} aria-hidden="true" /> Export CSV</button>}
+        {canExport && <button onClick={exportReport} disabled={loading} style={{ padding: '8px 16px', backgroundColor: '#0d7470', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: loading ? 'wait' : 'pointer', fontFamily: 'Inter, sans-serif', display: 'inline-flex', alignItems: 'center', gap: 7 }}><Download size={15} aria-hidden="true" /> Export CSV</button>}
       </div>
 
       <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
         {/* Tabs */}
         <div style={{ padding: '4px', display: 'flex', gap: '2px', borderBottom: '1px solid #f1f5f9', backgroundColor: '#f8fafc' }}>
           {TABS.map((t) => (
-            <button key={t} onClick={() => setTab(t)} style={{ padding: '8px 18px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: 'Inter, sans-serif', backgroundColor: tab === t ? '#2563eb' : 'transparent', color: tab === t ? 'white' : '#64748b', transition: 'all 0.15s' }}>{t}</button>
+            <button key={t} onClick={() => setTab(t)} style={{ padding: '8px 18px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: 'Inter, sans-serif', backgroundColor: tab === t ? '#0d7470' : 'transparent', color: tab === t ? 'white' : '#64748b', transition: 'all 0.15s' }}>{t}</button>
           ))}
         </div>
 
         <div style={{ padding: '20px' }}>
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '50px' }}><Loader2 size={22} style={{ animation: 'spin 1s linear infinite' }} color="#2563eb" /></div>
+            <TableSkeleton />
           ) : tab === 'Payroll Report' && payrollData ? (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -128,7 +129,7 @@ export default function FinanceReportsPage() {
                   <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '12px', color: '#64748b', width: '90px' }}>{label}</span>
                     <div style={{ flex: 1, height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${attendanceData.totalRecords ? (value / attendanceData.totalRecords) * 100 : 0}%`, height: '100%', backgroundColor: '#2563eb', borderRadius: '4px' }} />
+                      <div style={{ width: `${attendanceData.totalRecords ? (value / attendanceData.totalRecords) * 100 : 0}%`, height: '100%', backgroundColor: '#0d7470', borderRadius: '4px' }} />
                     </div>
                     <span style={{ fontSize: '11px', fontWeight: 700, color: '#374151', width: '30px', textAlign: 'right' }}>{value}</span>
                   </div>

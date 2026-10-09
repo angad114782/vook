@@ -1,3 +1,4 @@
+import LookupSelect from '../../components/ui/LookupSelect';
 import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -12,15 +13,16 @@ import LegacyDrawer from '../../components/ui/LegacyDrawer';
 import { useAccess } from '../../hooks/queries/useAccess';
 import { useSubmitExpense } from '../../hooks/mutations/useEmployeeMutations';
 import { StatusBadge } from '../../components/ui/ProductPrimitives';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 type Tab = 'All Request' | 'Pending Requests' | 'Approved Requests' | 'Completed Requests';
 const TABS: Tab[] = ['All Request', 'Pending Requests', 'Approved Requests', 'Completed Requests'];
 
 const CAT_META: Record<string, { bg: string; color: string }> = {
-  Travel:      { bg: '#dbeafe', color: '#1d4ed8' },
+  Travel:      { bg: '#dff3f1', color: '#0d4a47' },
   Materials:   { bg: '#dcfce7', color: '#15803d' },
   Utilities:   { bg: '#fef9c3', color: '#854d0e' },
-  Maintenance: { bg: '#f5f3ff', color: '#6d28d9' },
+  Maintenance: { bg: '#f0fdfa', color: '#0d4a47' },
   Others:      { bg: '#f1f5f9', color: '#475569' },
 };
 
@@ -90,7 +92,7 @@ export default function ExpensesPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
-        <div><h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Expenses</h1><p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Review, validate, and track employee expense claims</p></div>
+        <div><h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Expenses</h1><p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Review, validate, and track employee expense claims</p></div>
         {canCreate && <button onClick={() => setShowCreate(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', backgroundColor: '#0d7470', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}><Plus size={14} /> Submit expense</button>}
       </div>
 
@@ -130,7 +132,7 @@ export default function ExpensesPage() {
         </div>
 
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /></div>
+          <TableSkeleton />
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -227,7 +229,7 @@ export default function ExpensesPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}><h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>Submit expense</h3><button aria-label="Close expense form" onClick={() => { setShowCreate(false); setCreateError(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button></div>
           {createError && <div role="alert" style={{ padding: '10px 14px', backgroundColor: '#fef2f2', borderRadius: '8px', color: '#dc2626', fontSize: '12px', marginBottom: '14px' }}>{createError}</div>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>Category<select value={createForm.category} onChange={(event) => setCreateForm((current) => ({ ...current, category: event.target.value }))} style={{ display: 'block', width: '100%', marginTop: '5px', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', boxSizing: 'border-box' }}>{Object.keys(CAT_META).map((category) => <option key={category}>{category}</option>)}</select></label>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>Category<div style={{ marginTop: 4 }}><LookupSelect type="EXPENSE_CATEGORY" value={createForm.category} onChange={(v) => setCreateForm((current) => ({ ...current, category: v }))} entityLabel="category" placeholder="Choose a category" /></div></label>
             <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>Amount<input type="number" min="0" value={createForm.amount} onChange={(event) => setCreateForm((current) => ({ ...current, amount: event.target.value }))} style={{ display: 'block', width: '100%', marginTop: '5px', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', boxSizing: 'border-box' }} /></label>
             <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>Description<textarea rows={4} value={createForm.description} onChange={(event) => setCreateForm((current) => ({ ...current, description: event.target.value }))} style={{ display: 'block', width: '100%', marginTop: '5px', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', boxSizing: 'border-box', resize: 'vertical' }} /></label>
           </div>

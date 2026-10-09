@@ -1,4 +1,4 @@
-import { Activity, BarChart2, Blocks, BriefcaseBusiness, Building2, CalendarCheck, CalendarDays, CheckSquare, CreditCard, FileText, FolderOpen, LayoutDashboard, LifeBuoy, Receipt, Shield, ShieldCheck, UserCircle, UserCog, Users, Workflow } from 'lucide-react';
+import { Activity, BarChart2, Blocks, BriefcaseBusiness, Building2, CalendarCheck, CalendarDays, CheckSquare, CreditCard, Fingerprint, FileText, FolderOpen, LayoutDashboard, LifeBuoy, Receipt, Shield, ShieldCheck, UserCircle, UserCog, Users, Workflow } from 'lucide-react';
 import RoleSidebar, { type RoleNavGroup } from './RoleSidebar';
 
 const groups: RoleNavGroup[] = [
@@ -10,6 +10,7 @@ const groups: RoleNavGroup[] = [
     ] },
     { key: 'time-attendance', label: 'Time & attendance', Icon: CalendarCheck, children: [
       { to: '/company-admin/attendance', label: 'Attendance', Icon: CalendarCheck },
+      { to: '/company-admin/devices', label: 'Attendance devices', Icon: Fingerprint },
       { to: '/company-admin/shifts', label: 'Shift management', Icon: CalendarDays },
       { to: '/company-admin/calendar', label: 'Holiday calendar', Icon: CalendarDays },
     ] },

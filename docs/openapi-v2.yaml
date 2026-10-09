@@ -102,6 +102,7 @@ paths:
     post: { operationId: createDepartment, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
   /departments/{id}:
     parameters: [{ $ref: '#/components/parameters/Id' }]
+    delete: { operationId: deleteDepartment, responses: { '200': { $ref: '#/components/responses/Object' } } }
     patch: { operationId: updateDepartment, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
   /departments/summary:
     get: { operationId: getDepartmentSummary, responses: { '200': { $ref: '#/components/responses/Object' } } }
@@ -119,6 +120,7 @@ paths:
     post: { operationId: createDesignation, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
   /designations/{id}:
     parameters: [{ $ref: '#/components/parameters/Id' }]
+    delete: { operationId: deleteDesignation, responses: { '200': { $ref: '#/components/responses/Object' } } }
     patch: { operationId: updateDesignation, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
   /offices:
     get: { operationId: listOffices, responses: { '200': { $ref: '#/components/responses/Object' } } }
@@ -354,8 +356,79 @@ paths:
     get: { operationId: listAttendanceIntegrations, responses: { '200': { $ref: '#/components/responses/Object' } } }
     post: { operationId: createAttendanceIntegration, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
   /attendance-integrations/{id}/{action}:
-    parameters: [{ $ref: '#/components/parameters/Id' }, { name: action, in: path, required: true, schema: { type: string, enum: [test, activate] } }]
+    parameters: [{ $ref: '#/components/parameters/Id' }, { name: action, in: path, required: true, schema: { type: string, enum: [test, activate, disable] } }]
     post: { operationId: mutateAttendanceIntegration, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /auth/login-options:
+    get: { operationId: getLoginOptions, security: [], responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /auth/dev-accounts:
+    get: { operationId: listDevAccounts, security: [], x-mock-only: true, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /auth/dev-login:
+    post: { operationId: devLogin, security: [], x-mock-only: true, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /auth/2fa/disable:
+    post: { operationId: disableTwoFactor, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /attendance-providers:
+    post: { operationId: createAttendanceProvider, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /attendance-providers/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    put: { operationId: updateAttendanceProvider, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    delete: { operationId: deleteAttendanceProvider, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /attendance-integrations/{id}/availability:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    put: { operationId: setAttendanceIntegrationAvailability, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /attendance-integrations/quick:
+    post: { operationId: quickSetupAttendanceProvider, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /attendance-integrations/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    put: { operationId: updateAttendanceIntegration, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    delete: { operationId: deleteAttendanceIntegration, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /attendance-devices:
+    get: { operationId: listAttendanceDevices, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: registerAttendanceDevice, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /attendance-devices/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    put: { operationId: updateAttendanceDevice, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    delete: { operationId: deleteAttendanceDevice, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /attendance-devices/{id}/events:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { operationId: listAttendanceDeviceEvents, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /attendance-periods/current:
+    get: { operationId: getCurrentAttendancePeriod, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /attendance-periods/lock:
+    post: { operationId: lockAttendancePeriod, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /payroll-compliance:
+    get: { operationId: getPayrollCompliance, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    put: { operationId: updatePayrollCompliance, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /leave-types:
+    get: { operationId: listLeaveTypes, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: addLeaveType, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /leave-types/{type}:
+    parameters: [{ name: type, in: path, required: true, schema: { type: string } }]
+    delete: { operationId: deleteLeaveType, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /holiday-calendars:
+    get: { operationId: listHolidayCalendars, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: createHolidayCalendar, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /holiday-calendars/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    patch: { operationId: updateHolidayCalendar, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /holiday-calendars/{id}/holidays:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: addHoliday, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /holiday-calendars/{id}/holidays/{holidayId}:
+    parameters: [{ $ref: '#/components/parameters/Id' }, { name: holidayId, in: path, required: true, schema: { type: string } }]
+    delete: { operationId: deleteHoliday, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /holiday-calendars/{id}/copy:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: copyHolidayCalendar, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /payroll-runs/{id}/{action}:
+    parameters: [{ $ref: '#/components/parameters/Id' }, { name: action, in: path, required: true, schema: { type: string } }]
+    post: { operationId: transitionPayrollRun, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /lookups/{type}:
+    parameters: [{ name: type, in: path, required: true, schema: { type: string } }]
+    get: { operationId: getLookupList, responses: { '200': { $ref: '#/components/responses/Object' } } }
+    post: { operationId: addLookupItem, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /lookups/{type}/{value}:
+    parameters: [{ name: type, in: path, required: true, schema: { type: string } }, { name: value, in: path, required: true, schema: { type: string } }]
+    delete: { operationId: deleteLookupItem, responses: { '200': { $ref: '#/components/responses/Object' } } }
   /attendance-verification-policy:
     put: { operationId: updateAttendanceVerificationPolicy, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
   /profile:

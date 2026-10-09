@@ -6,17 +6,18 @@ import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import {
   Activity, CheckCircle2, XCircle, Calendar,
   Search, X, ChevronLeft, ChevronRight,
-  Loader2,
   LogIn, Clock,
 } from 'lucide-react';
 import LegacyDrawer from '../../components/ui/LegacyDrawer';
+import { statusLabel } from '../../utils/friendly';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 const roleMeta: Record<string, { label: string; bg: string; color: string }> = {
-  SUPER_ADMIN:   { label: 'Super Admin',   bg: '#ede9fe', color: '#6d28d9' },
-  COMPANY_ADMIN: { label: 'Company Admin', bg: '#fdf4ff', color: '#a21caf' },
-  HR:            { label: 'HR',            bg: '#dbeafe', color: '#1d4ed8' },
+  SUPER_ADMIN:   { label: 'Super Admin',   bg: '#e6f4f1', color: '#0d4a47' },
+  COMPANY_ADMIN: { label: 'Company Admin', bg: '#fff7ed', color: '#0d4a47' },
+  HR:            { label: 'HR',            bg: '#dff3f1', color: '#0d4a47' },
   FINANCE:       { label: 'Finance',       bg: '#f0fdf4', color: '#15803d' },
   SUPERVISOR:    { label: 'Supervisor',    bg: '#fff7ed', color: '#c2410c' },
   MANAGER:       { label: 'Manager',       bg: '#fef9c3', color: '#854d0e' },
@@ -24,26 +25,26 @@ const roleMeta: Record<string, { label: string; bg: string; color: string }> = {
 };
 
 const moduleColors: Record<string, string> = {
-  Auth:          '#6366f1',
+  Auth:          '#0d7470',
   Companies:     '#0f766e',
-  Subscriptions: '#7c3aed',
-  Employees:     '#3b82f6',
+  Subscriptions: '#2f8f8a',
+  Employees:     '#0d7470',
   Attendance:    '#f59e0b',
   Leaves:        '#10b981',
-  Approvals:     '#8b5cf6',
+  Approvals:     '#2f8f8a',
   Expenses:      '#ef4444',
-  Documents:     '#0ea5e9',
+  Documents:     '#2f8f8a',
   Payroll:       '#14b8a6',
-  Shifts:        '#ec4899',
+  Shifts:        '#b45309',
   Users:         '#64748b',
   Settings:      '#a16207',
   Support:       '#f97316',
 };
 
 const avatarColors = [
-  { bg: '#eef2ff', color: '#6366f1' }, { bg: '#f5f3ff', color: '#8b5cf6' },
-  { bg: '#f0f9ff', color: '#0ea5e9' }, { bg: '#f0fdf4', color: '#10b981' },
-  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fdf4ff', color: '#ec4899' },
+  { bg: '#f0fdfa', color: '#0d7470' }, { bg: '#f0fdfa', color: '#2f8f8a' },
+  { bg: '#e6f4f1', color: '#2f8f8a' }, { bg: '#f0fdf4', color: '#10b981' },
+  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fff7ed', color: '#b45309' },
 ];
 const getAvatarColor = (name?: string) => avatarColors[(name ?? 'A').charCodeAt(0) % avatarColors.length];
 const initials = (name?: string) => (name ?? 'System').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
@@ -93,7 +94,7 @@ function LogModal({ log, onClose }: { log: ActivityLog; onClose: () => void }) {
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, backgroundColor: log.status === 'Success' ? '#dcfce7' : '#fee2e2', color: log.status === 'Success' ? '#15803d' : '#b91c1c' }}>
               {log.status === 'Success' ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
-              {log.status}
+              {statusLabel(log.status)}
             </span>
             {log.module && (
               <span style={{ display: 'inline-block', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, backgroundColor: `${modColor}15`, color: modColor }}>
@@ -158,7 +159,7 @@ export default function ActivityPage() {
   };
 
   const statsRow = [
-    { label: 'Total Logs',    value: stats.total,   icon: Activity,      bg: '#eff6ff', color: '#3b82f6' },
+    { label: 'Total Logs',    value: stats.total,   icon: Activity,      bg: '#f0fdfa', color: '#0d7470' },
     { label: 'Today',         value: stats.today,   icon: Calendar,      bg: '#f0fdf4', color: '#22c55e' },
     { label: 'Success',       value: stats.success, icon: CheckCircle2,  bg: '#f0fdf4', color: '#16a34a' },
     { label: 'Failed',        value: stats.failed,  icon: XCircle,       bg: '#fef2f2', color: '#dc2626' },
@@ -176,7 +177,7 @@ export default function ActivityPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Activity Logs</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Activity Logs</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Monitor all user actions and system activity across the platform</p>
         </div>
         {/* Tab buttons - top right like Figma */}
@@ -245,10 +246,7 @@ export default function ActivityPage() {
 
         {/* Table */}
         {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}>
-            <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
-            <span style={{ fontSize: '14px' }}>Loading logs...</span>
-          </div>
+          <TableSkeleton />
         ) : logs.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 24px' }}>
             <Activity size={40} color="#e2e8f0" style={{ margin: '0 auto 12px' }} />
@@ -318,7 +316,7 @@ export default function ActivityPage() {
                       <td style={{ padding: '13px 20px' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, backgroundColor: log.status === 'Success' ? '#dcfce7' : '#fee2e2', color: log.status === 'Success' ? '#15803d' : '#b91c1c' }}>
                           {log.status === 'Success' ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
-                          {log.status}
+                          {statusLabel(log.status)}
                         </span>
                       </td>
                     </tr>

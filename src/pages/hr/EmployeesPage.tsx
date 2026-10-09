@@ -1,23 +1,27 @@
+import LookupSelect from '../../components/ui/LookupSelect';
 import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { type Employee } from '../../api/hr';
-import { Search, Plus, Edit2, ChevronDown, Loader2 } from 'lucide-react';
+import { Search, Plus, Edit2, Loader2, Upload } from 'lucide-react';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { extractError } from '../../utils/errorUtils';
 import { useEmployees } from '../../hooks/queries/useHrQueries';
 import { useCreateEmployee, useUpdateEmployee } from '../../hooks/mutations/useHrMutations';
 import PaginationBar from '../../components/data/Pagination';
 import AppDrawer from '../../components/ui/AppDrawer';
+import { DepartmentSelect, DesignationSelect } from '../../components/org/OrgSelects';
+import { useDepartmentOptions } from '../../hooks/useOrgOptions';
+import EmployeeImportDrawer from './EmployeeImportDrawer';
 import { useAccess } from '../../hooks/queries/useAccess';
-
-const DEPARTMENTS = ['Engineering', 'Sales', 'Marketing', 'HR', 'Design', 'Finance'];
+import { statusLabel } from '../../utils/friendly';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 const avatarColors = [
-  { bg: '#eef2ff', color: '#6366f1' }, { bg: '#f5f3ff', color: '#8b5cf6' },
-  { bg: '#f0f9ff', color: '#0ea5e9' }, { bg: '#f0fdf4', color: '#10b981' },
-  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fdf4ff', color: '#ec4899' },
+  { bg: '#f0fdfa', color: '#0d7470' }, { bg: '#f0fdfa', color: '#2f8f8a' },
+  { bg: '#e6f4f1', color: '#2f8f8a' }, { bg: '#f0fdf4', color: '#10b981' },
+  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fff7ed', color: '#b45309' },
 ];
 const getAv = (name?: string) => avatarColors[(name ?? 'H').charCodeAt(0) % avatarColors.length]!;
 const initials = (name?: string) => (name ?? 'User').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
@@ -88,11 +92,7 @@ function EmployeeModal({ emp, onClose }: { emp?: Employee; onClose: () => void }
               {!isEdit && <div><label style={labelStyle}>Email (Optional)</label><input type="email" autoComplete="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="employee@company.com" style={inputStyle} /></div>}
               <div>
                 <label style={labelStyle}>Employment Type</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {['Permanent', 'Contract'].map((t) => (
-                    <button key={t} onClick={() => set('employmentType', t)} style={{ padding: '6px 16px', borderRadius: '20px', border: `1.5px solid ${form.employmentType === t ? '#0d7470' : '#e2e8f0'}`, backgroundColor: form.employmentType === t ? '#0d7470' : 'white', color: form.employmentType === t ? 'white' : '#374151', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>{t}</button>
-                  ))}
-                </div>
+                <LookupSelect type="EMPLOYMENT_TYPE" value={form.employmentType} onChange={(v) => set('employmentType', v)} entityLabel="employment type" placeholder="Choose type" />
               </div>
             </div>
           </div>
@@ -102,16 +102,10 @@ function EmployeeModal({ emp, onClose }: { emp?: Employee; onClose: () => void }
             <p style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #f1f5f9' }}>Work Assignment</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div>
-                <label style={labelStyle}>Department / Unit</label>
-                <div style={{ position: 'relative' }}>
-                  <select value={form.department} onChange={(e) => set('department', e.target.value)} style={{ ...inputStyle, appearance: 'none', paddingRight: '28px' }}>
-                    <option value="">Select</option>
-                    {DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}
-                  </select>
-                  <ChevronDown size={13} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
-                </div>
+                <label style={labelStyle} htmlFor="employee-department">Department / Unit</label>
+                <DepartmentSelect id="employee-department" value={form.department} onChange={(v) => set('department', v)} />
               </div>
-              <div><label style={labelStyle}>Role / Designation</label><input value={form.designation} onChange={(e) => set('designation', e.target.value)} placeholder="e.g. UI/UX Designer" style={inputStyle} /></div>
+              <div><label style={labelStyle} htmlFor="employee-designation">Role / Designation</label><DesignationSelect id="employee-designation" value={form.designation} onChange={(v) => set('designation', v)} /></div>
               <div style={{ gridColumn: '1 / -1' }}><label style={labelStyle}>Annual CTC (₹)</label><input type="number" value={form.annualCtc} onChange={(e) => set('annualCtc', e.target.value)} placeholder="e.g. 1200000" style={inputStyle} /></div>
             </div>
           </div>
@@ -147,6 +141,8 @@ export default function EmployeesPage() {
   const page = Math.max(1, Number(urlParams.get('page') ?? '1') || 1);
   const limit = 20;
   const [modal, setModal] = useState<{ open: boolean; emp?: Employee }>({ open: false });
+  const [importOpen, setImportOpen] = useState(false);
+  const { options: departmentOptions } = useDepartmentOptions();
 
   const debouncedSearch = useDebouncedValue(search, 500);
 
@@ -172,18 +168,23 @@ export default function EmployeesPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Employee List</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Employee List</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage and track all employee information</p>
         </div>
-        {canCreate && <button onClick={() => setModal({ open: true })} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px', backgroundColor: '#0d7470', border: 'none', borderRadius: '9px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-          <Plus size={15} /> Add Employee
-        </button>}
+        {canCreate && <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={() => setImportOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px', backgroundColor: 'white', border: '1.5px solid #e2e8f0', borderRadius: '9px', color: '#374151', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+            <Upload size={15} /> Import from file
+          </button>
+          <button onClick={() => setModal({ open: true })} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px', backgroundColor: '#0d7470', border: 'none', borderRadius: '9px', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+            <Plus size={15} /> Add Employee
+          </button>
+        </div>}
       </div>
 
       {/* Department tabs */}
       <div className="employee-list-surface" style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
         <div className="employee-list-surface__filters" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
-          {['ALL', ...DEPARTMENTS].map((d) => (
+          {['ALL', ...departmentOptions.map((o) => o.value)].map((d) => (
             <button key={d} onClick={() => handleDeptChange(d)} style={{ padding: '5px 14px', borderRadius: '20px', border: '1px solid transparent', backgroundColor: deptFilter === d ? '#0d7470' : '#f1f5f9', color: deptFilter === d ? 'white' : '#475569', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
               {d === 'ALL' ? 'All' : d}
             </button>
@@ -198,9 +199,7 @@ export default function EmployeesPage() {
 
         {/* Table */}
         {isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}>
-            <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /><span style={{ fontSize: '14px' }}>Loading...</span>
-          </div>
+          <TableSkeleton />
         ) : (
           <div className="employee-list-surface__table" style={{ overflowX: 'auto' }}>
             <ResponsiveTable mobileRowClick style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -232,7 +231,7 @@ export default function EmployeesPage() {
                         <p style={{ fontSize: '11px', color: '#94a3b8' }}>{fmtCurrency(e.annualCtc)} CTC</p>
                       </td>
                       <td style={{ padding: '13px 18px' }}>
-                        <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: e.status === 'Active' ? '#dcfce7' : '#f1f5f9', color: e.status === 'Active' ? '#15803d' : '#475569' }}>{e.status}</span>
+                        <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600, backgroundColor: e.status === 'Active' ? '#dcfce7' : '#f1f5f9', color: e.status === 'Active' ? '#15803d' : '#475569' }}>{statusLabel(e.status)}</span>
                       </td>
                       <td style={{ padding: '13px 18px' }}>
                         {canEdit && <button aria-label={`Edit ${e.user.name}`} onClick={(e2) => { e2.stopPropagation(); setModal({ open: true, emp: e }); }} style={{ width: '30px', height: '30px', borderRadius: '7px', border: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}><Edit2 size={13} /></button>}
@@ -251,6 +250,7 @@ export default function EmployeesPage() {
 
       <PaginationBar page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} limit={limit} onPageChange={(nextPage) => updateUrl({ page: String(nextPage) })} />
 
+      {importOpen && canCreate && <EmployeeImportDrawer onClose={() => setImportOpen(false)} />}
       {modal.open && ((modal.emp && canEdit) || (!modal.emp && canCreate)) && <EmployeeModal emp={modal.emp} onClose={() => setModal({ open: false })} />}
     </div>
   );

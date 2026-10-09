@@ -1,3 +1,4 @@
+import LookupSelect from '../../components/ui/LookupSelect';
 import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -14,6 +15,7 @@ import {
   Building2, TrendingUp, Clock, AlertTriangle, Search,
   Pencil, Trash2, Loader2, ChevronLeft, ChevronRight,
 } from 'lucide-react';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 // Section.
 
@@ -26,9 +28,9 @@ const statusMeta: Record<string, { label: string; bg: string; color: string }> =
 };
 
 const avatarColors = [
-  { bg: '#eef2ff', color: '#6366f1' }, { bg: '#f5f3ff', color: '#8b5cf6' },
-  { bg: '#f0f9ff', color: '#0ea5e9' }, { bg: '#f0fdf4', color: '#10b981' },
-  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fdf4ff', color: '#ec4899' },
+  { bg: '#f0fdfa', color: '#0d7470' }, { bg: '#f0fdfa', color: '#2f8f8a' },
+  { bg: '#e6f4f1', color: '#2f8f8a' }, { bg: '#f0fdf4', color: '#10b981' },
+  { bg: '#fffbeb', color: '#f59e0b' }, { bg: '#fff7ed', color: '#b45309' },
 ];
 
 const getAvatarColor = (name?: string) => avatarColors[(name ?? 'C').charCodeAt(0) % avatarColors.length];
@@ -98,7 +100,7 @@ function CompanyModal({ company, onClose, onSave }: ModalProps) {
           {error && <div role="alert" style={{ padding: '10px 14px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontSize: '13px' }}>{error}</div>}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <div><label style={labelStyle}>Company Name *</label><input required style={inputStyle} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></div>
-            <div><label style={labelStyle}>Industry</label><input style={inputStyle} value={form.industry} onChange={(event) => setForm({ ...form, industry: event.target.value })} /></div>
+            <div><label style={labelStyle}>Industry</label><LookupSelect type="INDUSTRY" value={form.industry} onChange={(v) => setForm({ ...form, industry: v })} entityLabel="industry" placeholder="Choose an industry" /></div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <div><label style={labelStyle}>Email</label><input type="email" style={inputStyle} value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /></div>
@@ -191,7 +193,7 @@ export default function CompaniesPage() {
   };
 
   const statsRow = [
-    { label: 'Total Companies', value: stats.total, icon: Building2,     iconBg: '#eff6ff', iconColor: '#3b82f6' },
+    { label: 'Total Companies', value: stats.total, icon: Building2,     iconBg: '#f0fdfa', iconColor: '#0d7470' },
     { label: 'Active',          value: stats.active, icon: TrendingUp,    iconBg: '#f0fdf4', iconColor: '#16a34a' },
     { label: 'On Trial',        value: stats.trial,  icon: Clock,         iconBg: '#fffbeb', iconColor: '#d97706' },
     { label: 'Expiring Soon',   value: stats.expiringSoon, icon: AlertTriangle, iconBg: '#fef2f2', iconColor: '#dc2626' },
@@ -209,7 +211,7 @@ export default function CompaniesPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>Companies</h1>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Companies</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage your platform and monitor client companies</p>
         </div>
       </div>
@@ -261,10 +263,7 @@ export default function CompaniesPage() {
 
         {/* Table */}
         {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px', gap: '10px', color: '#64748b' }}>
-            <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
-            <span style={{ fontSize: '14px' }}>Loading companies...</span>
-          </div>
+          <TableSkeleton />
         ) : companies.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 24px' }}>
             <Building2 size={40} color="#e2e8f0" style={{ margin: '0 auto 12px' }} />
