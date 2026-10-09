@@ -128,4 +128,4 @@ Detect → contain (revoke sessions, disable integration/tenant) → assess scop
 - **Reachable only through Nginx.** Set `HOST=127.0.0.1`; the API then cannot be called directly, so a caller cannot forge the `X-Forwarded-For` header the sign-in protections rely on.
 - **Secrets only on the server.** `/etc/vook/server.env` (mode 640) holds the database address and `SECRETS_KEY`; nothing secret is in git or in the GitHub workflow. The workflow refuses to deploy if `SECRETS_KEY` or `MONGODB_URI` is missing.
 - **The site is replaced last.** The deploy checks the server, restarts the API and waits for `/ready` before it replaces the website files, so a failed API deploy never leaves visitors on a broken page.
-- The systemd service runs as an unprivileged `vook` user with `NoNewPrivileges`, a private `/tmp` and write access only to `/var/lib/vook`.
+- The API runs under pm2 from `/etc/vook/server.env` (mode 600), a single copy, and restarts itself if it crashes.

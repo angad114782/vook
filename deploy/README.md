@@ -1,36 +1,35 @@
 # Deploying Vook (frontend + API) to the VPS
 
-Every push to the `frontend` branch runs `.github/workflows/deploy.yml`. It builds the app and the API, **checks the server is ready first**, uploads and restarts the API, and only then replaces the website files. If the server is not set up yet, the run stops with a plain message and **the live site is not changed**.
+Every push to the `frontend` branch runs `.github/workflows/deploy.yml`. It builds the app and the API, **checks the server is ready first**, uploads the API, starts or restarts it with **pm2** (the first run starts it for you), waits until it answers, and only then replaces the website files. If the server is not set up yet, the run stops with a plain message and **the live site is not changed**.
 
 ```
 Browser ──► Nginx (influencersfeed.com)
               ├─ /            → static files in /var/www/influencersfeed.com/dist
-              ├─ /api/        → Vook API on 127.0.0.1:4000   (systemd service `vook-api`)
+              ├─ /api/        → Vook API on 127.0.0.1:4000   (pm2 process `vook-api`)
               └─ /socket.io/  → same API (live notifications)
                                    └─ MongoDB Atlas
 ```
 
-## One-time setup (do these once, on the VPS, as root)
+## One-time setup (do these once, on the VPS, as the same user GitHub logs in with, usually root)
 
-### 1. Node.js 24
-The API needs Node 24 or newer in `/usr/bin/node`.
+### 1. Node.js 24 and pm2
 ```bash
-node -v        # must print v24 or higher
+node -v                    # must print v24 or higher
+npm install -g pm2
+pm2 -v
 ```
-If not, install it (NodeSource or your usual way) and make sure `/usr/bin/node` points to it.
+If Node is older, install Node 24 first (NodeSource or your usual way).
 
-### 2. A user and folders
+### 2. Folders
 ```bash
-useradd --system --home /var/lib/vook --shell /usr/sbin/nologin vook
 mkdir -p /var/lib/vook/uploads /etc/vook /var/www/influencersfeed.com/server
-chown -R vook:vook /var/lib/vook
 ```
 
 ### 3. The secret settings file
 Copy `deploy/server.env.example` to `/etc/vook/server.env` and fill it in.
 ```bash
 nano /etc/vook/server.env
-chmod 640 /etc/vook/server.env && chown root:vook /etc/vook/server.env
+chmod 600 /etc/vook/server.env
 ```
 You must set:
 - `MONGODB_URI`: your Atlas connection string. In Atlas → **Network Access**, add the VPS's public IP.
@@ -39,25 +38,24 @@ You must set:
 - `CORS_ORIGIN`: `https://influencersfeed.com` (your real address).
 - Leave `SEED_DEMO=false`, `COOKIE_SECURE=true`, `HOST=127.0.0.1`.
 
-### 4. The service
-```bash
-cp deploy/vook-api.service /etc/systemd/system/vook-api.service   # or paste its contents
-systemctl daemon-reload
-systemctl enable vook-api
-```
-(It starts for the first time when the workflow deploys. You do not need to start it now.)
-
-### 5. Nginx
+### 4. Nginx
 Open the Nginx file for influencersfeed.com and add the blocks from `deploy/nginx-vook.conf` **inside** the existing `server { ... }`: the `/api/` and `/socket.io/` proxies, `client_max_body_size`, and the `try_files ... /index.html` line for `/`.
 ```bash
 nginx -t && systemctl reload nginx
 ```
 
+### 5. Start pm2 again after a reboot (once)
+So the API comes back by itself if the server restarts:
+```bash
+pm2 startup        # it prints one command; copy and run that command
+```
+(The workflow runs `pm2 save` after every deploy, so the process list is remembered.)
+
 ### 6. GitHub secrets (already there)
-`VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` already exist for the old frontend-only deploy. Nothing new is needed. The SSH user must be allowed to run `systemctl`, `nginx` and `npm` (root is simplest).
+`VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` already exist for the old frontend-only deploy. Nothing new is needed. That SSH user must be able to run `pm2`, `nginx`, `npm` and `systemctl reload nginx` (root is simplest). Its login shell must find `node` and `pm2`; if you installed them with nvm, put them in `/usr/local/bin` or load nvm in `~/.bashrc` above the "return if not interactive" line.
 
 ### 7. Deploy, then create the first admin
-Push to `frontend` (or Actions → *Deploy Vook* → *Run workflow*). When it is green, create the first real Super Admin **on the VPS**:
+Push to `frontend` (or Actions → *Deploy Vook* → *Run workflow*). The first run starts the API under pm2 by itself. When it is green, create the first real Super Admin **on the VPS**:
 ```bash
 cd /var/www/influencersfeed.com/server
 set -a; . /etc/vook/server.env; set +a
@@ -74,8 +72,9 @@ Sign in at `https://influencersfeed.com/login`, then turn on two-step sign-in un
 
 ## Day to day
 - **Deploy:** push to `frontend`.
-- **Logs:** `journalctl -u vook-api -f`
-- **Restart:** `systemctl restart vook-api`
+- **Status:** `pm2 status` (look for `vook-api` → `online`)
+- **Logs:** `pm2 logs vook-api` (add `--lines 200` for more)
+- **Restart:** `pm2 restart vook-api`
 - **Health:** `curl http://127.0.0.1:4000/ready` on the VPS
 - **Roll back:** in GitHub, re-run the workflow on the last good commit (Actions → pick the run → *Re-run all jobs*), or push a revert.
 - **Backups:** Atlas takes them (check your plan). Uploaded files are in `/var/lib/vook/uploads`; include that folder in your VPS backup.

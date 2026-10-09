@@ -24,10 +24,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -65,6 +65,7 @@ jobs:
           mkdir -p release
           cp -r server/dist release/dist
           cp server/package.json server/package-lock.json release/
+          cp deploy/ecosystem.config.cjs release/
 
       # ── Server first. The live site is only touched at the very end, once the API answers. ──
       - name: Check the server is ready (nothing is changed here)
@@ -73,12 +74,11 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          script_stop: true
           script: |
             set -e
             fail() { echo "NOT READY: $1"; echo "Do the one-time setup in deploy/README.md, then run this workflow again. The live site was not changed."; exit 1; }
             [ -f /etc/vook/server.env ] || fail "/etc/vook/server.env is missing"
-            systemctl cat vook-api >/dev/null 2>&1 || fail "the systemd service vook-api is missing"
+            command -v pm2 >/dev/null 2>&1 || fail "pm2 is not installed (run: npm install -g pm2)"
             node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 24 ? 0 : 1)' || fail "Node.js 24 or newer is required (found $(node -v 2>/dev/null || echo none))"
             nginx -T 2>/dev/null | grep -q "proxy_pass http://127.0.0.1:4000" || fail "Nginx has no /api proxy to 127.0.0.1:4000"
             grep -q '^SECRETS_KEY=.\+' /etc/vook/server.env || fail "SECRETS_KEY is empty in /etc/vook/server.env"
@@ -95,21 +95,21 @@ jobs:
           target: "${{ env.APP_DIR }}/server"
           strip_components: 1
 
-      - name: Install, restart and verify API
+      - name: Install, start or restart API with pm2, and verify
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          script_stop: true
           script: |
             set -e
             cd ${{ env.APP_DIR }}/server
             npm ci --omit=dev
-            systemctl restart vook-api
+            pm2 startOrRestart ecosystem.config.cjs --update-env
+            pm2 save
             for i in 1 2 3 4 5 6 7 8 9 10; do
               if curl -fsS http://127.0.0.1:4000/ready >/dev/null; then echo "API is ready"; break; fi
-              if [ "$i" = "10" ]; then echo "API did not become ready. Last log lines:"; journalctl -u vook-api -n 40 --no-pager; exit 1; fi
+              if [ "$i" = "10" ]; then echo "API did not become ready. Last log lines:"; pm2 logs vook-api --lines 40 --nostream; exit 1; fi
               sleep 3
             done
 
