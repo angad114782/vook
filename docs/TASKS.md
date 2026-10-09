@@ -100,3 +100,6 @@ Legend: `[x]` done (present in frontend/mock) · `[ ]` pending · 🔌 needs rea
 - [ ] Super Admin activity filters (modules) from the module catalogue
 - [x] Attendance devices: platform ↔ company link (choose which companies get a brand, per-company usage, status banners, notifications, delete guard, “Ask Vook” tickets, setup guide)
 - [ ] Per-company API credentials for machines (today one key and token per brand is shared by every company of that brand)
+- [x] Deploy: one workflow ships frontend + API to the VPS (server checked first, site replaced last), systemd service, Nginx blocks, production-safe defaults, `create-admin` script (see deploy/README.md)
+- [ ] Run the API test suite in CI (needs a MongoDB replica set service)
+- [ ] Database backups and monitoring/alerts for the VPS

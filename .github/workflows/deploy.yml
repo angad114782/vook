@@ -1,16 +1,29 @@
-name: Deploy InfluencersFeed Frontend
+name: Deploy Vook (frontend + API)
 
+# Runs on every push to the `frontend` branch, or by hand from the Actions tab.
+# One-time server setup is in deploy/README.md. Nothing here writes secrets: they live only on the VPS.
 on:
   push:
     branches:
       - frontend
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vook
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  APP_DIR: /var/www/influencersfeed.com
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout frontend branch
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -18,21 +31,97 @@ jobs:
         with:
           node-version: 24
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
 
-      - name: Install dependencies
+      # ── Checks: stop here if anything does not compile, before touching the server ──
+      - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build frontend
-        run: npm run build
+      - name: Check the API contract file is up to date
+        run: npm run verify:api
 
-      - name: Deploy to VPS
+      - name: Build frontend (talks to the API on the same domain)
+        run: npm run build
+        env:
+          VITE_DATA_MODE: api
+          VITE_API_BASE_URL: /api/v2
+
+      - name: Install API dependencies
+        run: npm ci
+        working-directory: server
+
+      - name: Type-check API
+        run: npm run typecheck
+        working-directory: server
+
+      - name: Build API
+        run: npm run build
+        working-directory: server
+
+      - name: Prepare API release
+        run: |
+          mkdir -p release
+          cp -r server/dist release/dist
+          cp server/package.json server/package-lock.json release/
+
+      # ── Server first. The live site is only touched at the very end, once the API answers. ──
+      - name: Check the server is ready (nothing is changed here)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            fail() { echo "NOT READY: $1"; echo "Do the one-time setup in deploy/README.md, then run this workflow again. The live site was not changed."; exit 1; }
+            [ -f /etc/vook/server.env ] || fail "/etc/vook/server.env is missing"
+            systemctl cat vook-api >/dev/null 2>&1 || fail "the systemd service vook-api is missing"
+            node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 24 ? 0 : 1)' || fail "Node.js 24 or newer is required (found $(node -v 2>/dev/null || echo none))"
+            nginx -T 2>/dev/null | grep -q "proxy_pass http://127.0.0.1:4000" || fail "Nginx has no /api proxy to 127.0.0.1:4000"
+            grep -q '^SECRETS_KEY=.\+' /etc/vook/server.env || fail "SECRETS_KEY is empty in /etc/vook/server.env"
+            grep -q '^MONGODB_URI=mongodb' /etc/vook/server.env || fail "MONGODB_URI is not set in /etc/vook/server.env"
+            echo "Server is ready"
+
+      - name: Upload API to VPS
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "release/*"
+          target: "${{ env.APP_DIR }}/server"
+          strip_components: 1
+
+      - name: Install, restart and verify API
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            cd ${{ env.APP_DIR }}/server
+            npm ci --omit=dev
+            systemctl restart vook-api
+            for i in 1 2 3 4 5 6 7 8 9 10; do
+              if curl -fsS http://127.0.0.1:4000/ready >/dev/null; then echo "API is ready"; break; fi
+              if [ "$i" = "10" ]; then echo "API did not become ready. Last log lines:"; journalctl -u vook-api -n 40 --no-pager; exit 1; fi
+              sleep 3
+            done
+
+      # ── Frontend last ──
+      - name: Deploy frontend to VPS
         uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           source: "dist/*"
-          target: "/var/www/influencersfeed.com/dist"
+          target: "${{ env.APP_DIR }}/dist"
           strip_components: 1
 
       - name: Reload Nginx

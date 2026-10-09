@@ -122,3 +122,10 @@ Detect → contain (revoke sessions, disable integration/tenant) → assess scop
 
 ## 18. One-click sign-in for local development
 `GET /auth/dev-accounts` and `POST /auth/dev-login { role }` let a developer enter as a sample person without a password. They exist **only** when all of these are true, otherwise they answer `404` as if they did not exist: `NODE_ENV=development`, `DEV_QUICK_LOGIN` is not `off`, the TCP connection really comes from this computer (loopback address, read from the socket, not from headers), no proxy or tunnel headers (`X-Forwarded-*`, `Forwarded`, `X-Real-IP`) are present, and the `Host` is exactly `localhost`, `127.0.0.1` or `::1`. The login page shows the buttons only when it is itself open on localhost in a dev build. Tested both ways; there is nothing to switch off in production because the code path is closed there. Never set `NODE_ENV=development` on a public server.
+
+## 19. Production safety defaults
+- **No demo data in production.** `SEED_DEMO` is off unless explicitly turned on, so an empty production database never gets the `Demo@123` accounts. The first real admin is created with `npm run create-admin` (password read from `ADMIN_PASSWORD`, at least 12 characters with letters and a number, never from the command line).
+- **Reachable only through Nginx.** Set `HOST=127.0.0.1`; the API then cannot be called directly, so a caller cannot forge the `X-Forwarded-For` header the sign-in protections rely on.
+- **Secrets only on the server.** `/etc/vook/server.env` (mode 640) holds the database address and `SECRETS_KEY`; nothing secret is in git or in the GitHub workflow. The workflow refuses to deploy if `SECRETS_KEY` or `MONGODB_URI` is missing.
+- **The site is replaced last.** The deploy checks the server, restarts the API and waits for `/ready` before it replaces the website files, so a failed API deploy never leaves visitors on a broken page.
+- The systemd service runs as an unprivileged `vook` user with `NoNewPrivileges`, a private `/tmp` and write access only to `/var/lib/vook`.

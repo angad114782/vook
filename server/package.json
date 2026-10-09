@@ -7,10 +7,12 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "seed": "tsx src/seed/run.ts",
+    "create-admin": "tsx src/seed/createAdminCli.ts",
+    "create-admin:prod": "node dist/seed/createAdminCli.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --packages=external --target=node24 --outfile=dist/index.js --sourcemap",
+    "build": "esbuild src/index.ts src/seed/createAdminCli.ts --bundle --platform=node --format=esm --packages=external --target=node24 --outdir=dist --outbase=src --sourcemap",
     "start:prod": "node dist/index.js",
     "test:e2e": "node e2e/smoke.mjs",
     "loadtest": "node loadtest/run.mjs"

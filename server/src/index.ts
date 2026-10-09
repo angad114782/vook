@@ -22,7 +22,7 @@ async function main() {
   void runBillingTick().catch((err) => logger.error({ err }, 'billing tick failed'));
   setInterval(() => void runBillingTick().catch((err) => logger.error({ err }, 'billing tick failed')), 3_600_000).unref();
   setInterval(() => void deliverQueuedMail().catch((err) => logger.error({ err }, 'mail worker failed')), 15_000).unref();
-  server.listen(env.PORT, () => logger.info(`Vook API listening on http://localhost:${env.PORT}/api/v2`));
+  server.listen(env.PORT, env.HOST, () => logger.info(`Vook API listening on http://${env.HOST}:${env.PORT}/api/v2`));
 
   const shutdown = (signal: string) => {
     logger.info({ signal }, 'shutting down');

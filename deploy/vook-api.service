@@ -1,0 +1,24 @@
+# Copy to /etc/systemd/system/vook-api.service  (see deploy/README.md)
+[Unit]
+Description=Vook API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vook
+Group=vook
+WorkingDirectory=/var/www/influencersfeed.com/server
+EnvironmentFile=/etc/vook/server.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=3
+# Keeps a bug in the app from touching the rest of the machine.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/lib/vook
+
+[Install]
+WantedBy=multi-user.target
