@@ -10,7 +10,15 @@ Browser ──► Nginx (influencersfeed.com)
                                    └─ MongoDB Atlas
 ```
 
-## One-time setup (do these once, on the VPS, as the same user GitHub logs in with, usually root)
+## Easiest way: let the helper check and do the safe parts
+
+On the VPS, as the user GitHub deploys with (usually root):
+```bash
+curl -fsSL https://raw.githubusercontent.com/angad114782/vook/frontend/deploy/server-setup.sh | bash
+```
+It prints a ✓ / ✗ list. It installs pm2, makes the folders and creates `/etc/vook/server.env` with a fresh `SECRETS_KEY` for you. It never overwrites an existing settings file, never edits Nginx and never installs Node. Fix the ✗ lines, run it again until nothing is left, then run the deploy. The steps below explain each item.
+
+## One-time setup (the same things, by hand)
 
 ### 1. Node.js 24 and pm2
 ```bash
