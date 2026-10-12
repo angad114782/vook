@@ -10,7 +10,6 @@ const groups: RoleNavGroup[] = [
     ] },
     { key: 'time-attendance', label: 'Time & attendance', Icon: CalendarCheck, children: [
       { to: '/company-admin/attendance', label: 'Attendance', Icon: CalendarCheck },
-      { to: '/company-admin/devices', label: 'Attendance devices', Icon: Fingerprint },
       { to: '/company-admin/shifts', label: 'Shift management', Icon: CalendarDays },
       { to: '/company-admin/calendar', label: 'Holiday calendar', Icon: CalendarDays },
     ] },
@@ -35,6 +34,7 @@ const groups: RoleNavGroup[] = [
     ] },
     { to: '/company-admin/settings/workflows', label: 'Workflows', Icon: Workflow },
     { to: '/company-admin/activity', label: 'Activity log', Icon: Activity },
+    { to: '/company-admin/devices', label: 'Attendance devices', Icon: Fingerprint },
   ] },
   { label: 'Plan', entries: [
     { to: '/company-admin/modules', label: 'Plan and modules', Icon: Blocks },

@@ -103,3 +103,4 @@ Legend: `[x]` done (present in frontend/mock) · `[ ]` pending · 🔌 needs rea
 - [x] Deploy: one workflow ships frontend + API to the VPS (server checked first, site replaced last), pm2 process file, Nginx blocks, production-safe defaults, `create-admin` script (see deploy/README.md)
 - [ ] Run the API test suite in CI (needs a MongoDB replica set service)
 - [ ] Database backups and monitoring/alerts for the VPS
+- [x] VPS go-live helper (`deploy/go-live.sh`): server check, Nginx routes added safely, optional backup and retirement of the old backend

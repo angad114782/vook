@@ -73,10 +73,14 @@ if [ -f "$ENV_FILE" ]; then
   case "$PERM" in 600|640|400) ok "File permissions $PERM" ;; *) chmod 600 "$ENV_FILE" 2>/dev/null && ok "Permissions tightened to 600" || todo "Run: chmod 600 $ENV_FILE" ;; esac
 fi
 
-echo; echo "4. Nginx"
+echo; echo "4. Port and Nginx"
+PORT="$(grep -E '^PORT=' "$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2)"; PORT="${PORT:-4000}"
+if pm2 describe vook-api >/dev/null 2>&1; then ok "Port $PORT belongs to vook-api"
+elif ss -ltn 2>/dev/null | grep -qE "[:.]$PORT[[:space:]]"; then todo "Port $PORT is already used by another program on this server. Pick a free one (see: ss -ltnp) and set PORT in $ENV_FILE"
+else ok "Port $PORT is free"; fi
 if command -v nginx >/dev/null 2>&1; then
-  if nginx -T 2>/dev/null | grep -q "proxy_pass http://127.0.0.1:4000"; then ok "Nginx already sends /api/ to the API"
-  else todo "Add the blocks from deploy/nginx-vook.conf inside your server { } block, then run: nginx -t && systemctl reload nginx"; fi
+  if nginx -T 2>/dev/null | grep -q "proxy_pass http://127.0.0.1:$PORT"; then ok "Nginx already sends /api/ to the API (port $PORT)"
+  else todo "Add the blocks from deploy/nginx-vook.conf inside your server { } block (use port $PORT), then run: nginx -t && systemctl reload nginx"; fi
 else todo "nginx is not installed here."; fi
 
 echo; echo "5. Start on reboot, and the API itself"
@@ -85,7 +89,7 @@ if command -v pm2 >/dev/null 2>&1; then
   else todo "Run: pm2 startup   (it prints one command; copy it and run it)"; fi
   if pm2 describe vook-api >/dev/null 2>&1; then
     pm2 describe vook-api 2>/dev/null | grep -q "online" && ok "vook-api is running under pm2" || todo "vook-api exists but is not online. See: pm2 logs vook-api"
-    curl -fsS http://127.0.0.1:4000/ready >/dev/null 2>&1 && ok "The API answers on /ready" || todo "The API does not answer on /ready. See: pm2 logs vook-api"
+    curl -fsS http://127.0.0.1:$PORT/ready >/dev/null 2>&1 && ok "The API answers on /ready" || todo "The API does not answer on /ready. See: pm2 logs vook-api"
   else note "vook-api is not started yet. The first deploy (GitHub → Actions → Run workflow) starts it."; fi
 fi
 

@@ -246,7 +246,7 @@ deviceRouter.put('/attendance-integrations/:id/availability', async (req, res) =
   const had = (id: string) => before.mode !== 'SELECTED' || before.companyIds.includes(id);
   const has = (id: string) => next.mode !== 'SELECTED' || next.companyIds.includes(id);
   await tellCompanies(withDevices.filter((id) => had(id) && !has(id)), 'Attendance device provider no longer available', `${row.displayName} is no longer available to your company, so its machines have stopped sending attendance. Contact Vook support if this is unexpected.`, { connectionId: row.id });
-  if (next.mode === 'SELECTED') await tellCompanies(companyIds.filter((id) => !had(id)), 'New attendance device provider available', `${row.displayName} is now available. Add your machines under Time & attendance → Attendance devices.`, { connectionId: row.id });
+  if (next.mode === 'SELECTED') await tellCompanies(companyIds.filter((id) => !had(id)), 'New attendance device provider available', `${row.displayName} is now available. Add your machines under Attendance devices in the side menu.`, { connectionId: row.id });
   await appendAudit({ actorId: user.id, action: 'ATTENDANCE_DEVICE_AVAILABILITY_CHANGED', entityType: 'ATTENDANCE_CONNECTION', entityId: row.id, oldValue: before, newValue: next, ...reqMeta(req) });
   ok(res, connectionView({ id: updated._id, ...updated }));
 });

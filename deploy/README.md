@@ -10,7 +10,15 @@ Browser ──► Nginx (influencersfeed.com)
                                    └─ MongoDB Atlas
 ```
 
-## Easiest way: let the helper check and do the safe parts
+## Fastest way: one go-live command (replaces an old backend, sets up the new one)
+
+On the VPS, as root:
+```bash
+curl -fsSL https://raw.githubusercontent.com/angad114782/vook/frontend/deploy/go-live.sh | REMOVE_OLD=yes bash
+```
+It (1) runs the server check below, (2) adds the `/api` and `/socket.io` routes to the Nginx site of `influencersfeed.com` (set `VOOK_DOMAIN=` for another domain; it backs the file up, tests it, and restores it if Nginx objects), and (3) because of `REMOVE_OLD=yes`, backs up the old Prisma backend (`/var/www/vook/backend`, pm2 `vook-backend`), stops it and moves its folder aside to `_old-backend-DATE`. Nothing is deleted for good. Leave out `REMOVE_OLD=yes` to keep the old backend running. Then fix any ✗ line, run it again, and run the deploy workflow.
+
+## The helper that only checks and prepares
 
 On the VPS, as the user GitHub deploys with (usually root):
 ```bash

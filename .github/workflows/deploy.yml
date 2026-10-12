@@ -80,7 +80,9 @@ jobs:
             [ -f /etc/vook/server.env ] || fail "/etc/vook/server.env is missing"
             command -v pm2 >/dev/null 2>&1 || fail "pm2 is not installed (run: npm install -g pm2)"
             node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 24 ? 0 : 1)' || fail "Node.js 24 or newer is required (found $(node -v 2>/dev/null || echo none))"
-            nginx -T 2>/dev/null | grep -q "proxy_pass http://127.0.0.1:4000" || fail "Nginx has no /api proxy to 127.0.0.1:4000"
+            PORT="$(grep -E '^PORT=' /etc/vook/server.env | tail -1 | cut -d= -f2)"; PORT="${PORT:-4000}"
+            nginx -T 2>/dev/null | grep -q "proxy_pass http://127.0.0.1:$PORT" || fail "Nginx has no /api proxy to 127.0.0.1:$PORT (the PORT in /etc/vook/server.env)"
+            if ! pm2 describe vook-api >/dev/null 2>&1 && ss -ltn 2>/dev/null | grep -qE "[:.]$PORT[[:space:]]"; then fail "Port $PORT is already used by another program. Choose a free PORT in /etc/vook/server.env and in Nginx"; fi
             grep -q '^SECRETS_KEY=.\+' /etc/vook/server.env || fail "SECRETS_KEY is empty in /etc/vook/server.env"
             grep -q '^MONGODB_URI=mongodb' /etc/vook/server.env || fail "MONGODB_URI is not set in /etc/vook/server.env"
             echo "Server is ready"
@@ -105,10 +107,11 @@ jobs:
             set -e
             cd ${{ env.APP_DIR }}/server
             npm ci --omit=dev
+            PORT="$(grep -E '^PORT=' /etc/vook/server.env | tail -1 | cut -d= -f2)"; PORT="${PORT:-4000}"
             pm2 startOrRestart ecosystem.config.cjs --update-env
             pm2 save
             for i in 1 2 3 4 5 6 7 8 9 10; do
-              if curl -fsS http://127.0.0.1:4000/ready >/dev/null; then echo "API is ready"; break; fi
+              if curl -fsS http://127.0.0.1:$PORT/ready >/dev/null; then echo "API is ready"; break; fi
               if [ "$i" = "10" ]; then echo "API did not become ready. Last log lines:"; pm2 logs vook-api --lines 40 --nostream; exit 1; fi
               sleep 3
             done
