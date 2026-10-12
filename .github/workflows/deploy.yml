@@ -17,6 +17,7 @@ permissions:
 
 env:
   APP_DIR: /var/www/influencersfeed.com
+  NODE24: /opt/node24
 
 jobs:
   deploy:
@@ -65,7 +66,7 @@ jobs:
           mkdir -p release
           cp -r server/dist release/dist
           cp server/package.json server/package-lock.json release/
-          cp deploy/ecosystem.config.cjs release/
+          cp deploy/ecosystem.config.cjs deploy/install-node24.sh release/
 
       # ── Server first. The live site is only touched at the very end, once the API answers. ──
       - name: Check the server is ready (nothing is changed here)
@@ -79,7 +80,8 @@ jobs:
             fail() { echo "NOT READY: $1"; echo "Do the one-time setup in deploy/README.md, then run this workflow again. The live site was not changed."; exit 1; }
             [ -f /etc/vook/server.env ] || fail "/etc/vook/server.env is missing"
             command -v pm2 >/dev/null 2>&1 || fail "pm2 is not installed (run: npm install -g pm2)"
-            node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 24 ? 0 : 1)' || fail "Node.js 24 or newer is required (found $(node -v 2>/dev/null || echo none))"
+            command -v curl >/dev/null 2>&1 || fail "curl is not installed"
+            [ -x ${{ env.NODE24 }}/bin/node ] && echo "Node.js 24 is in ${{ env.NODE24 }}" || echo "Node.js 24 is not installed yet; the next step installs it into ${{ env.NODE24 }} (your other apps keep their own Node)"
             PORT="$(grep -E '^PORT=' /etc/vook/server.env | tail -1 | cut -d= -f2)"; PORT="${PORT:-4000}"
             nginx -T 2>/dev/null | grep -q "proxy_pass http://127.0.0.1:$PORT" || fail "Nginx has no /api proxy to 127.0.0.1:$PORT (the PORT in /etc/vook/server.env)"
             if ! pm2 describe vook-api >/dev/null 2>&1 && ss -ltn 2>/dev/null | grep -qE "[:.]$PORT[[:space:]]"; then fail "Port $PORT is already used by another program. Choose a free PORT in /etc/vook/server.env and in Nginx"; fi
@@ -106,6 +108,8 @@ jobs:
           script: |
             set -e
             cd ${{ env.APP_DIR }}/server
+            VOOK_NODE_DIR=${{ env.NODE24 }} bash install-node24.sh
+            export PATH=${{ env.NODE24 }}/bin:$PATH
             npm ci --omit=dev
             PORT="$(grep -E '^PORT=' /etc/vook/server.env | tail -1 | cut -d= -f2)"; PORT="${PORT:-4000}"
             pm2 startOrRestart ecosystem.config.cjs --update-env

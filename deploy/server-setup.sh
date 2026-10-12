@@ -3,9 +3,9 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/angad114782/vook/frontend/deploy/server-setup.sh | bash
 #
-# It checks everything the deploy needs, does the safe parts for you (installs pm2, makes folders, creates the settings
-# file with a fresh SECRETS_KEY) and prints what is still left for you. It never overwrites a settings file that exists,
-# never edits Nginx, and never installs Node. Run it as many times as you like.
+# It checks everything the deploy needs, does the safe parts for you (puts Node 24 in /opt/node24 for the API only,
+# installs pm2, makes folders, creates the settings file with a fresh SECRETS_KEY) and prints what is still left for you.
+# It never overwrites a settings file that exists, never edits Nginx, and never changes the Node your other apps use. Run it as many times as you like.
 set -u
 
 ENV_FILE="${VOOK_ENV_FILE:-/etc/vook/server.env}"
@@ -18,12 +18,16 @@ note() { printf '  · %s\n' "$1"; }
 
 echo "Vook server check"
 
-echo; echo "1. Node.js and pm2"
-NODE_OK=0
-if command -v node >/dev/null 2>&1 && node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 24 ? 0 : 1)'; then ok "Node.js $(node -v)"; NODE_OK=1
-else todo "Node.js 24 or newer is needed (found: $(node -v 2>/dev/null || echo none)). Install it, then run this again."; fi
+echo; echo "1. Node.js 24 for the API, and pm2"
+NODE24="${VOOK_NODE_DIR:-/opt/node24}"
+if [ -x "$NODE24/bin/node" ] && [ "$("$NODE24/bin/node" -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)" -ge 24 ]; then ok "Node.js $("$NODE24/bin/node" -v) for the API in $NODE24"
+elif [ "${SKIP_NODE_INSTALL:-0}" = 1 ]; then todo "Node.js 24 is not in $NODE24 yet."
+else
+  if curl -fsSL https://raw.githubusercontent.com/angad114782/vook/frontend/deploy/install-node24.sh | VOOK_NODE_DIR="$NODE24" bash; then ok "Node.js 24 installed in $NODE24 (only the Vook API uses it)"; else todo "Node.js 24 could not be installed in $NODE24. See the message above."; fi
+fi
+command -v node >/dev/null 2>&1 && note "Your other apps keep using the server's Node ($(node -v))."
 if command -v pm2 >/dev/null 2>&1; then ok "pm2 $(pm2 -v 2>/dev/null)"
-elif [ "$NODE_OK" = 1 ] && [ "${SKIP_PM2_INSTALL:-0}" != 1 ]; then
+elif command -v npm >/dev/null 2>&1 && [ "${SKIP_PM2_INSTALL:-0}" != 1 ]; then
   if npm install -g pm2 >/dev/null 2>&1 && command -v pm2 >/dev/null 2>&1; then ok "pm2 was not there, so it was installed ($(pm2 -v))"; else todo "pm2 could not be installed. Run: npm install -g pm2"; fi
 else todo "pm2 is missing. Run: npm install -g pm2"; fi
 

@@ -104,3 +104,4 @@ Legend: `[x]` done (present in frontend/mock) · `[ ]` pending · 🔌 needs rea
 - [ ] Run the API test suite in CI (needs a MongoDB replica set service)
 - [ ] Database backups and monitoring/alerts for the VPS
 - [x] VPS go-live helper (`deploy/go-live.sh`): server check, Nginx routes added safely, optional backup and retirement of the old backend
+- [x] API runs on its own Node 24 in /opt/node24 (checksum-verified install), so the VPS's Node 20 and the other apps are untouched

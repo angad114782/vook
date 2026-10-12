@@ -5,6 +5,8 @@ module.exports = {
     {
       name: 'vook-api',
       script: 'dist/index.js',
+      // The API runs on its own Node.js 24 (installed by deploy/install-node24.sh). Your other apps keep the server's Node.
+      interpreter: '/opt/node24/bin/node',
       cwd: '/var/www/influencersfeed.com/server',
       node_args: '--env-file=/etc/vook/server.env',
       // One copy only: live notifications keep their connections in memory, so a second copy would split them.

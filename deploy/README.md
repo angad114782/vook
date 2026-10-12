@@ -24,17 +24,17 @@ On the VPS, as the user GitHub deploys with (usually root):
 ```bash
 curl -fsSL https://raw.githubusercontent.com/angad114782/vook/frontend/deploy/server-setup.sh | bash
 ```
-It prints a ✓ / ✗ list. It installs pm2, makes the folders and creates `/etc/vook/server.env` with a fresh `SECRETS_KEY` for you. It never overwrites an existing settings file, never edits Nginx and never installs Node. Fix the ✗ lines, run it again until nothing is left, then run the deploy. The steps below explain each item.
+It prints a ✓ / ✗ list. It puts Node 24 in `/opt/node24` for the API only, installs pm2, makes the folders and creates `/etc/vook/server.env` with a fresh `SECRETS_KEY` for you. It never overwrites an existing settings file, never edits Nginx and never changes the Node your other apps use. Fix the ✗ lines, run it again until nothing is left, then run the deploy. The steps below explain each item.
 
 ## One-time setup (the same things, by hand)
 
-### 1. Node.js 24 and pm2
+### 1. Node.js 24 (for the API only) and pm2
+The server's own Node (for example 20) stays as it is, so your other apps are not affected. The API gets its own Node 24 in `/opt/node24`:
 ```bash
-node -v                    # must print v24 or higher
-npm install -g pm2
-pm2 -v
+curl -fsSL https://raw.githubusercontent.com/angad114782/vook/frontend/deploy/install-node24.sh | bash
+npm install -g pm2 && pm2 -v
 ```
-If Node is older, install Node 24 first (NodeSource or your usual way).
+The deploy workflow runs the same installer if `/opt/node24` is missing, so this step is optional by hand.
 
 ### 2. Folders
 ```bash
