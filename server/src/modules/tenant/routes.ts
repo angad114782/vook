@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { coll } from '../../db/mongo.ts';
 import { byId, count, escapeRegex, find, findOne, findPage, insert, patch, remove, type Row } from '../../db/repo.ts';
+import { createCompanyByAdmin } from '../../domain/companies.ts';
 import { appendAudit, effectiveEntitlements, invalidateTenant, subscriptionAccess } from '../../domain/access.ts';
 import { AppError, notFound } from '../../lib/errors.ts';
 import { companyIdFor, me, ok, parse, reqMeta } from '../../lib/http.ts';
@@ -33,7 +34,20 @@ tenantRouter.get('/companies', async (req, res) => {
   ok(res, { companies: rows, pagination, stats: { total, active, trial, expiringSoon: trial } });
 });
 
-tenantRouter.post('/companies', () => { throw new AppError(405, 'ONLINE_SIGNUP_REQUIRED', 'Companies are created through online signup after successful checkout.'); });
+const createCompanySchema = z.object({
+  name: z.string().trim().min(2).max(160), adminName: z.string().trim().min(2).max(120), adminEmail: z.string().trim().email().max(200), adminMobile: z.string().trim().max(20).optional().or(z.literal('')),
+  planVersionId: z.string().trim().min(1), billingCycle: z.enum(['Monthly', 'Annual']).default('Monthly'), trialDays: z.number().int().min(0).max(365).default(0),
+  industry: z.string().trim().max(120).optional(),
+  password: z.string().min(12, 'The password needs at least 12 characters.').max(128).regex(/[a-z]/i, 'Add some letters.').regex(/\d/, 'Add a number.').optional().or(z.literal('')),
+});
+/** Super Admin adds a company by hand (for example a customer who pays offline). Online signup still goes through checkout. */
+tenantRouter.post('/companies', async (req, res) => {
+  const user = me(req);
+  if (user.role !== 'SUPER_ADMIN') throw new AppError(403, 'FORBIDDEN', 'Only the platform admin can add a company.');
+  const body = parse(createCompanySchema, req.body);
+  const created = await createCompanyByAdmin({ ...body, adminMobile: body.adminMobile || undefined, password: body.password || undefined, actorId: user.id });
+  ok(res, { ...(await byId('companies', created.companyId)), temporaryPassword: created.temporaryPassword, adminEmail: created.adminEmail }, 201);
+});
 
 const COMPANY_PROFILE_FIELDS = ['name', 'legalName', 'displayName', 'email', 'phone', 'address', 'industry', 'timezone', 'currency', 'website', 'logo', 'gstin', 'pan'] as const;
 const companyProfileSchema = z.object({

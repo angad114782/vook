@@ -105,3 +105,4 @@ Legend: `[x]` done (present in frontend/mock) · `[ ]` pending · 🔌 needs rea
 - [ ] Database backups and monitoring/alerts for the VPS
 - [x] VPS go-live helper (`deploy/go-live.sh`): server check, Nginx routes added safely, optional backup and retirement of the old backend
 - [x] API runs on its own Node 24 in /opt/node24 (checksum-verified install), so the VPS's Node 20 and the other apps are untouched
+- [x] Super Admin can add a company from the Companies page ("Add company": company, first admin, plan, trial days, optional password; a one-time password is shown once). Empty production databases get plans, modules and role templates on first start (`ensurePlatformBase`). `set-password:prod` resets a lost admin password. Company admins' first-sign-in "change your password" prompt is not built yet.

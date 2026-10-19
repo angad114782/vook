@@ -2,7 +2,7 @@ import LookupSelect from '../../components/ui/LookupSelect';
 import { ResponsiveTable } from '../../components/data/ResponsiveDataView';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { companiesApi, type Company } from '../../api/companies';
+import { companiesApi, type Company, type CreatedCompany } from '../../api/companies';
 import { type PlanData } from '../../api/subscriptions';
 import { extractError } from '../../utils/errorUtils';
 import { getPlanBadge } from '../../utils/planColors';
@@ -13,7 +13,7 @@ import AppDialog from '../../components/ui/AppDialog';
 import AppDrawer from '../../components/ui/AppDrawer';
 import {
   Building2, TrendingUp, Clock, AlertTriangle, Search,
-  Pencil, Trash2, Loader2, ChevronLeft, ChevronRight,
+  Pencil, Trash2, Loader2, ChevronLeft, ChevronRight, Plus, Copy, CheckCircle2,
 } from 'lucide-react';
 import { TableSkeleton } from '../../components/ui/Skeleton';
 
@@ -118,6 +118,100 @@ function CompanyModal({ company, onClose, onSave }: ModalProps) {
   );
 }
 
+// ─── Add company ─────────────────────────────────────────────────────────────
+const planVersionIdOf = (plan: PlanData) => (typeof plan.currentVersionId === 'string' ? plan.currentVersionId : plan.currentVersionId?.id) ?? '';
+
+function CreateCompanyDrawer({ plans, onClose, onCreated }: { plans: PlanData[]; onClose: () => void; onCreated: () => void }) {
+  const published = plans.filter((plan) => plan.status === 'PUBLISHED' && planVersionIdOf(plan));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState<CreatedCompany | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [form, setForm] = useState({ name: '', industry: '', adminName: '', adminEmail: '', adminMobile: '', planVersionId: '', billingCycle: 'Monthly' as 'Monthly' | 'Annual', trialDays: '7', password: '' });
+  const planVersionId = form.planVersionId || (published[0] ? planVersionIdOf(published[0]) : '');
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError('');
+    if (!planVersionId) { setError('Create and publish a plan first (Plans page), then add the company.'); return; }
+    setSaving(true);
+    try {
+      const { data } = await companiesApi.create({
+        name: form.name.trim(), industry: form.industry.trim() || undefined, adminName: form.adminName.trim(), adminEmail: form.adminEmail.trim(),
+        adminMobile: form.adminMobile.trim() || undefined, planVersionId, billingCycle: form.billingCycle, trialDays: Number(form.trialDays) || 0, password: form.password || undefined,
+      });
+      setDone(data);
+      onCreated();
+    } catch (reason) {
+      setError(extractError(reason, 'The company could not be added. Please check the details and try again.'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const inputStyle: React.CSSProperties = { width: '100%', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', color: '#0f172a', outline: 'none', fontFamily: 'Inter, sans-serif', backgroundColor: 'white' };
+  const labelStyle: React.CSSProperties = { display: 'block', fontSize: '12px', fontWeight: 600, color: '#374151', marginBottom: '5px' };
+  const hintStyle: React.CSSProperties = { fontSize: '11px', color: '#64748b', marginTop: '4px' };
+  const set = (key: keyof typeof form) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm({ ...form, [key]: event.target.value });
+
+  return (
+    <AppDrawer open onOpenChange={(open) => { if (!open) onClose(); }} title={done ? 'Company added' : 'Add a company'} description={done ? 'Share these sign-in details with the company admin.' : 'Create the company and its first admin. They can sign in right away.'} placement="responsive" size="md" contentClassName="company-drawer">
+      {done ? (
+        <div className="company-drawer__form">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', backgroundColor: '#f0fdfa', border: '1px solid #99e6df', borderRadius: '10px', color: '#0d4a47', fontSize: '14px', fontWeight: 600 }}>
+            <CheckCircle2 size={18} /> {done.name} ({done.companyCode}) is ready.
+          </div>
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', display: 'grid', gap: '8px', fontSize: '13px' }}>
+            <div><span style={{ color: '#64748b' }}>Sign in at: </span><strong>{window.location.origin}/login</strong></div>
+            <div><span style={{ color: '#64748b' }}>Email: </span><strong>{done.adminEmail}</strong></div>
+            {done.temporaryPassword
+              ? <div><span style={{ color: '#64748b' }}>One-time password: </span><strong style={{ fontFamily: 'monospace', fontSize: '14px' }}>{done.temporaryPassword}</strong></div>
+              : <div style={{ color: '#64748b' }}>They sign in with the password you entered.</div>}
+          </div>
+          {done.temporaryPassword && <p style={hintStyle}>This password is shown only now. Copy it and send it to the admin. They should change it after the first sign-in.</p>}
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', paddingTop: '4px' }}>
+            {done.temporaryPassword && (
+              <button type="button" className="admin-button admin-button--secondary" onClick={() => { void navigator.clipboard?.writeText(`Sign in: ${window.location.origin}/login\nEmail: ${done.adminEmail}\nPassword: ${done.temporaryPassword}`).then(() => setCopied(true)); }}>
+                <Copy size={14} /> {copied ? 'Copied' : 'Copy sign-in details'}
+              </button>
+            )}
+            <button type="button" className="admin-button" onClick={onClose}>Done</button>
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={submit} className="company-drawer__form">
+          {error && <div role="alert" style={{ padding: '10px 14px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontSize: '13px' }}>{error}</div>}
+          {!published.length && <div role="status" style={{ padding: '10px 14px', backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', color: '#92400e', fontSize: '13px' }}>There is no published plan yet. Publish a plan on the Plans page first.</div>}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div><label style={labelStyle}>Company name *</label><input required minLength={2} style={inputStyle} value={form.name} onChange={set('name')} /></div>
+            <div><label style={labelStyle}>Industry</label><LookupSelect type="INDUSTRY" value={form.industry} onChange={(v) => setForm({ ...form, industry: v })} entityLabel="industry" placeholder="Choose or add" /></div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div><label style={labelStyle}>Admin name *</label><input required minLength={2} style={inputStyle} value={form.adminName} onChange={set('adminName')} /></div>
+            <div><label style={labelStyle}>Admin mobile</label><input inputMode="numeric" placeholder="10-digit number" style={inputStyle} value={form.adminMobile} onChange={set('adminMobile')} /></div>
+          </div>
+          <div><label style={labelStyle}>Admin email *</label><input required type="email" style={inputStyle} value={form.adminEmail} onChange={set('adminEmail')} /><p style={hintStyle}>The admin signs in with this email (or the mobile number above).</p></div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
+            <div><label style={labelStyle}>Plan *</label>
+              <select style={inputStyle} value={planVersionId} onChange={set('planVersionId')}>
+                {published.map((plan) => <option key={plan.id} value={planVersionIdOf(plan)}>{plan.name}</option>)}
+              </select></div>
+            <div><label style={labelStyle}>Billing</label>
+              <select style={inputStyle} value={form.billingCycle} onChange={set('billingCycle')}><option value="Monthly">Monthly</option><option value="Annual">Yearly</option></select></div>
+            <div><label style={labelStyle}>Free trial (days)</label><input type="number" min={0} max={365} style={inputStyle} value={form.trialDays} onChange={set('trialDays')} /></div>
+          </div>
+          <p style={hintStyle}>Free trial 0 means the plan starts as active right away.</p>
+          <div><label style={labelStyle}>Password (optional)</label><input type="text" autoComplete="off" placeholder="Leave empty to create one for you" style={inputStyle} value={form.password} onChange={set('password')} /><p style={hintStyle}>If you type one: at least 12 characters, with letters and a number.</p></div>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', paddingTop: '4px' }}>
+            <button type="button" className="admin-button admin-button--secondary" onClick={onClose}>Cancel</button>
+            <button type="submit" disabled={saving || !published.length} className="admin-button">{saving && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />} Add company</button>
+          </div>
+        </form>
+      )}
+    </AppDrawer>
+  );
+}
+
 // ─── View Modal ──────────────────────────────────────────────────────────────
 function ViewModal({ company, plans, onClose, onEdit }: { company: Company; plans: PlanData[]; onClose: () => void; onEdit: () => void }) {
   const av = getAvatarColor(company.name);
@@ -165,7 +259,7 @@ export default function CompaniesPage() {
   const [search,      setSearch]      = useState('');
   const [planFilter,  setPlanFilter]  = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [modal,       setModal]       = useState<'edit' | 'view' | null>(null);
+  const [modal,       setModal]       = useState<'edit' | 'view' | 'create' | null>(null);
   const [selected,    setSelected]    = useState<Company | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Company | null>(null);
   const [page,        setPage]        = useState(1);
@@ -214,6 +308,7 @@ export default function CompaniesPage() {
           <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0d4a47', margin: 0 }}>Companies</h1>
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Manage your platform and monitor client companies</p>
         </div>
+        <button type="button" className="admin-button" onClick={() => setModal('create')}><Plus size={15} /> Add company</button>
       </div>
 
       {/* Stats */}
@@ -268,7 +363,8 @@ export default function CompaniesPage() {
           <div style={{ textAlign: 'center', padding: '60px 24px' }}>
             <Building2 size={40} color="#e2e8f0" style={{ margin: '0 auto 12px' }} />
             <p style={{ fontSize: '14px', fontWeight: 600, color: '#94a3b8' }}>No companies found</p>
-            <p style={{ fontSize: '13px', color: '#cbd5e1', marginTop: '4px' }}>Try changing the filters or wait for a company to sign up online.</p>
+            <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>Add your first company, or change the filters. Companies can also sign up online.</p>
+            <button type="button" className="admin-button" style={{ marginTop: '14px' }} onClick={() => setModal('create')}><Plus size={15} /> Add company</button>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -354,6 +450,10 @@ export default function CompaniesPage() {
             void qc.invalidateQueries({ queryKey: ['sa', 'companies'] });
           }}
         />
+      )}
+
+      {modal === 'create' && (
+        <CreateCompanyDrawer plans={plans} onClose={() => setModal(null)} onCreated={() => { void qc.invalidateQueries({ queryKey: ['sa', 'companies'] }); }} />
       )}
 
       {modal === 'view' && selected && (

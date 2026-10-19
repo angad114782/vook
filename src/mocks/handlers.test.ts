@@ -138,6 +138,14 @@ describe('mock API behavior', () => {
     expect(after.companies.find((item) => item.id === 'company_orbit')?.plan).toBe('PRO');
   });
 
+  it('lets the Super Admin add a company with its first admin, and refuses a repeated email', async () => {
+    expect((await login('superadmin@demo.vook.app')).status).toBe(200);
+    const created = await json('/companies', 'POST', { name: 'Manual Tenant', adminName: 'Manual Admin', adminEmail: 'manual@example.test', planVersionId: 'plan_pro_v1', billingCycle: 'Monthly', trialDays: 7 });
+    expect(created.status).toBe(201);
+    expect((await created.json()).data).toMatchObject({ name: 'Manual Tenant', status: 'TRIAL', adminEmail: 'manual@example.test' });
+    expect((await json('/companies', 'POST', { name: 'Again', adminName: 'Manual Admin', adminEmail: 'manual@example.test', planVersionId: 'plan_pro_v1' })).status).toBe(409);
+  });
+
   it('rejects manual provisioning and payment changes while preserving support actions', async () => {
     expect((await login('superadmin@demo.vook.app')).status).toBe(200);
     const before = await getMockState();
@@ -145,7 +153,6 @@ describe('mock API behavior', () => {
     const subscriptionCount = before.subscriptions.length;
     const paymentCount = before.payments.length;
 
-    expect((await json('/companies', 'POST', { name: 'Manual Tenant', adminEmail: 'manual@example.test' })).status).toBe(405);
     expect((await json('/subscriptions', 'POST', { companyId: 'company_orbit', planVersionId: 'plan_pro_v1' })).status).toBe(405);
     for (const action of ['extend-trial', 'change-plan', 'migrate', 'reactivate', 'renew', 'retry-payment']) {
       expect((await json(`/subscriptions/${before.subscriptions[0].id}/${action}`, 'POST', {})).status).toBe(405);

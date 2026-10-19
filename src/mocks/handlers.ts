@@ -239,7 +239,15 @@ const resolver: HttpResponseResolver = async ({ request }) => {
     const stats = { total: state.companies.length, active: rows.filter((item) => item.status === 'ACTIVE').length, trial: rows.filter((item) => item.status === 'TRIAL').length, expiringSoon: rows.filter((item) => item.status === 'TRIAL').length };
     return ok({ companies: result.rows, pagination: result.pagination, stats });
   }
-  if (path === '/companies' && method === 'POST') return fail(405, 'ONLINE_SIGNUP_REQUIRED', 'Companies are created through online signup after successful checkout.');
+  if (path === '/companies' && method === 'POST') {
+    const body = await bodyOf(request);
+    if (!body.name || !body.adminEmail) return fail(422, 'VALIDATION_ERROR', 'Enter the company name and the admin email.');
+    if (state.users.some((u: Row) => String(u.email).toLowerCase() === String(body.adminEmail).toLowerCase())) return fail(409, 'EMAIL_TAKEN', 'A user with this email already exists.');
+    const id = `company_${Date.now().toString(36)}`;
+    const created = { id, _id: id, companyCode: `CMP-${String(state.companies.length + 1).padStart(3, '0')}`, name: body.name, industry: body.industry ?? null, email: body.adminEmail, plan: 'BASIC', status: Number(body.trialDays) > 0 ? 'TRIAL' : 'ACTIVE', maxUsers: 50, userCount: 1, planExpiry: new Date(Date.now() + 30 * 86_400_000).toISOString(), createdAt: new Date().toISOString() };
+    await updateMockState((draft) => { draft.companies.unshift(created as never); draft.users.push({ id: `user_${id}`, _id: `user_${id}`, name: body.adminName, email: body.adminEmail, role: 'COMPANY_ADMIN', companyId: id, isActive: true } as never); });
+    return ok({ ...created, adminEmail: body.adminEmail, temporaryPassword: body.password ? undefined : 'Demo-Only-Pass-123' }, 201);
+  }
   const companyMatch = path.match(/^\/companies\/([^/]+)$/);
   if (companyMatch) {
     const found = state.companies.find((item) => item.id === companyMatch[1]) as Row | undefined;

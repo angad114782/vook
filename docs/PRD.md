@@ -18,7 +18,7 @@ Vook is a multi-tenant **HRMS + ERP SaaS**. One platform operator (Super Admin) 
 ## 4. Personas & roles
 | Role | Portal | Core jobs |
 |---|---|---|
-| Super Admin | `/super-admin` | Companies, plans & versions, subscriptions, modules, payments, integrations, support, audit, platform settings |
+| Super Admin | `/super-admin` | Companies (add by hand or by online signup), plans & versions, subscriptions, modules, payments, integrations, support, audit, platform settings |
 | Company Admin | `/company-admin` | Dashboard, workforce, org, roles/permissions, workflows, plan & billing, payroll authorize/publish, reports |
 | HR | `/hr` | Employees, attendance, leave, approvals, documents, holiday calendar |
 | Finance | `/finance` | Payroll prepare/review, salary structure, payslips, expenses, reports |

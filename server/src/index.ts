@@ -5,6 +5,7 @@ import { closeDb, connectDb } from './db/mongo.ts';
 import { ensureIndexes } from './db/indexes.ts';
 import { logger } from './lib/logger.ts';
 import { seedIfEmpty } from './seed/seed.ts';
+import { ensurePlatformBase } from './seed/bootstrap.ts';
 import { initRealtime, closeRealtime } from './realtime/gateway.ts';
 import { deliverQueuedMail } from './workers/mail.ts';
 import { runBillingTick } from './domain/billing.ts';
@@ -13,6 +14,7 @@ async function main() {
   await connectDb(env.MONGODB_URI, env.MONGODB_DB);
   await ensureIndexes();
   if (env.SEED_DEMO) await seedIfEmpty();
+  else await ensurePlatformBase();
   const app = createApp();
   const server = createServer(app);
   initRealtime(server);

@@ -32,7 +32,14 @@ export interface UpdateCompanyData {
   address?: string;
 }
 
+export interface CreateCompanyData {
+  name: string; industry?: string; adminName: string; adminEmail: string; adminMobile?: string;
+  planVersionId: string; billingCycle: 'Monthly' | 'Annual'; trialDays: number; password?: string;
+}
+export type CreatedCompany = Company & { temporaryPassword?: string; adminEmail: string };
+
 export const companiesApi = {
+  create: (data: CreateCompanyData) => api.post<CreatedCompany>('/companies', data),
   getAll: (params?: Record<string, string>) =>
     api.get<CompaniesResponse>('/companies', { params }),
   getOne: (id: string) => api.get<Company>(`/companies/${id}`),
