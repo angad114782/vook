@@ -38,7 +38,7 @@ const createCompanySchema = z.object({
   name: z.string().trim().min(2).max(160), adminName: z.string().trim().min(2).max(120), adminEmail: z.string().trim().email().max(200), adminMobile: z.string().trim().max(20).optional().or(z.literal('')),
   planVersionId: z.string().trim().min(1), billingCycle: z.enum(['Monthly', 'Annual']).default('Monthly'), trialDays: z.number().int().min(0).max(365).default(0),
   industry: z.string().trim().max(120).optional(),
-  password: z.string().min(12, 'The password needs at least 12 characters.').max(128).regex(/[a-z]/i, 'Add some letters.').regex(/\d/, 'Add a number.').optional().or(z.literal('')),
+  password: z.string().min(6, 'The password needs at least 6 characters.').max(128).regex(/[a-z]/i, 'Add some letters.').regex(/\d/, 'Add a number.').optional().or(z.literal('')),
 });
 /** Super Admin adds a company by hand (for example a customer who pays offline). Online signup still goes through checkout. */
 tenantRouter.post('/companies', async (req, res) => {

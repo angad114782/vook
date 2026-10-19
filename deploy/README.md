@@ -77,7 +77,7 @@ cd /var/www/influencersfeed.com/server
 set -a; . /etc/vook/server.env; set +a
 ADMIN_PASSWORD='a-long-password-with-1-number' node dist/seed/createAdminCli.js "Your Name" you@yourdomain.com
 ```
-(The password is read from `ADMIN_PASSWORD`, not typed after the command, so it stays out of your shell history. Use at least 12 characters with letters and a number.)
+(The password is read from `ADMIN_PASSWORD`, not typed after the command, so it stays out of your shell history. Use at least 6 characters with letters and a number.)
 
 Sign in at `https://influencersfeed.com/login`, then turn on two-step sign-in under *Account security*. After that, create companies and plans from the Super Admin screens.
 

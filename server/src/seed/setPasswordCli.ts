@@ -10,7 +10,7 @@ const [email] = process.argv.slice(2);
 const password = process.env.NEW_PASSWORD ?? '';
 if (!email || !password) { console.error('Usage: NEW_PASSWORD=... npm run set-password:prod -- user@example.com'); process.exit(1); }
 try {
-  if (password.length < 12 || !/[a-z]/i.test(password) || !/\d/.test(password)) throw new Error('The password needs at least 12 characters, with letters and a number.');
+  if (password.length < 6 || !/[a-z]/i.test(password) || !/\d/.test(password)) throw new Error('The password needs at least 6 characters, with letters and a number.');
   await connectDb(env.MONGODB_URI, env.MONGODB_DB);
   const user = await findOne('users', { emailLower: email.trim().toLowerCase() });
   if (!user) throw new Error('No user with this email.');

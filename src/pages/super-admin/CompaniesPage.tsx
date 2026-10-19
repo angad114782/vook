@@ -201,7 +201,7 @@ function CreateCompanyDrawer({ plans, onClose, onCreated }: { plans: PlanData[];
             <div><label style={labelStyle}>Free trial (days)</label><input type="number" min={0} max={365} style={inputStyle} value={form.trialDays} onChange={set('trialDays')} /></div>
           </div>
           <p style={hintStyle}>Free trial 0 means the plan starts as active right away.</p>
-          <div><label style={labelStyle}>Password (optional)</label><input type="text" autoComplete="off" placeholder="Leave empty to create one for you" style={inputStyle} value={form.password} onChange={set('password')} /><p style={hintStyle}>If you type one: at least 12 characters, with letters and a number.</p></div>
+          <div><label style={labelStyle}>Password (optional)</label><input type="text" autoComplete="off" placeholder="Leave empty to create one for you" style={inputStyle} value={form.password} onChange={set('password')} /><p style={hintStyle}>If you type one: at least 6 characters, with letters and a number.</p></div>
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', paddingTop: '4px' }}>
             <button type="button" className="admin-button admin-button--secondary" onClick={onClose}>Cancel</button>
             <button type="submit" disabled={saving || !published.length} className="admin-button">{saving && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />} Add company</button>

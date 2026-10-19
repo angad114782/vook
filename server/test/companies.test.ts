@@ -35,7 +35,7 @@ describe('adding a company by hand', () => {
     const sa = await loginAs(ctx.app, ACCOUNTS.superAdmin);
     expect((await sa.agent.post('/api/v2/companies').send(body({ adminEmail: 'not-an-email' }))).status).toBe(422);
     expect((await sa.agent.post('/api/v2/companies').send(body({ adminEmail: 'z@y.test', adminMobile: '', planVersionId: 'nope' }))).status).toBe(422);
-    expect((await sa.agent.post('/api/v2/companies').send(body({ adminEmail: 'w@y.test', adminMobile: '', password: 'short1' }))).status).toBe(422);
+    expect((await sa.agent.post('/api/v2/companies').send(body({ adminEmail: 'w@y.test', adminMobile: '', password: 'ab1' }))).status).toBe(422);
     expect((await request(ctx.app).post('/api/v2/companies').send(body())).status).toBe(401);
   });
 });
