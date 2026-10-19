@@ -4,6 +4,7 @@ import { ensureIndexes } from '../db/indexes.ts';
 import { createSuperAdmin } from './createAdmin.ts';
 
 // Usage (on the server):  ADMIN_PASSWORD='a-long-password-1' npm run create-admin -- "Full Name" admin@yourdomain.com
+// Optional: ADMIN_MOBILE='8619930583' lets this admin also sign in with a mobile code.
 // The password is read from the environment, never from the command line, so it does not end up in shell history.
 const [name, email] = process.argv.slice(2);
 const password = process.env.ADMIN_PASSWORD ?? '';
@@ -11,7 +12,7 @@ if (!name || !email || !password) { console.error('Usage: ADMIN_PASSWORD=... npm
 try {
   await connectDb(env.MONGODB_URI, env.MONGODB_DB);
   await ensureIndexes();
-  const user = await createSuperAdmin({ name, email, password });
+  const user = await createSuperAdmin({ name, email, password, mobile: process.env.ADMIN_MOBILE });
   console.log(`Super Admin created: ${user.email}. Sign in, then turn on two-step sign-in under Account security.`);
 } catch (err) {
   console.error(err instanceof Error ? err.message : err);
