@@ -175,7 +175,7 @@ export default function RegisterPageV2() {
     try {
       const result = await onboardingApi.checkout(payload);
       const order = result.data;
-      await openPaymentCheckout({
+      if (order.provider !== 'MANUAL') await openPaymentCheckout({
         keyId: order.keyId,
         amount: order.amount,
         currency: order.currency,

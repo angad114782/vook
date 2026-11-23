@@ -11,7 +11,7 @@ import { appendAudit, effectiveEntitlements, invalidateTenant } from '../../doma
 import { assertHuman } from '../../lib/botguard.ts';
 import { clientIp, IP_RULE, ipMatches } from '../../lib/ip.ts';
 import { assertPublicHost } from '../../lib/ssrf.ts';
-import { issueVerificationEmail, provisionRegistration, settlePayment } from '../../domain/billing.ts';
+import { issueVerificationEmail, provisionRegistration, settleManualRegistration, settlePayment } from '../../domain/billing.ts';
 import { AppError, forbidden, notFound } from '../../lib/errors.ts';
 import { companyIdFor, me, ok, parse, reqMeta } from '../../lib/http.ts';
 import { idempotent } from '../../lib/idempotency.ts';
@@ -58,11 +58,23 @@ publicBillingRouter.post('/onboarding/checkout', limiter(3_600_000, 20, 'Too man
   const version = await byId('planVersions', versionId);
   if (!version || version.planId !== plan?.id && !body.planVersionId) throw new AppError(422, 'PUBLISHED_PLAN_REQUIRED', 'Please choose one of the available plans.');
   const amount = body.billingCycle === 'Annual' ? version.pricing.annual : version.pricing.monthly;
-  const provider = await getPaymentProvider();
+  // No payment gateway configured: still take the registration and let the Super Admin confirm the payment by hand.
+  const provider = await getPaymentProvider().catch((error: unknown) => {
+    if (error instanceof AppError && error.code === 'PAYMENTS_NOT_CONFIGURED') return null;
+    throw error;
+  });
   const registration = await insert('registrations', {
-    acquisition: 'ONLINE_PURCHASE', companyName: body.company.name, companyEmail: body.company.email ?? body.admin.email, adminName: body.admin.name, adminEmail: body.admin.email,
-    adminPasswordHash: await hashPassword(body.admin.password), planId: version.planId, planVersionId: version.id, billingCycle: body.billingCycle, provider: provider.name, status: 'PENDING', emailVerified: false, createdAt: nowIso(),
+    acquisition: provider ? 'ONLINE_PURCHASE' : 'MANUAL_PAYMENT', companyName: body.company.name, companyEmail: body.company.email ?? body.admin.email, adminName: body.admin.name, adminEmail: body.admin.email,
+    adminPasswordHash: await hashPassword(body.admin.password), planId: version.planId, planVersionId: version.id, billingCycle: body.billingCycle, provider: provider?.name ?? 'MANUAL', status: 'PENDING', emailVerified: false, createdAt: nowIso(),
   }, 'registration');
+  if (!provider) {
+    const reference = `MANUAL-${registration.id}`;
+    await coll('registrations').updateOne({ _id: registration.id }, { $set: { registrationId: registration.id, orderId: reference } });
+    await insert('payments', { companyId: null, registrationId: registration.id, purpose: 'REGISTRATION', plan: version.type, billingCycle: body.billingCycle, planVersionId: version.id, amount, currency: version.currency, source: 'MANUAL', status: 'PENDING', reference, createdAt: nowIso() }, 'payment');
+    await appendAudit({ action: 'REGISTRATION_AWAITING_MANUAL_PAYMENT', entityType: 'REGISTRATION', entityId: registration.id, newValue: { company: body.company.name, plan: version.name, amount }, ...reqMeta(req) });
+    ok(res, { registrationId: registration.id, orderId: reference, amount, currency: version.currency, keyId: '', provider: 'MANUAL', status: 'PENDING' }, 201);
+    return;
+  }
   const order = await provider.createOrder({ amountMinor: Math.round(amount * 100), currency: version.currency, receipt: registration.id, notes: { registrationId: registration.id } });
   await coll('registrations').updateOne({ _id: registration.id }, { $set: { registrationId: registration.id, orderId: order.orderId } });
   const payment = await insert('payments', { companyId: null, registrationId: registration.id, purpose: 'REGISTRATION', plan: version.type, billingCycle: body.billingCycle, planVersionId: version.id, amount, currency: version.currency, source: provider.name, status: 'PENDING', reference: order.orderId, razorpayOrderId: order.orderId, createdAt: nowIso() }, 'payment');
@@ -74,7 +86,7 @@ publicBillingRouter.post('/onboarding/checkout', limiter(3_600_000, 20, 'Too man
 publicBillingRouter.get('/onboarding/checkout/:id', async (req, res) => {
   const reg = await byId('registrations', String(req.params.id));
   if (!reg) throw notFound('Registration');
-  ok(res, { status: reg.status === 'PROVISIONED' ? 'PAID' : reg.status, provider: reg.provider });
+  ok(res, { status: reg.status === 'PROVISIONED' ? 'PAID' : reg.status, provider: reg.provider, provisioned: reg.status === 'PROVISIONED' });
 });
 
 publicBillingRouter.post('/onboarding/checkout/:id/resend-verification', limiter(900_000, 5, 'Please wait a few minutes before asking for another email.'), async (req, res) => {
@@ -182,7 +194,19 @@ const paymentFilter = (req: import('express').Request): Row => {
 billingRouter.get('/payments', async (req, res) => {
   const { rows, pagination } = await findPage('payments', paymentFilter(req), req.query);
   const companies = rows.length ? new Map((await find('companies', { _id: { $in: [...new Set(rows.map((r) => r.companyId).filter(Boolean))] } }, { projection: { name: 1, companyCode: 1 } })).map((c) => [c.id, c])) : new Map();
-  ok(res, { payments: rows.map((p) => ({ ...p, company: companies.get(p.companyId) })), pagination });
+  const regIds = [...new Set(rows.map((r) => r.registrationId).filter(Boolean))];
+  const regs = regIds.length ? new Map((await find('registrations', { _id: { $in: regIds } }, { projection: { companyName: 1, adminName: 1, adminEmail: 1, status: 1 } })).map((r) => [r.id, r])) : new Map();
+  ok(res, { payments: rows.map((p) => ({ ...p, company: companies.get(p.companyId), registration: p.registrationId ? regs.get(p.registrationId) : undefined })), pagination });
+});
+billingRouter.post('/registrations/:id/mark-paid', async (req, res) => {
+  const user = me(req);
+  if (user.role !== 'SUPER_ADMIN') throw forbidden('Only the Super Admin can confirm a manual payment.', 'FORBIDDEN');
+  const body = parse(z.object({ reference: z.string().trim().max(120).optional(), note: z.string().trim().max(500).optional() }), req.body ?? {});
+  const result = await settleManualRegistration(String(req.params.id), { reference: body.reference, note: body.note, markedBy: user.id });
+  if (!result) throw new AppError(409, 'NOT_AWAITING_PAYMENT', 'This registration is not waiting for a manual payment.');
+  invalidateTenant(result.companyId);
+  await appendAudit({ actorId: user.id, companyId: result.companyId, action: 'MANUAL_PAYMENT_CONFIRMED', entityType: 'REGISTRATION', entityId: String(req.params.id), newValue: { reference: body.reference }, ...reqMeta(req) });
+  ok(res, result);
 });
 billingRouter.get('/payments/mine', async (req, res) => ok(res, await find('payments', { companyId: companyIdFor(req) }, { sort: { createdAt: -1 }, limit: 200 })));
 billingRouter.post('/payments/offline', () => { throw new AppError(405, 'ONLINE_PAYMENT_REQUIRED', 'Payments must be collected through online checkout.'); });

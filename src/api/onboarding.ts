@@ -15,12 +15,13 @@ export interface CheckoutOrder {
   amount: number;
   currency: string;
   keyId: string;
+  provider?: string;
 }
 
 export const onboardingApi = {
   plans: () => api.get<PlanData[]>('/onboarding/plans'),
   checkout: (data: CheckoutRegistrationData) => withBotProof((botProof) => api.post<CheckoutOrder>('/onboarding/checkout', { ...data, botProof })),
-  status: (id: string) => api.get<{ status: string }>(`/onboarding/checkout/${id}`),
+  status: (id: string) => api.get<{ status: string; provider?: string; provisioned?: boolean }>(`/onboarding/checkout/${id}`),
   resendVerification: (id: string) => api.post(`/onboarding/checkout/${id}/resend-verification`),
   verifyEmail: (token: string) => api.post('/onboarding/verify-email', { token }),
 };

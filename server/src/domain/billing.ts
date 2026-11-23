@@ -43,6 +43,16 @@ export async function settlePayment(paymentId: string, outcome: 'PAID' | 'FAILED
   return p;
 }
 
+/** Super Admin confirms an offline payment for a registration: marks it paid and creates the company straight away. */
+export async function settleManualRegistration(registrationId: string, by: { reference?: string; note?: string; markedBy: string }) {
+  const reg = await byId('registrations', registrationId);
+  if (!reg || reg.provider !== 'MANUAL' || !['PENDING', 'PAID'].includes(reg.status)) return null;
+  const payment = await coll('payments').findOneAndUpdate({ registrationId, source: 'MANUAL', status: 'PENDING' }, { $set: { status: 'PAID', paidAt: nowIso(), ...(by.reference ? { reference: by.reference } : {}), ...(by.note ? { notes: by.note } : {}), confirmedBy: by.markedBy } });
+  if (!payment && reg.status !== 'PAID') return null;
+  await coll('registrations').updateOne({ _id: registrationId }, { $set: { status: 'PAID' } });
+  return provisionRegistration(registrationId);
+}
+
 async function applySubscriptionPayment(payment: Row) {
   const version = await byId('planVersions', payment.planVersionId);
   const subscription = await findOne('subscriptions', { companyId: payment.companyId });

@@ -18,6 +18,14 @@ export default function RegistrationCompletePage() {
     }
     try {
       const response = await onboardingApi.status(registrationId);
+      if (response.data.provider === 'MANUAL' && response.data.status === 'PENDING') {
+        setStatus('Registration received. Your plan will be activated as soon as our team confirms your payment. You will be able to sign in with the email and password you just set.');
+        return true;
+      }
+      if (response.data.provider === 'MANUAL' && response.data.provisioned) {
+        setStatus('Your company is active. You can sign in now.');
+        return true;
+      }
       if (response.data.status === 'PAID') {
         setStatus('Payment confirmed. Check your inbox to verify your email, then sign in.');
         return true;
@@ -63,12 +71,14 @@ export default function RegistrationCompletePage() {
     }
   };
 
+  const awaiting = status.startsWith('Registration received');
+  const active = status.startsWith('Your company is active');
   const paid = status.startsWith('Payment confirmed');
   const failed = status.startsWith('Payment failed');
 
   return <main className="registration-result"><div>
-    {paid ? <CheckCircle2 size={30} /> : failed ? <CheckCircle2 size={30} /> : <Loader2 size={30} className="spin" />}
-    <h1>{paid ? 'Verify your email' : failed ? 'Payment could not be confirmed' : 'Confirming your payment'}</h1>
+    {paid || awaiting || active ? <CheckCircle2 size={30} /> : failed ? <CheckCircle2 size={30} /> : <Loader2 size={30} className="spin" />}
+    <h1>{awaiting ? 'Registration received' : active ? 'Company is active' : paid ? 'Verify your email' : failed ? 'Payment could not be confirmed' : 'Confirming your payment'}</h1>
     <p>{status}</p>
     {isMockMode && paid && registrationId && <Link className="admin-button" to={`/verify-email?token=${encodeURIComponent(registrationId)}`}>Verify demo email</Link>}
     {paid && <button className="admin-button" onClick={resend} disabled={resending || resent}>{resent ? 'Verification email sent' : resending ? 'Sending…' : 'Resend verification email'}</button>}

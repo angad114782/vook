@@ -27,10 +27,8 @@ export default function PaymentsPage() {
     setLoading(true);
     setError('');
     try {
-      const response = await paymentsApi.getAll({ source: 'RAZORPAY', status, page: String(page), limit: '10' });
-      // Billing is online-only. Guard against older backends that may ignore
-      // the source query and still return legacy offline records.
-      setPayments(response.data.payments.filter((payment) => payment.source === 'RAZORPAY'));
+      const response = await paymentsApi.getAll({ status, page: String(page), limit: '10' });
+      setPayments(response.data.payments.filter((payment) => payment.source === 'RAZORPAY' || payment.source === 'MANUAL'));
       setTotalPages(response.data.pagination.totalPages || 1);
     } catch (reason) {
       setError(extractError(reason, 'Could not load payments'));
@@ -40,6 +38,22 @@ export default function PaymentsPage() {
   }, [page, status]);
 
   useEffect(() => { void load(); }, [load]);
+
+  const [activating, setActivating] = useState('');
+  const markPaid = async (payment: Payment) => {
+    if (!payment.registrationId) return;
+    const reference = window.prompt(`Confirm you received ₹${payment.amount.toLocaleString('en-IN')} from ${payment.registration?.companyName ?? 'this company'}.\nEnter the payment reference (UTR / transaction ID):`);
+    if (reference === null) return;
+    setActivating(payment.id);
+    try {
+      await paymentsApi.markRegistrationPaid(payment.registrationId, { reference: reference.trim() || undefined });
+      await load();
+    } catch (reason) {
+      setError(extractError(reason, 'Could not activate this registration'));
+    } finally {
+      setActivating('');
+    }
+  };
 
   const stats = useMemo(() => ({
     paid: payments.filter((payment) => payment.status === 'PAID').length,
@@ -61,18 +75,19 @@ export default function PaymentsPage() {
     <div style={{ display: 'flex', gap: 9, padding: 12, background: 'white', border: '1px solid #e2e8f0', borderRadius: 10 }}>
       <select aria-label="Filter by payment status" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }} style={{ ...fieldStyle, width: 170 }}><option value="ALL">All statuses</option>{(['PENDING', 'PAID', 'FAILED', 'CANCELLED', 'REFUNDED'] as PaymentStatus[]).map((item) => <option key={item}>{item}</option>)}</select>
     </div>
-    <div style={{ overflowX: 'auto', background: 'white', border: '1px solid #e2e8f0', borderRadius: 10 }}><ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}><thead><tr>{['Company', 'Source', 'Plan', 'Amount', 'Status', 'Reference', 'Date'].map((heading) => <th key={heading} style={{ padding: '12px 14px', textAlign: 'left', color: '#64748b', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: 11, fontWeight: 750, textTransform: 'uppercase', letterSpacing: '.3px' }}>{heading}</th>)}</tr></thead><tbody>
-      {loading ? <tr><td colSpan={7} style={{ padding: 0 }}><TableSkeleton rows={6} cols={6} label="Loading payments" /></td></tr> : payments.length === 0 ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: 45, color: '#64748b', fontSize: 13 }}>No payment records match these filters.</td></tr> : payments.map((payment) => {
+    <div style={{ overflowX: 'auto', background: 'white', border: '1px solid #e2e8f0', borderRadius: 10 }}><ResponsiveTable style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}><thead><tr>{['Company', 'Source', 'Plan', 'Amount', 'Status', 'Reference', 'Date', 'Action'].map((heading) => <th key={heading} style={{ padding: '12px 14px', textAlign: 'left', color: '#64748b', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: 11, fontWeight: 750, textTransform: 'uppercase', letterSpacing: '.3px' }}>{heading}</th>)}</tr></thead><tbody>
+      {loading ? <tr><td colSpan={8} style={{ padding: 0 }}><TableSkeleton rows={6} cols={6} label="Loading payments" /></td></tr> : payments.length === 0 ? <tr><td colSpan={8} style={{ textAlign: 'center', padding: 45, color: '#64748b', fontSize: 13 }}>No payment records match these filters.</td></tr> : payments.map((payment) => {
         const meta = statusMeta[payment.status] ?? statusMeta.NOT_RECORDED;
         const reference = payment.reference || payment.razorpayPaymentId || payment.razorpayOrderId;
         return <tr key={payment.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-          <td style={{ padding: '13px 14px', color: '#0f172a', fontSize: 13, fontWeight: 650 }}>{payment.company?.name || 'Pending checkout / legacy'}<span style={{ display: 'block', color: '#94a3b8', fontSize: 10, fontWeight: 400 }}>{payment.company?.companyCode || ''}</span></td>
+          <td style={{ padding: '13px 14px', color: '#0f172a', fontSize: 13, fontWeight: 650 }}>{payment.company?.name || payment.registration?.companyName || 'Pending checkout / legacy'}<span style={{ display: 'block', color: '#94a3b8', fontSize: 10, fontWeight: 400 }}>{payment.company?.companyCode || payment.registration?.adminEmail || ''}</span></td>
           <td style={{ padding: 14 }}><span style={{ padding: '4px 8px', borderRadius: 5, color: payment.source === 'RAZORPAY' ? '#0d7470' : '#64748b', background: payment.source === 'RAZORPAY' ? '#f0fdfa' : '#f1f5f9', fontSize: 10, fontWeight: 750 }}>{payment.source}</span></td>
           <td style={{ padding: 14, color: '#475569', fontSize: 12 }}>{payment.plan}</td>
           <td style={{ padding: 14, color: '#0f172a', fontSize: 13, fontWeight: 700 }}>₹{payment.amount.toLocaleString('en-IN')}</td>
           <td style={{ padding: 14 }}><span style={{ padding: '4px 8px', borderRadius: 99, color: meta.color, background: meta.bg, fontSize: 10, fontWeight: 750 }}>{meta.label}</span></td>
           <td style={{ padding: 14, color: '#64748b', fontSize: 12 }}>{reference || '—'}</td>
           <td style={{ padding: 14, color: '#64748b', fontSize: 12, whiteSpace: 'nowrap' }}>{new Date(payment.paidAt || payment.createdAt).toLocaleDateString('en-IN')}</td>
+          <td style={{ padding: 14 }}>{payment.source === 'MANUAL' && payment.status === 'PENDING' && <button disabled={activating === payment.id} onClick={() => void markPaid(payment)} style={{ border: 0, borderRadius: 6, padding: '6px 10px', background: '#0d7470', color: 'white', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>{activating === payment.id ? 'Activating…' : 'Mark paid & activate'}</button>}</td>
         </tr>;
       })}
     </tbody></ResponsiveTable><div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, padding: '10px 14px', borderTop: '1px solid #f1f5f9' }}><span style={{ color: '#64748b', fontSize: 11 }}>Page {page} of {totalPages}</span><button aria-label="Previous page" disabled={page <= 1} onClick={() => setPage((current) => current - 1)} style={{ border: '1px solid #e2e8f0', background: 'white', borderRadius: 6, padding: 5, color: '#64748b', cursor: page <= 1 ? 'not-allowed' : 'pointer' }}><ChevronLeft size={15} /></button><button aria-label="Next page" disabled={page >= totalPages} onClick={() => setPage((current) => current + 1)} style={{ border: '1px solid #e2e8f0', background: 'white', borderRadius: 6, padding: 5, color: '#64748b', cursor: page >= totalPages ? 'not-allowed' : 'pointer' }}><ChevronRight size={15} /></button></div></div>
