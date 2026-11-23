@@ -32,11 +32,13 @@ export default function LoginPage() {
   const demoAccounts = demoAccountsQuery.data?.accounts ?? [];
 
   const [email, setEmail] = useState(''); // email address or mobile number
-  const [mode, setMode] = useState<'password' | 'otp'>('password');
+  const [pickedMode, setMode] = useState<'password' | 'otp' | null>(null); // null = the user has not chosen a tab yet
   const [trap, setTrap] = useState(''); // hidden field only bots fill in
   // Which ways of signing in the server offers right now (falls back to password-only in demo mode / when unreachable).
   const optionsQuery = useQuery({ queryKey: ['login-options'], queryFn: () => authApi.loginOptions().then((r) => r.data), retry: false, staleTime: 300_000, enabled: !isMockMode });
   const options = optionsQuery.data ?? PASSWORD_ONLY;
+  // Mobile code is the default way in whenever the server offers it; Password stays one tap away.
+  const mode: 'password' | 'otp' = pickedMode ?? (options.otp.enabled ? 'otp' : 'password');
   useEffect(() => { if (!isMockMode) void prepareBotProof(); }, []);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

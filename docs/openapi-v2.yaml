@@ -454,6 +454,10 @@ paths:
     get: { operationId: listOnboardingPlans, security: [], responses: { '200': { $ref: '#/components/responses/Object' } } }
   /onboarding/trial:
     post: { operationId: createTrialRegistration, security: [], requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
+  /auth/register-otp/request:
+    post: { operationId: requestRegistrationMobileOtp, security: [], requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /auth/register-otp/verify:
+    post: { operationId: verifyRegistrationMobileOtp, security: [], requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
   /onboarding/checkout:
     post: { operationId: createRegistrationCheckout, security: [], requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '201': { $ref: '#/components/responses/Object' } } }
   /onboarding/checkout/{id}:

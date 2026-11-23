@@ -20,6 +20,9 @@ import {
 import type { PlanData } from "../../api/subscriptions";
 import { extractError } from "../../utils/errorUtils";
 import { openPaymentCheckout } from "../../payments/checkout";
+import { authApi } from "../../api/auth";
+import OtpCodeDialog from "../../components/auth/OtpCodeDialog";
+import { isMockMode } from "../../config/runtime";
 
 type RegisterStep = 1 | 2 | 3;
 
@@ -61,7 +64,7 @@ export default function RegisterPageV2() {
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
     companyName: "",
-    companyEmail: "",
+    mobile: "",
     adminName: "",
     adminEmail: "",
     password: "",
@@ -99,6 +102,43 @@ export default function RegisterPageV2() {
   );
   const selectedFeatures = selected?.features ?? [];
 
+  // Mobile check: when the server can send codes (WhatsApp / SMS), "Send OTP" replaces "Continue" on step 1.
+  // A modal takes the 6-digit code, verifies it by itself on the last digit, then moves on to step 2.
+  const [otpEnabled, setOtpEnabled] = useState(false);
+  const [otpChannel, setOtpChannel] = useState<"WHATSAPP" | "SMS" | undefined>();
+  const [otpOpen, setOtpOpen] = useState(false);
+  const [otpSentAt, setOtpSentAt] = useState(0);
+  const [otpDevCode, setOtpDevCode] = useState<string | undefined>();
+  const [otpBusy, setOtpBusy] = useState(false);
+  const [verifiedMobile, setVerifiedMobile] = useState("");
+  const mobileVerified = verifiedMobile !== "" && verifiedMobile === form.mobile.trim();
+  useEffect(() => {
+    if (isMockMode) return;
+    authApi
+      .loginOptions()
+      .then((res) => {
+        setOtpEnabled(res.data.otp.enabled);
+        setOtpChannel(res.data.otp.channels[0]);
+      })
+      .catch(() => undefined);
+  }, []);
+  const sendOtp = async () => {
+    const res = await onboardingApi.requestMobileOtp(form.mobile.trim(), otpChannel);
+    setOtpDevCode(res.data.devOtp);
+    setOtpSentAt(Date.now());
+  };
+  const verifyOtp = async (code: string) => {
+    try {
+      await onboardingApi.verifyMobileOtp(form.mobile.trim(), code);
+    } catch (reason) {
+      throw new Error(extractError(reason, "That code is not correct. Please try again."));
+    }
+    setVerifiedMobile(form.mobile.trim());
+    setOtpOpen(false);
+    setError("");
+    setStep(2);
+  };
+
   const updateForm = (changes: Partial<typeof form>) => {
     setForm((current) => ({ ...current, ...changes }));
     if (error) setError("");
@@ -120,10 +160,11 @@ export default function RegisterPageV2() {
       setError("Enter a valid administrator email address to continue.");
       return false;
     }
-    if (form.companyEmail && !form.companyEmail.includes("@")) {
-      setError("Enter a valid company email address or leave it blank.");
+    if (form.mobile.replace(/\D/g, "").length < 10) {
+      setError("Enter a valid 10-digit mobile number to continue.");
       return false;
     }
+
     if (form.password.length < 8) {
       setError("Your password must be at least 8 characters long.");
       return false;
@@ -131,9 +172,23 @@ export default function RegisterPageV2() {
     return true;
   };
 
-  const continueToNextStep = () => {
+  const continueToNextStep = async () => {
     setError("");
-    if (step === 1 && validateDetails()) setStep(2);
+    if (step === 1 && validateDetails()) {
+      if (!otpEnabled || mobileVerified) {
+        setStep(2);
+      } else {
+        setOtpBusy(true);
+        try {
+          await sendOtp();
+          setOtpOpen(true);
+        } catch (reason) {
+          setError(extractError(reason, "Could not send the code. Please try again."));
+        } finally {
+          setOtpBusy(false);
+        }
+      }
+    }
     if (step === 2) {
       if (!selected || amount <= 0) {
         setError("Choose a paid plan before continuing.");
@@ -162,11 +217,11 @@ export default function RegisterPageV2() {
     const payload: CheckoutRegistrationData = {
       company: {
         name: form.companyName.trim(),
-        email: form.companyEmail.trim() || undefined,
       },
       admin: {
         name: form.adminName.trim(),
         email: form.adminEmail.trim(),
+        mobile: form.mobile.trim(),
         password: form.password,
       },
       plan: selected.type,
@@ -318,16 +373,18 @@ export default function RegisterPageV2() {
                       />
                     </label>
                     <label className="admin-label">
-                      <span>
-                        Company email{" "}
-                        <span className="register-optional">Optional</span>
-                      </span>
+                      <span>Mobile number</span>
                       <input
                         className="admin-input"
-                        type="email"
-                        value={form.companyEmail}
+                        type="tel"
+                        inputMode="tel"
+                        autoComplete="tel"
+                        placeholder="98765 43210"
+                        required
+                        value={form.mobile}
+                        disabled={otpBusy}
                         onChange={(event) =>
-                          updateForm({ companyEmail: event.target.value })
+                          updateForm({ mobile: event.target.value })
                         }
                       />
                     </label>
@@ -524,7 +581,7 @@ export default function RegisterPageV2() {
                       <span>Company</span>
                       <strong>{form.companyName || "Not provided"}</strong>
                       <small>
-                        {form.companyEmail || "No company email added"}
+                        {form.mobile || "No mobile number added"}
                       </small>
                     </div>
                     <button type="button" onClick={() => setStep(1)}>
@@ -592,9 +649,22 @@ export default function RegisterPageV2() {
                 <button
                   type="button"
                   className="admin-button register-next"
-                  onClick={continueToNextStep}
+                  disabled={otpBusy}
+                  onClick={() => void continueToNextStep()}
                 >
-                  Continue <ArrowRight size={16} />
+                  {otpBusy ? (
+                    <>
+                      <Loader2 size={16} className="spin" /> Sending OTP...
+                    </>
+                  ) : step === 1 && otpEnabled && !mobileVerified ? (
+                    <>
+                      Send OTP <ArrowRight size={16} />
+                    </>
+                  ) : (
+                    <>
+                      Continue <ArrowRight size={16} />
+                    </>
+                  )}
                 </button>
               ) : (
                 <button
@@ -624,6 +694,15 @@ export default function RegisterPageV2() {
           </footer>
         </div>
       </section>
+      <OtpCodeDialog
+        open={otpOpen}
+        mobile={form.mobile.trim()}
+        sentAt={otpSentAt}
+        devCode={otpDevCode}
+        onVerify={verifyOtp}
+        onResend={sendOtp}
+        onClose={() => setOtpOpen(false)}
+      />
     </main>
   );
 }

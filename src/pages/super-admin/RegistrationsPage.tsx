@@ -76,7 +76,7 @@ export default function RegistrationsPage() {
               const manualWaiting = row.stage === 'AWAITING_PAYMENT';
               return <tr key={row.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                 <td style={{ padding: '13px 14px', fontSize: 13, fontWeight: 650, color: '#0f172a' }}>{row.companyName}</td>
-                <td style={{ padding: 14, fontSize: 12, color: '#475569' }}>{row.adminName}<span style={{ display: 'block', color: '#94a3b8', fontSize: 10 }}>{row.adminEmail}</span></td>
+                <td style={{ padding: 14, fontSize: 12, color: '#475569' }}>{row.adminName}<span style={{ display: 'block', color: '#94a3b8', fontSize: 10 }}>{row.adminEmail}{row.adminMobile ? ` · ${row.adminMobile}` : ''}</span></td>
                 <td style={{ padding: 14, fontSize: 12, color: '#475569' }}>{row.plan}<span style={{ display: 'block', color: '#94a3b8', fontSize: 10 }}>{row.billingCycle}</span></td>
                 <td style={{ padding: 14, fontSize: 13, fontWeight: 700 }}>{row.amount == null ? '—' : `₹${row.amount.toLocaleString('en-IN')}`}</td>
                 <td style={{ padding: 14 }}><span style={{ padding: '4px 8px', borderRadius: 99, color: meta.color, background: meta.bg, fontSize: 10, fontWeight: 750 }}>{meta.label}</span>{row.stage === 'TRIAL' && row.trialEndsAt && <span style={{ display: 'block', color: '#94a3b8', fontSize: 10, marginTop: 3 }}>until {new Date(row.trialEndsAt).toLocaleDateString('en-IN')}</span>}</td>

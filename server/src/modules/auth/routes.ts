@@ -109,11 +109,12 @@ authRouter.post('/auth/login', loginLimiter, async (req, res) => {
   const user = looksLikeEmail(identifier) ? await findOne('users', { emailLower: identifier.toLowerCase() }) : mobileKey ? await findOne('users', { mobileKey }) : null;
   if (user?.lockedUntil && new Date(user.lockedUntil) > new Date()) throw new AppError(429, 'ACCOUNT_LOCKED', 'Too many wrong passwords. Try again in a few minutes, or reset your password.');
   const valid = await verifyPassword(body.password, user?.passwordHash ?? (await dummy()));
-  if (!user && looksLikeEmail(identifier)) {
+  if (!user && (looksLikeEmail(identifier) || mobileKey)) {
     // A company that registered but is still waiting for the Super Admin's approval has no account yet.
     // Say so, but only to someone who proves they know the password they registered with.
     const escaped = identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const pending = await findOne('registrations', { adminEmail: { $regex: `^${escaped}$`, $options: 'i' }, status: { $in: ['PENDING', 'PAID'] }, companyId: { $exists: false } });
+    const who = mobileKey ? { adminMobileKey: mobileKey } : { adminEmail: { $regex: `^${escaped}$`, $options: 'i' } };
+    const pending = await findOne('registrations', { ...who, provider: 'MANUAL', status: 'PENDING', companyId: { $exists: false } });
     if (pending?.adminPasswordHash && await verifyPassword(body.password, pending.adminPasswordHash)) {
       throw new AppError(403, 'REGISTRATION_PENDING', `Your registration for ${pending.companyName} is received and is waiting for approval. You will be able to sign in as soon as our team confirms your payment or starts your trial.`);
     }
@@ -176,7 +177,7 @@ authRouter.post('/auth/otp/request', async (req, res) => {
   let devOtp: string | undefined;
   if (user && user.isActive !== false) {
     const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
-    await coll('otpCodes').deleteMany({ mobileKey }); // only the newest code works
+    await coll('otpCodes').deleteMany({ mobileKey, purpose: { $exists: false } }); // only the newest code works
     await insert('otpCodes', { mobileKey, userId: user.id, channel: body.channel, codeHash: otpHash(mobileKey, code), attempts: 0, createdAt: nowIso(), expireAt: new Date(Date.now() + env.OTP_TTL_MINUTES * 60_000) }, 'otp');
     try { await sendOtp({ channel: body.channel, mobileKey, code }); } catch (err) { if (err instanceof AppError) throw err; /* provider hiccup: answer the same way so nothing leaks */ }
     if (env.NODE_ENV === 'development') devOtp = code;
@@ -191,7 +192,7 @@ authRouter.post('/auth/otp/verify', async (req, res) => {
   if ((await hit(`otp:verify:ip:${ip}`, 15 * 60_000)) > 30) throw new AppError(429, 'RATE_LIMITED', 'Too many attempts. Please wait a few minutes.');
   const mobileKey = mobileOrThrow(body.mobile);
   const bad = async () => { await recordFailure(ip); return new AppError(401, 'INVALID_OTP', 'That code is not correct or has expired. Please try again or ask for a new code.'); };
-  const record = await findOne('otpCodes', { mobileKey });
+  const record = await findOne('otpCodes', { mobileKey, purpose: { $exists: false } });
   if (!record || new Date(record.expireAt) < new Date()) throw await bad();
   const tries = await coll('otpCodes').findOneAndUpdate({ _id: record.id }, { $inc: { attempts: 1 } }, { returnDocument: 'after' });
   if (!tries || tries.attempts > 5) { await coll('otpCodes').deleteOne({ _id: record.id }); throw await bad(); } // five guesses per code, then it is dead
@@ -203,6 +204,45 @@ authRouter.post('/auth/otp/verify', async (req, res) => {
   if (user.twoFactorEnabled && user.totpSecret && !body.totp) throw new AppError(401, 'TWO_FACTOR_REQUIRED', 'Enter the 6-digit code from your authenticator app.'); // keeps the SMS code valid for the retry
   await completeLogin(req, res, user, ip, 'OTP', body.totp);
   await coll('otpCodes').deleteOne({ _id: record.id }); // one use only
+});
+
+// ── Mobile check for a new company registration (this number has no account yet) ──
+authRouter.post('/auth/register-otp/request', async (req, res) => {
+  noStore(res);
+  const body = parse(z.object({ mobile: z.string().trim().min(1).max(20), channel: z.enum(['WHATSAPP', 'SMS']).optional(), ...proofFields }), req.body);
+  const ip = await networkGate(req);
+  if ((await hit(`regotp:req:ip:${ip}`, 3_600_000)) > 15) throw new AppError(429, 'RATE_LIMITED', 'Too many code requests from your network. Please try again in a while.');
+  await assertHuman(req.body, ip);
+  const mobileKey = mobileOrThrow(body.mobile);
+  if ((await hit(`regotp:req:mobile:${mobileKey}`, 3_600_000)) > 5) throw new AppError(429, 'RATE_LIMITED', 'Too many codes asked for this number. Please try again in an hour.');
+  if ((await hit(`regotp:cool:${mobileKey}`, 30_000)) > 1) throw new AppError(429, 'OTP_COOLDOWN', 'Please wait 30 seconds before asking for another code.', { retryAfterSeconds: 30 });
+  const channels = await availableChannels();
+  if (!channels.length) throw new AppError(422, 'CHANNEL_UNAVAILABLE', 'Mobile verification is not available right now.');
+  const channel = body.channel && channels.includes(body.channel) ? body.channel : channels[0];
+  if (await findOne('users', { mobileKey })) throw new AppError(409, 'MOBILE_IN_USE', 'An account with this mobile number already exists. Please sign in instead.');
+  const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+  await coll('otpCodes').deleteMany({ mobileKey, purpose: 'REGISTRATION' });
+  await insert('otpCodes', { mobileKey, purpose: 'REGISTRATION', channel, verified: false, codeHash: otpHash(mobileKey, code), attempts: 0, createdAt: nowIso(), expireAt: new Date(Date.now() + env.OTP_TTL_MINUTES * 60_000) }, 'otp');
+  try { await sendOtp({ channel, mobileKey, code }); } catch (err) { if (err instanceof AppError) throw err; throw new AppError(502, 'OTP_SEND_FAILED', 'We could not send the code. Please try again in a moment.'); }
+  ok(res, { channel, expiresInSeconds: env.OTP_TTL_MINUTES * 60, resendAfterSeconds: 30, ...(env.NODE_ENV === 'development' ? { devOtp: code } : {}) });
+});
+
+authRouter.post('/auth/register-otp/verify', async (req, res) => {
+  noStore(res);
+  const body = parse(z.object({ mobile: z.string().trim().min(1).max(20), code: z.string().regex(/^\d{6}$/, 'Enter the 6-digit code.') }), req.body);
+  const ip = await networkGate(req);
+  if ((await hit(`regotp:verify:ip:${ip}`, 15 * 60_000)) > 30) throw new AppError(429, 'RATE_LIMITED', 'Too many attempts. Please wait a few minutes.');
+  const mobileKey = mobileOrThrow(body.mobile);
+  const bad = async () => { await recordFailure(ip); return new AppError(401, 'INVALID_OTP', 'That code is not correct or has expired. Please try again or ask for a new code.'); };
+  const record = await findOne('otpCodes', { mobileKey, purpose: 'REGISTRATION' });
+  if (!record || record.verified || new Date(record.expireAt) < new Date()) throw await bad();
+  const tries = await coll('otpCodes').findOneAndUpdate({ _id: record.id }, { $inc: { attempts: 1 } }, { returnDocument: 'after' });
+  if (!tries || tries.attempts > 5) { await coll('otpCodes').deleteOne({ _id: record.id }); throw await bad(); }
+  const given = Buffer.from(otpHash(mobileKey, body.code)), want = Buffer.from(record.codeHash);
+  if (given.length !== want.length || !timingSafeEqual(given, want)) throw await bad();
+  // Verified: keep the proof for 30 minutes so the sign-up form can finish; checkout uses it once.
+  await coll('otpCodes').updateOne({ _id: record.id }, { $set: { verified: true, expireAt: new Date(Date.now() + 30 * 60_000) } });
+  ok(res, { verified: true });
 });
 
 authRouter.get('/auth/session', async (req, res) => {

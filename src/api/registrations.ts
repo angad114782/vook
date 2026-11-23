@@ -3,7 +3,7 @@ import api from './axios';
 export type RegistrationStage = 'AWAITING_PAYMENT' | 'CHECKOUT_PENDING' | 'TRIAL' | 'ACTIVE' | 'PAID' | 'FAILED';
 
 export interface RegistrationRow {
-  id: string; companyName: string; adminName: string; adminEmail: string; plan: string; billingCycle: string;
+  id: string; companyName: string; adminName: string; adminEmail: string; adminMobile?: string | null; plan: string; billingCycle: string;
   amount: number | null; currency: string; provider: string; stage: RegistrationStage; paymentStatus: string | null;
   companyId: string | null; trialEndsAt: string | null; createdAt: string;
 }

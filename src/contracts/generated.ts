@@ -2710,6 +2710,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/register-otp/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["requestRegistrationMobileOtp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/register-otp/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["verifyRegistrationMobileOtp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/onboarding/checkout": {
         parameters: {
             query?: never;
@@ -5913,6 +5945,30 @@ export interface operations {
         requestBody: components["requestBodies"]["Object"];
         responses: {
             201: components["responses"]["Object"];
+        };
+    };
+    requestRegistrationMobileOtp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Object"];
+        responses: {
+            200: components["responses"]["Object"];
+        };
+    };
+    verifyRegistrationMobileOtp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Object"];
+        responses: {
+            200: components["responses"]["Object"];
         };
     };
     createRegistrationCheckout: {

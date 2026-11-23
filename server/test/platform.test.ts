@@ -116,9 +116,13 @@ describe('billing', () => {
 describe('online registration', () => {
   it('buys a plan, verifies the emailed link once, creates the company with a working admin login', async () => {
     const plans = (await request(ctx.app).get('/api/v2/onboarding/plans')).body.data;
-    const body = { company: { name: 'Acme Works', email: 'hello@acme.test' }, admin: { name: 'Asha Rao', email: 'asha@acme.test', password: 'Sturdy#Pass1' }, plan: plans[0].type, billingCycle: 'Monthly' };
+    const body = { company: { name: 'Acme Works', email: 'hello@acme.test' }, admin: { name: 'Asha Rao', email: 'asha@acme.test', mobile: '9876500011', password: 'Sturdy#Pass1' }, plan: plans[0].type, billingCycle: 'Monthly' };
+    const { coll: otpColl } = await import('../src/db/mongo.ts');
+    expect((await request(ctx.app).post('/api/v2/onboarding/checkout').send(body)).body.error.code).toBe('MOBILE_NOT_VERIFIED');
+    await otpColl('otpCodes').insertOne({ _id: 'otp_reg_test', mobileKey: '9876500011', purpose: 'REGISTRATION', verified: true, expireAt: new Date(Date.now() + 600_000) });
     expect((await request(ctx.app).post('/api/v2/onboarding/checkout').send({ ...body, admin: { ...body.admin, password: 'short' } })).body.error.code).toBe('WEAK_PASSWORD');
     expect((await request(ctx.app).post('/api/v2/onboarding/checkout').send({ ...body, admin: { ...body.admin, email: ACCOUNTS.hr } })).body.error.code).toBe('EMAIL_IN_USE');
+    expect((await request(ctx.app).post('/api/v2/onboarding/checkout').send({ ...body, admin: { ...body.admin, mobile: '12345' } })).body.error.code).toBe('INVALID_MOBILE');
     const checkout = await request(ctx.app).post('/api/v2/onboarding/checkout').send(body);
     expect(checkout.status).toBe(201);
     expect(checkout.body.data.status).toBe('PAID');

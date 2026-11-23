@@ -9,7 +9,8 @@ import { coll } from '../../db/mongo.ts';
 import { byId, count, find, findOne, findPage, insert, insertMany, type Row } from '../../db/repo.ts';
 import { appendAudit, effectiveEntitlements, invalidateTenant } from '../../domain/access.ts';
 import { assertHuman } from '../../lib/botguard.ts';
-import { clientIp, IP_RULE, ipMatches } from '../../lib/ip.ts';
+import { availableChannels } from '../../lib/messaging.ts';
+import { clientIp, IP_RULE, ipMatches, mobileKeyOf } from '../../lib/ip.ts';
 import { assertPublicHost } from '../../lib/ssrf.ts';
 import { issueVerificationEmail, provisionRegistration, defaultTrialDays, settleManualRegistration, startRegistrationTrial, settlePayment } from '../../domain/billing.ts';
 import { AppError, forbidden, notFound } from '../../lib/errors.ts';
@@ -44,7 +45,7 @@ publicBillingRouter.post('/onboarding/trial', () => { throw new AppError(410, 'O
 publicBillingRouter.post('/onboarding/checkout', limiter(3_600_000, 20, 'Too many sign-up attempts from here. Please try again later.'), async (req, res) => {
   const body = parse(z.object({
     company: z.object({ name: z.string().trim().min(2).max(160), email: z.string().trim().email().max(200).optional() }),
-    admin: z.object({ name: z.string().trim().min(2).max(120), email: z.string().trim().email().max(200), password: z.string() }),
+    admin: z.object({ name: z.string().trim().min(2).max(120), email: z.string().trim().email().max(200), mobile: z.string().trim().max(30), password: z.string() }),
     plan: z.string().optional(), planId: z.string().optional(), planVersionId: z.string().optional(), billingCycle: z.enum(['Monthly', 'Annual']).default('Monthly'),
     provider: z.string().optional(), simulateFailure: z.boolean().optional(),
   }), req.body);
@@ -52,6 +53,13 @@ publicBillingRouter.post('/onboarding/checkout', limiter(3_600_000, 20, 'Too man
   const problem = passwordProblem(body.admin.password);
   if (problem) throw new AppError(422, 'WEAK_PASSWORD', problem);
   if (body.provider && body.provider !== 'RAZORPAY') throw new AppError(422, 'UNSUPPORTED_PAYMENT_PROVIDER', 'Online signup currently accepts Razorpay checkout only.');
+  const mobileKey = mobileKeyOf(body.admin.mobile);
+  if (!mobileKey) throw new AppError(422, 'INVALID_MOBILE', 'Enter a valid 10-digit mobile number.');
+  if ((await availableChannels()).length) {
+    const proof = await findOne('otpCodes', { mobileKey, purpose: 'REGISTRATION', verified: true });
+    if (!proof || new Date(proof.expireAt) < new Date()) throw new AppError(422, 'MOBILE_NOT_VERIFIED', 'Verify your mobile number with the code we send, then continue.');
+  }
+  if (await findOne('users', { mobileKey })) throw new AppError(409, 'MOBILE_IN_USE', 'An account with this mobile number already exists. Please sign in instead.');
   if (await findOne('users', { emailLower: body.admin.email.toLowerCase() })) throw new AppError(409, 'EMAIL_IN_USE', 'An account with this email already exists. Please sign in instead.');
   const plan = await findOne('plans', body.planId ? { _id: body.planId } : { type: String(body.plan ?? '').toUpperCase(), status: 'PUBLISHED' });
   const versionId = body.planVersionId ?? plan?.currentVersionId;
@@ -64,10 +72,11 @@ publicBillingRouter.post('/onboarding/checkout', limiter(3_600_000, 20, 'Too man
     throw error;
   });
   const registration = await insert('registrations', {
-    acquisition: provider ? 'ONLINE_PURCHASE' : 'MANUAL_PAYMENT', companyName: body.company.name, companyEmail: body.company.email ?? body.admin.email, adminName: body.admin.name, adminEmail: body.admin.email,
+    acquisition: provider ? 'ONLINE_PURCHASE' : 'MANUAL_PAYMENT', companyName: body.company.name, companyEmail: body.company.email ?? body.admin.email, adminName: body.admin.name, adminEmail: body.admin.email, adminMobile: `+91 ${mobileKey}`, adminMobileKey: mobileKey,
     adminPasswordHash: await hashPassword(body.admin.password), planId: version.planId, planVersionId: version.id, billingCycle: body.billingCycle, provider: provider?.name ?? 'MANUAL', status: 'PENDING', emailVerified: false, createdAt: nowIso(),
   }, 'registration');
   if (!provider) {
+    await coll('otpCodes').deleteMany({ mobileKey, purpose: 'REGISTRATION' }); // the proof is single-use
     const reference = `MANUAL-${registration.id}`;
     await coll('registrations').updateOne({ _id: registration.id }, { $set: { registrationId: registration.id, orderId: reference } });
     await insert('payments', { companyId: null, registrationId: registration.id, purpose: 'REGISTRATION', plan: version.type, billingCycle: body.billingCycle, planVersionId: version.id, amount, currency: version.currency, source: 'MANUAL', status: 'PENDING', reference, createdAt: nowIso() }, 'payment');
@@ -75,6 +84,7 @@ publicBillingRouter.post('/onboarding/checkout', limiter(3_600_000, 20, 'Too man
     ok(res, { registrationId: registration.id, orderId: reference, amount, currency: version.currency, keyId: '', provider: 'MANUAL', status: 'PENDING' }, 201);
     return;
   }
+  await coll('otpCodes').deleteMany({ mobileKey, purpose: 'REGISTRATION' }); // the proof is single-use
   const order = await provider.createOrder({ amountMinor: Math.round(amount * 100), currency: version.currency, receipt: registration.id, notes: { registrationId: registration.id } });
   await coll('registrations').updateOne({ _id: registration.id }, { $set: { registrationId: registration.id, orderId: order.orderId } });
   const payment = await insert('payments', { companyId: null, registrationId: registration.id, purpose: 'REGISTRATION', plan: version.type, billingCycle: body.billingCycle, planVersionId: version.id, amount, currency: version.currency, source: provider.name, status: 'PENDING', reference: order.orderId, razorpayOrderId: order.orderId, createdAt: nowIso() }, 'payment');
@@ -215,7 +225,7 @@ billingRouter.get('/registrations', async (req, res) => {
   const rows = regs.map((r) => {
     const pay = payBy.get(r.id); const sub = r.companyId ? subBy.get(r.companyId) : undefined;
     const stage = r.status === 'PROVISIONED' ? (sub?.status === 'TRIAL' ? 'TRIAL' : 'ACTIVE') : r.status === 'PENDING' ? (r.provider === 'MANUAL' ? 'AWAITING_PAYMENT' : 'CHECKOUT_PENDING') : r.status;
-    return { id: r.id, companyName: r.companyName, adminName: r.adminName, adminEmail: r.adminEmail, plan: verBy.get(r.planVersionId)?.name ?? '-', billingCycle: r.billingCycle, amount: pay?.amount ?? null, currency: pay?.currency ?? 'INR', provider: r.provider, stage, paymentStatus: pay?.status ?? null, companyId: r.companyId ?? null, trialEndsAt: sub?.trialEndsAt ?? null, createdAt: r.createdAt };
+    return { id: r.id, companyName: r.companyName, adminName: r.adminName, adminEmail: r.adminEmail, adminMobile: r.adminMobile ?? null, plan: verBy.get(r.planVersionId)?.name ?? '-', billingCycle: r.billingCycle, amount: pay?.amount ?? null, currency: pay?.currency ?? 'INR', provider: r.provider, stage, paymentStatus: pay?.status ?? null, companyId: r.companyId ?? null, trialEndsAt: sub?.trialEndsAt ?? null, createdAt: r.createdAt };
   });
   ok(res, { registrations: rows, defaultTrialDays: await defaultTrialDays() });
 });
