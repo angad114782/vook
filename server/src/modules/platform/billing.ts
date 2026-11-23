@@ -11,7 +11,7 @@ import { appendAudit, effectiveEntitlements, invalidateTenant } from '../../doma
 import { assertHuman } from '../../lib/botguard.ts';
 import { clientIp, IP_RULE, ipMatches } from '../../lib/ip.ts';
 import { assertPublicHost } from '../../lib/ssrf.ts';
-import { issueVerificationEmail, provisionRegistration, settleManualRegistration, settlePayment } from '../../domain/billing.ts';
+import { issueVerificationEmail, provisionRegistration, defaultTrialDays, settleManualRegistration, startRegistrationTrial, settlePayment } from '../../domain/billing.ts';
 import { AppError, forbidden, notFound } from '../../lib/errors.ts';
 import { companyIdFor, me, ok, parse, reqMeta } from '../../lib/http.ts';
 import { idempotent } from '../../lib/idempotency.ts';
@@ -198,6 +198,39 @@ billingRouter.get('/payments', async (req, res) => {
   const regs = regIds.length ? new Map((await find('registrations', { _id: { $in: regIds } }, { projection: { companyName: 1, adminName: 1, adminEmail: 1, status: 1 } })).map((r) => [r.id, r])) : new Map();
   ok(res, { payments: rows.map((p) => ({ ...p, company: companies.get(p.companyId), registration: p.registrationId ? regs.get(p.registrationId) : undefined })), pagination });
 });
+billingRouter.get('/registrations', async (req, res) => {
+  if (me(req).role !== 'SUPER_ADMIN') throw forbidden('Only the Super Admin can see registrations.', 'FORBIDDEN');
+  const regs = await find('registrations', {}, { sort: { createdAt: -1 }, limit: 300, projection: { adminPasswordHash: 0, verificationTokenHash: 0 } });
+  const ids = regs.map((r) => r.id);
+  const companyIds = regs.map((r) => r.companyId).filter(Boolean);
+  const versionIds = [...new Set(regs.map((r) => r.planVersionId).filter(Boolean))];
+  const [payments, subs, versions] = await Promise.all([
+    ids.length ? find('payments', { registrationId: { $in: ids } }) : [],
+    companyIds.length ? find('subscriptions', { companyId: { $in: companyIds } }) : [],
+    versionIds.length ? find('planVersions', { _id: { $in: versionIds } }, { projection: { name: 1, currency: 1 } }) : [],
+  ]);
+  const payBy = new Map(payments.map((p) => [p.registrationId, p]));
+  const subBy = new Map(subs.map((x) => [x.companyId, x]));
+  const verBy = new Map(versions.map((v) => [v.id, v]));
+  const rows = regs.map((r) => {
+    const pay = payBy.get(r.id); const sub = r.companyId ? subBy.get(r.companyId) : undefined;
+    const stage = r.status === 'PROVISIONED' ? (sub?.status === 'TRIAL' ? 'TRIAL' : 'ACTIVE') : r.status === 'PENDING' ? (r.provider === 'MANUAL' ? 'AWAITING_PAYMENT' : 'CHECKOUT_PENDING') : r.status;
+    return { id: r.id, companyName: r.companyName, adminName: r.adminName, adminEmail: r.adminEmail, plan: verBy.get(r.planVersionId)?.name ?? '-', billingCycle: r.billingCycle, amount: pay?.amount ?? null, currency: pay?.currency ?? 'INR', provider: r.provider, stage, paymentStatus: pay?.status ?? null, companyId: r.companyId ?? null, trialEndsAt: sub?.trialEndsAt ?? null, createdAt: r.createdAt };
+  });
+  ok(res, { registrations: rows, defaultTrialDays: await defaultTrialDays() });
+});
+billingRouter.post('/registrations/:id/start-trial', async (req, res) => {
+  const user = me(req);
+  if (user.role !== 'SUPER_ADMIN') throw forbidden('Only the Super Admin can start a trial.', 'FORBIDDEN');
+  const body = parse(z.object({ days: z.number().int().min(1).max(365).optional() }), req.body ?? {});
+  const days = body.days ?? await defaultTrialDays();
+  if (days < 1) throw new AppError(422, 'TRIAL_DISABLED', 'Trial days is set to 0. Set a trial length in System settings or enter the days.');
+  const result = await startRegistrationTrial(String(req.params.id), days);
+  if (!result) throw new AppError(409, 'NOT_AWAITING_PAYMENT', 'This registration is not waiting for a manual payment.');
+  invalidateTenant(result.companyId);
+  await appendAudit({ actorId: user.id, companyId: result.companyId, action: 'REGISTRATION_TRIAL_STARTED', entityType: 'REGISTRATION', entityId: String(req.params.id), newValue: { days }, ...reqMeta(req) });
+  ok(res, { ...result, days });
+});
 billingRouter.post('/registrations/:id/mark-paid', async (req, res) => {
   const user = me(req);
   if (user.role !== 'SUPER_ADMIN') throw forbidden('Only the Super Admin can confirm a manual payment.', 'FORBIDDEN');
@@ -327,7 +360,7 @@ const settingsSchema = z.object({
   general: z.object({ platformName: z.string().trim().min(1).max(80), platformUrl: z.string().url().max(200), supportEmail: z.string().email().max(200) }).partial(),
   security: z.object({ twoFA: z.boolean(), sessionTimeout: z.union([z.boolean(), z.number().int().min(5).max(1440)]), blockedIps: z.array(z.string().regex(IP_RULE, 'Use an address like 203.0.113.7 or a range like 203.0.113.0/24.')).max(500), adminAllowedIps: z.array(z.string().regex(IP_RULE, 'Use an address like 203.0.113.7 or a range like 203.0.113.0/24.')).max(100) }).partial(),
   notifications: z.object({ email: z.boolean(), inApp: z.boolean() }).partial(),
-  system: z.object({ maxUsers: z.number().int().min(1).max(10_000_000), maintenance: z.boolean(), maintenanceMsg: z.string().max(300) }).partial(),
+  system: z.object({ trialDays: z.number().int().min(0).max(365), maxUsers: z.number().int().min(1).max(10_000_000), maintenance: z.boolean(), maintenanceMsg: z.string().max(300) }).partial(),
 }).partial();
 billingRouter.get('/settings/platform', async (_req, res) => { const { id, _id, ...s } = (await byId('platformSettings', 'platform')) ?? {}; ok(res, s); });
 billingRouter.put('/settings/platform', async (req, res) => {

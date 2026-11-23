@@ -339,6 +339,14 @@ paths:
   /payments/{id}:
     parameters: [{ $ref: '#/components/parameters/Id' }]
     patch: { operationId: updatePayment, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /registrations:
+    get: { operationId: listRegistrations, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /registrations/{id}/start-trial:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: startRegistrationTrial, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
+  /registrations/{id}/mark-paid:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { operationId: markRegistrationPaid, requestBody: { $ref: '#/components/requestBodies/Object' }, responses: { '200': { $ref: '#/components/responses/Object' } } }
   /invoices:
     get: { operationId: listInvoices, responses: { '200': { $ref: '#/components/responses/Object' } } }
   /invoices/{id}/download:

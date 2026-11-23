@@ -6,6 +6,7 @@ const groups: RoleNavGroup[] = [
     { to: '/companies', label: 'Organizations', Icon: Building2 },
     { key: 'commercial', label: 'Commercial', Icon: CreditCard, children: [
       { to: '/subscriptions', label: 'Plans & subscriptions', Icon: CreditCard },
+      { to: '/registrations', label: 'Registrations', Icon: Users },
       { to: '/payments', label: 'Billing & payments', Icon: ReceiptIndianRupee },
     ] },
   ] },

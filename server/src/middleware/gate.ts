@@ -23,6 +23,7 @@ export const gate: RequestHandler = async (req, _res, next) => {
     || (path.startsWith('/subscriptions') && path !== '/subscription')
     || (path.startsWith('/payments') && path !== '/payments/mine' && role !== 'FINANCE')
     || (path.startsWith('/plans') && method !== 'GET')
+    || path.startsWith('/registrations')
     || path.startsWith('/entitlement-overrides')
     || path.startsWith('/attendance-providers') || (path.startsWith('/attendance-integrations') && method !== 'GET')
     || path.startsWith('/integrations') || path.startsWith('/modules') || path === '/reports/revenue-trend'

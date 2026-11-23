@@ -750,12 +750,30 @@ function SystemConfigTab({
 }) {
   const [maintenance, setMaintenance] = useState(false);
   const [maintenanceMsg, setMaintenanceMsg] = useState("");
+  const [trialDays, setTrialDays] = useState("14");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    platformApi
+      .getSettings<{ system?: { trialDays?: number } }>()
+      .then((res) => {
+        const days = res.data?.system?.trialDays;
+        if (typeof days === "number") setTrialDays(String(days));
+      })
+      .catch(() => undefined);
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
     try {
+      const days = Number(trialDays);
+      if (!Number.isInteger(days) || days < 0 || days > 365) {
+        showToast("Trial days must be a whole number from 0 to 365", "error");
+        setSaving(false);
+        return;
+      }
       await platformApi.updateSettings("system", {
+        trialDays: days,
         maintenance,
         maintenanceMsg,
       });
@@ -801,6 +819,22 @@ function SystemConfigTab({
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        {/* Free trial length */}
+        <div style={{ marginBottom: "22px" }}>
+          <p style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>Free trial length (days)</p>
+          <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 8px" }}>
+            Default number of trial days when you start a trial for a new registration. Set 0 to turn trials off. After the trial ends the company moves to a 7-day grace period, then is suspended.
+          </p>
+          <input
+            type="number"
+            min={0}
+            max={365}
+            value={trialDays}
+            onChange={(event) => setTrialDays(event.target.value)}
+            style={{ width: 120, padding: "9px 11px", border: "1px solid #dbe5e4", borderRadius: 8, fontSize: 13 }}
+          />
+        </div>
+
         {/* Maintenance mode */}
         <div
           style={{

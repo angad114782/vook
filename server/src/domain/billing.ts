@@ -43,14 +43,33 @@ export async function settlePayment(paymentId: string, outcome: 'PAID' | 'FAILED
   return p;
 }
 
-/** Super Admin confirms an offline payment for a registration: marks it paid and creates the company straight away. */
+/** Platform-wide default trial length, set by the Super Admin in System settings. */
+export async function defaultTrialDays() {
+  const settings = await byId('platformSettings', 'platform');
+  const days = Number(settings?.system?.trialDays);
+  return Number.isInteger(days) && days >= 0 ? days : 14;
+}
+
+/** Super Admin confirms an offline payment: marks it paid and either creates the company or upgrades its running trial. */
 export async function settleManualRegistration(registrationId: string, by: { reference?: string; note?: string; markedBy: string }) {
   const reg = await byId('registrations', registrationId);
-  if (!reg || reg.provider !== 'MANUAL' || !['PENDING', 'PAID'].includes(reg.status)) return null;
-  const payment = await coll('payments').findOneAndUpdate({ registrationId, source: 'MANUAL', status: 'PENDING' }, { $set: { status: 'PAID', paidAt: nowIso(), ...(by.reference ? { reference: by.reference } : {}), ...(by.note ? { notes: by.note } : {}), confirmedBy: by.markedBy } });
+  if (!reg || reg.provider !== 'MANUAL' || !['PENDING', 'PAID', 'PROVISIONED'].includes(reg.status)) return null;
+  const payment = await coll('payments').findOneAndUpdate({ registrationId, source: 'MANUAL', status: 'PENDING' }, { $set: { status: 'PAID', paidAt: nowIso(), ...(by.reference ? { reference: by.reference } : {}), ...(by.note ? { notes: by.note } : {}), confirmedBy: by.markedBy } }, { returnDocument: 'after' });
+  if (reg.status === 'PROVISIONED') {
+    if (!payment) return null; // already paid
+    await applySubscriptionPayment(out(payment as Doc) as Row); // trial → paid plan, with invoice
+    return { companyId: reg.companyId as string, adminEmail: reg.adminEmail as string };
+  }
   if (!payment && reg.status !== 'PAID') return null;
   await coll('registrations').updateOne({ _id: registrationId }, { $set: { status: 'PAID' } });
   return provisionRegistration(registrationId);
+}
+
+/** Super Admin lets a waiting registration in on a free trial; the company is created now and the payment stays pending. */
+export async function startRegistrationTrial(registrationId: string, trialDays: number) {
+  const reg = await byId('registrations', registrationId);
+  if (!reg || reg.provider !== 'MANUAL' || reg.status !== 'PENDING') return null;
+  return provisionRegistration(registrationId, { trialDays });
 }
 
 async function applySubscriptionPayment(payment: Row) {
@@ -68,21 +87,22 @@ async function applySubscriptionPayment(payment: Row) {
 }
 
 /** Creates the company, its admin, roles, subscription and invoice together, or nothing at all. */
-export async function provisionRegistration(registrationId: string) {
+export async function provisionRegistration(registrationId: string, opts: { trialDays?: number } = {}) {
   return withTransaction(async (session) => {
     const reg = await coll('registrations').findOne({ _id: registrationId }, { session });
     if (!reg) throw new Error('Registration not found');
     if (reg.companyId) return { companyId: reg.companyId as string, adminEmail: reg.adminEmail as string };
-    if (reg.status !== 'PAID') throw new Error('Registration is not paid');
+    const trialDays = opts.trialDays ?? 0;
+    if (reg.status !== 'PAID' && !trialDays) throw new Error('Registration is not paid');
     const version = await coll('planVersions').findOne({ _id: reg.planVersionId }, { session });
     const plan = version ? await coll('plans').findOne({ _id: version.planId }, { session }) : null;
     if (!version || !plan) throw new Error('Published registration plan is missing');
     const now = nowIso();
     const companyId = newId('company');
-    const end = addDays(periodDays(reg.billingCycle));
+    const end = addDays(trialDays || periodDays(reg.billingCycle));
     const amount = reg.billingCycle === 'Annual' ? version.pricing.annual : version.pricing.monthly;
     const seq = await nextSeq('company-code', () => count('companies'));
-    await coll('companies').insertOne({ _id: companyId, companyCode: `WEB-${String(seq).padStart(3, '0')}`, name: reg.companyName, legalName: reg.companyName, displayName: reg.companyName, email: reg.companyEmail ?? reg.adminEmail, industry: null, phone: null, address: null, timezone: 'Asia/Kolkata', currency: 'INR', plan: plan.type, status: 'ACTIVE', maxUsers: version.limits.employees, userCount: 1, planExpiry: end, createdAt: now }, { session });
+    await coll('companies').insertOne({ _id: companyId, companyCode: `WEB-${String(seq).padStart(3, '0')}`, name: reg.companyName, legalName: reg.companyName, displayName: reg.companyName, email: reg.companyEmail ?? reg.adminEmail, industry: null, phone: null, address: null, timezone: 'Asia/Kolkata', currency: 'INR', plan: plan.type, status: trialDays ? 'TRIAL' : 'ACTIVE', maxUsers: version.limits.employees, userCount: 1, planExpiry: end, createdAt: now }, { session });
     const adminId = newId('user');
     await coll('users').insertOne({ _id: adminId, name: reg.adminName, email: reg.adminEmail, emailLower: String(reg.adminEmail).toLowerCase(), passwordHash: reg.adminPasswordHash, role: 'COMPANY_ADMIN', companyId, isActive: true, twoFactorEnabled: false, createdAt: now, lastLoginAt: null }, { session });
     const templates = await coll('roleDefinitions').find({ companyId: 'platform' }, { session }).toArray();
@@ -91,13 +111,13 @@ export async function provisionRegistration(registrationId: string) {
     const adminRole = cloned.find((r) => r.key === 'COMPANY_ADMIN');
     if (adminRole) await coll('roleAssignments').insertOne({ _id: newId('assignment'), companyId, userId: adminId, roleDefinitionId: adminRole._id, scopeType: 'COMPANY', scopeId: companyId, isPrimary: true, createdAt: now }, { session });
     const subscriptionId = newId('subscription');
-    await coll('subscriptions').insertOne({ _id: subscriptionId, companyId, planId: plan._id, planVersionId: version._id, plan: plan.type, billingCycle: reg.billingCycle ?? 'Monthly', amount, startDate: now, endDate: end, trialEndsAt: null, currentPeriodEnd: end, status: 'ACTIVE', isActive: true }, { session });
+    await coll('subscriptions').insertOne({ _id: subscriptionId, companyId, planId: plan._id, planVersionId: version._id, plan: plan.type, billingCycle: reg.billingCycle ?? 'Monthly', amount, startDate: now, endDate: end, trialEndsAt: trialDays ? end : null, currentPeriodEnd: end, status: trialDays ? 'TRIAL' : 'ACTIVE', isActive: true }, { session });
     await coll('onboardings').insertOne({ _id: companyId, companyId, status: 'NOT_STARTED', steps: ['company-profile', 'first-branch', 'organization', 'roles', 'shifts-holidays', 'attendance-policy', 'leave-policy', 'workflows', 'payroll', 'expenses', 'employees', 'invitations'].map((key) => ({ key, status: 'NOT_STARTED' })) }, { session });
     const year = new Date().getUTCFullYear();
     const invSeq = await nextSeq(`invoice:${year}`, () => count('invoices', { invoiceNumber: { $regex: `^INV-${year}-` } }));
-    await coll('invoices').insertOne({ _id: newId('invoice'), companyId, subscriptionId, invoiceNumber: `INV-${year}-${String(invSeq).padStart(5, '0')}`, status: 'PAID', amount, currency: version.currency, planName: version.name, billingCycle: reg.billingCycle, issuedAt: now, paidAt: now }, { session });
+    if (!trialDays) await coll('invoices').insertOne({ _id: newId('invoice'), companyId, subscriptionId, invoiceNumber: `INV-${year}-${String(invSeq).padStart(5, '0')}`, status: 'PAID', amount, currency: version.currency, planName: version.name, billingCycle: reg.billingCycle, issuedAt: now, paidAt: now }, { session });
     await coll('payments').updateMany({ registrationId: reg._id }, { $set: { companyId } }, { session });
-    await coll('registrations').updateOne({ _id: reg._id }, { $set: { companyId, adminUserId: adminId, status: 'PROVISIONED', emailVerified: true, verifiedAt: now }, $unset: { adminPasswordHash: '', verificationTokenHash: '' } }, { session });
+    await coll('registrations').updateOne({ _id: reg._id }, { $set: { companyId, adminUserId: adminId, status: 'PROVISIONED', emailVerified: true, verifiedAt: now, ...(trialDays ? { trialStartedAt: now, trialDays } : {}) }, $unset: { adminPasswordHash: '', verificationTokenHash: '' } }, { session });
     await coll('audit').insertOne({ _id: newId('audit'), actorId: adminId, companyId, action: 'ONLINE_COMPANY_PROVISIONED', entityType: 'COMPANY', entityId: companyId, oldValue: null, newValue: { planVersionId: version._id }, createdAt: now }, { session });
     return { companyId, adminEmail: reg.adminEmail as string };
   });
