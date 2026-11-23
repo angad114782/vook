@@ -29,7 +29,13 @@ function ProviderCard({ provider }: { provider: Integration }) {
   const refresh = () =>
     client.invalidateQueries({ queryKey: ["integrations"] });
   const action = useMutation({
-    mutationFn: async (kind: "save" | "test" | "activate" | "disable") => {
+    mutationFn: async (kind: "save" | "test" | "activate" | "disable" | "connect") => {
+      if (kind === "connect") {
+        // One click: save the form, check it against the provider, then switch it on.
+        await integrationsApi.save(provider.providerKey, { publicConfig, secrets, reason: "Dashboard configuration update" });
+        await integrationsApi.test(provider.providerKey);
+        return integrationsApi.activate(provider.providerKey, "Approved after successful connection test");
+      }
       if (kind === "save")
         return integrationsApi.save(provider.providerKey, {
           publicConfig,
@@ -49,13 +55,13 @@ function ProviderCard({ provider }: { provider: Integration }) {
     },
     onSuccess: (_response, kind) => {
       toast.success(
-        kind === "test" ? "Configuration validated" : kind === "save" ? "Integration draft saved" : "Integration updated",
+        kind === "test" ? "Configuration validated" : kind === "save" ? "Integration draft saved" : kind === "connect" ? `${provider.displayName} connected and active` : "Integration updated",
       );
       refresh();
     },
     onError: (error: any) =>
       toast.error(
-        error?.response?.data?.message ?? "Integration action failed",
+        error?.response?.data?.error?.message ?? error?.response?.data?.message ?? "Integration action failed",
       ),
   });
   return (
@@ -135,21 +141,20 @@ function ProviderCard({ provider }: { provider: Integration }) {
         >
           <FlaskConical size={15} /> {isWhatsApp ? "Test connection" : "Test"}
         </button>
-        {provider.status === "ACTIVE" ? (
+        <button
+          className="admin-button"
+          disabled={!provider.available || action.isPending}
+          onClick={() => action.mutate("connect")}
+        >
+          <ShieldCheck size={15} /> {provider.status === "ACTIVE" ? "Save & re-activate" : "Save & activate"}
+        </button>
+        {provider.status === "ACTIVE" && (
           <button
             className="admin-button admin-button--secondary"
             disabled={action.isPending}
             onClick={() => action.mutate("disable")}
           >
             Disable
-          </button>
-        ) : (
-          <button
-            className="admin-button"
-            disabled={!provider.available || !provider.lastTestedAt || action.isPending}
-            onClick={() => action.mutate("activate")}
-          >
-            <ShieldCheck size={15} /> Activate
           </button>
         )}
       </footer>

@@ -109,6 +109,15 @@ authRouter.post('/auth/login', loginLimiter, async (req, res) => {
   const user = looksLikeEmail(identifier) ? await findOne('users', { emailLower: identifier.toLowerCase() }) : mobileKey ? await findOne('users', { mobileKey }) : null;
   if (user?.lockedUntil && new Date(user.lockedUntil) > new Date()) throw new AppError(429, 'ACCOUNT_LOCKED', 'Too many wrong passwords. Try again in a few minutes, or reset your password.');
   const valid = await verifyPassword(body.password, user?.passwordHash ?? (await dummy()));
+  if (!user && looksLikeEmail(identifier)) {
+    // A company that registered but is still waiting for the Super Admin's approval has no account yet.
+    // Say so, but only to someone who proves they know the password they registered with.
+    const escaped = identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pending = await findOne('registrations', { adminEmail: { $regex: `^${escaped}$`, $options: 'i' }, status: { $in: ['PENDING', 'PAID'] }, companyId: { $exists: false } });
+    if (pending?.adminPasswordHash && await verifyPassword(body.password, pending.adminPasswordHash)) {
+      throw new AppError(403, 'REGISTRATION_PENDING', `Your registration for ${pending.companyName} is received and is waiting for approval. You will be able to sign in as soon as our team confirms your payment or starts your trial.`);
+    }
+  }
   if (!user || !valid) {
     await recordFailure(ip);
     if (user) {
