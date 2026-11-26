@@ -9,6 +9,7 @@ export interface AuthUser {
   email: string;
   role: string;
   avatar?: string | null;
+  mobile?: string | null;
   company?: { id: string; name: string; companyCode: string } | null;
   twoFactorEnabled?: boolean;
   twoFactorEnrollmentRequired?: boolean;

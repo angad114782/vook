@@ -10,8 +10,6 @@ import {
   Mail,
   Palette,
   RotateCcw,
-  ShieldCheck,
-  ShieldOff,
   Smartphone,
   Trash2,
   UserRound,
@@ -24,6 +22,7 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { accountApi } from "../api/account";
@@ -268,6 +267,7 @@ interface EmployeeSnapshot {
 interface ProfileResponse {
   name?: string;
   email?: string;
+  mobile?: string | null;
   avatar?: string | null;
   employee?: EmployeeSnapshot | null;
 }
@@ -284,30 +284,12 @@ interface Session {
   current?: boolean;
 }
 
-interface TwoFactorStatus {
-  enabled?: boolean;
-  required?: boolean;
-  enrollmentRequired?: boolean;
-}
-
-interface TwoFactorSetup {
-  secret?: string;
-  otpauthUrl?: string;
-  otpauthUri?: string;
-  qrCodeDataUrl?: string;
-}
-
 const defaultPreferenceState = (options: RoleMeta["preferences"]) =>
   Object.fromEntries(options.map(({ key }) => [key, true])) as Record<
     PreferenceKey,
     boolean
   >;
 
-const formatRole = (role?: string) =>
-  role
-    ?.replaceAll("_", " ")
-    .toLowerCase()
-    .replace(/\b\w/g, (letter) => letter.toUpperCase()) ?? "User";
 const formatDate = (value?: string | null) =>
   value
     ? new Date(value).toLocaleDateString("en-IN", {
@@ -330,6 +312,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState({
     name: user?.name ?? "",
     email: user?.email ?? "",
+    mobile: user?.mobile ?? "",
   });
   const [avatarDraft, setAvatarDraft] = useState<string | null>(
     user?.avatar ?? null,
@@ -343,15 +326,9 @@ export default function ProfilePage() {
     confirm: "",
   });
   const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
-  const [twoFactor, setTwoFactor] = useState<TwoFactorStatus>({
-    enabled: Boolean(user?.twoFactorEnabled),
-  });
-  const [twoFactorSetup, setTwoFactorSetup] = useState<TwoFactorSetup | null>(
-    null,
-  );
-  const [twoFactorOtp, setTwoFactorOtp] = useState("");
   const [securityBusy, setSecurityBusy] = useState(false);
   const [preferences, setPreferences] = useState<
     Record<PreferenceKey, boolean>
@@ -384,6 +361,7 @@ export default function ProfilePage() {
         setProfile((current) => ({
           name: data.name ?? current.name,
           email: data.email ?? current.email,
+          mobile: data.mobile ?? current.mobile,
         }));
         if (data.avatar !== undefined) setAvatarDraft(data.avatar ?? null);
       })
@@ -410,12 +388,6 @@ export default function ProfilePage() {
       .finally(() => {
         if (active) setSessionsLoading(false);
       });
-    void accountApi
-      .getTwoFactorStatus<TwoFactorStatus>()
-      .then(({ data }) => {
-        if (active) setTwoFactor((current) => ({ ...current, ...data }));
-      })
-      .catch(() => undefined);
     return () => {
       active = false;
     };
@@ -447,11 +419,16 @@ export default function ProfilePage() {
       toast.error("Enter your name.");
       return;
     }
+    if (profile.mobile.replace(/\D/g, "").length < 10) {
+      toast.error("Enter a valid 10-digit mobile number.");
+      return;
+    }
     setProfileSaving(true);
     try {
       await accountApi.updateProfile({
         name: profile.name.trim(),
         email: profile.email.trim(),
+        mobile: profile.mobile.trim(),
         ...(avatarDraft !== (user?.avatar ?? null)
           ? { avatar: avatarDraft }
           : {}),
@@ -459,6 +436,7 @@ export default function ProfilePage() {
       setUser({
         name: profile.name.trim(),
         email: profile.email.trim(),
+        mobile: profile.mobile.trim(),
         avatar: avatarDraft,
       });
       toast.success("Profile updated successfully.");
@@ -485,6 +463,7 @@ export default function ProfilePage() {
     try {
       await accountApi.changePassword(passwords.current, passwords.next);
       setPasswords({ current: "", next: "", confirm: "" });
+      setPasswordOpen(false);
       toast.success("Password updated successfully.");
     } catch (error: any) {
       toast.error(
@@ -492,65 +471,6 @@ export default function ProfilePage() {
       );
     } finally {
       setPasswordSaving(false);
-    }
-  };
-
-  const handleTwoFactorSetup = async () => {
-    setSecurityBusy(true);
-    try {
-      const { data } = await accountApi.setupTwoFactor<TwoFactorSetup>();
-      setTwoFactorSetup(data);
-    } catch (error: any) {
-      toast.error(
-        error.response?.data?.message ?? "Unable to start two-factor setup.",
-      );
-    } finally {
-      setSecurityBusy(false);
-    }
-  };
-
-  const handleTwoFactorVerify = async () => {
-    if (twoFactorOtp.length !== 6) {
-      toast.error("Enter the 6-digit authenticator code.");
-      return;
-    }
-    setSecurityBusy(true);
-    try {
-      await accountApi.verifyTwoFactor(twoFactorOtp);
-      setTwoFactor({ ...twoFactor, enabled: true });
-      setUser({ twoFactorEnabled: true });
-      setTwoFactorSetup(null);
-      setTwoFactorOtp("");
-      toast.success("Two-factor authentication is enabled.");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message ?? "Verification failed.");
-    } finally {
-      setSecurityBusy(false);
-    }
-  };
-
-  const handleTwoFactorDisable = async () => {
-    if (twoFactor.required) {
-      toast.error("Two-factor authentication is required for this account.");
-      return;
-    }
-    if (!window.confirm("Turn off two-factor authentication for this account?"))
-      return;
-    setSecurityBusy(true);
-    try {
-      await accountApi.disableTwoFactor();
-      setTwoFactor((current) => ({ ...current, enabled: false }));
-      setUser({ twoFactorEnabled: false });
-      setTwoFactorSetup(null);
-      setTwoFactorOtp("");
-      toast.success("Two-factor authentication is off.");
-    } catch (error: any) {
-      toast.error(
-        error.response?.data?.message ??
-          "Unable to turn off two-factor authentication.",
-      );
-    } finally {
-      setSecurityBusy(false);
     }
   };
 
@@ -710,38 +630,46 @@ export default function ProfilePage() {
                     <small>Email changes may require verification.</small>
                   </label>
                   <label className="profile-field">
-                    <span>Role</span>
+                    <span>Mobile number *</span>
                     <input
-                      value={formatRole(user.role)}
-                      readOnly
-                      className="is-readonly"
+                      value={profile.mobile}
+                      onChange={(event) =>
+                        setProfile({ ...profile, mobile: event.target.value })
+                      }
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel"
+                      placeholder="10-digit mobile number"
+                      required
                     />
-                  </label>
-                  <label className="profile-field">
-                    <span>Company</span>
-                    <input
-                      value={user.company?.name ?? "VOOK platform"}
-                      readOnly
-                      className="is-readonly"
-                    />
+                    <small>Used to sign in with a mobile code.</small>
                   </label>
                 </div>
                 <div className="profile-form__footer">
                   <span>
                     Last saved changes apply across every VOOK workspace.
                   </span>
-                  <button
-                    type="submit"
-                    className="profile-button profile-button--primary"
-                    disabled={profileSaving}
-                  >
-                    {profileSaving ? (
-                      <Loader2 size={15} className="profile-spin" />
-                    ) : (
-                      <Check size={15} />
-                    )}{" "}
-                    Save profile
-                  </button>
+                  <div className="profile-form__buttons">
+                    <button
+                      type="button"
+                      className="profile-button profile-button--secondary"
+                      onClick={() => setPasswordOpen(true)}
+                    >
+                      <KeyRound size={15} /> Update password
+                    </button>
+                    <button
+                      type="submit"
+                      className="profile-button profile-button--primary"
+                      disabled={profileSaving}
+                    >
+                      {profileSaving ? (
+                        <Loader2 size={15} className="profile-spin" />
+                      ) : (
+                        <Check size={15} />
+                      )}{" "}
+                      Save profile
+                    </button>
+                  </div>
                 </div>
               </form>
             </section>
@@ -798,219 +726,90 @@ export default function ProfilePage() {
               </section>
             )}
 
-            <section className="profile-card profile-card--password">
-              <div className="profile-card__header">
-                <div>
-                  <p className="profile-card__eyebrow">CREDENTIALS</p>
-                  <h2>Change password</h2>
-                  <p>
+            <Dialog.Root
+              open={passwordOpen}
+              onOpenChange={(open) => {
+                setPasswordOpen(open);
+                if (!open) setPasswords({ current: "", next: "", confirm: "" });
+              }}
+            >
+              <Dialog.Portal>
+                <Dialog.Overlay className="profile-modal__overlay" />
+                <Dialog.Content className="profile-modal">
+                  <Dialog.Title>Update password</Dialog.Title>
+                  <Dialog.Description>
                     Confirm your current password before choosing a new one.
-                  </p>
-                </div>
-                <KeyRound size={19} />
-              </div>
-              <form
-                className="profile-form"
-                onSubmit={(event) => void handlePasswordSave(event)}
-              >
-                <div className="profile-form__grid profile-form__grid--password">
-                  <label className="profile-field">
-                    <span>Current password</span>
-                    <input
-                      value={passwords.current}
-                      onChange={(event) =>
-                        setPasswords({
-                          ...passwords,
-                          current: event.target.value,
-                        })
-                      }
-                      type="password"
-                      autoComplete="current-password"
-                      required
-                    />
-                  </label>
-                  <label className="profile-field">
-                    <span>New password</span>
-                    <input
-                      value={passwords.next}
-                      onChange={(event) =>
-                        setPasswords({ ...passwords, next: event.target.value })
-                      }
-                      type="password"
-                      minLength={8}
-                      autoComplete="new-password"
-                      required
-                    />
-                    <small>At least 8 characters.</small>
-                  </label>
-                  <label className="profile-field">
-                    <span>Confirm new password</span>
-                    <input
-                      value={passwords.confirm}
-                      onChange={(event) =>
-                        setPasswords({
-                          ...passwords,
-                          confirm: event.target.value,
-                        })
-                      }
-                      type="password"
-                      minLength={8}
-                      autoComplete="new-password"
-                      required
-                    />
-                  </label>
-                </div>
-                <div className="profile-form__footer">
-                  <span>
-                    Your current session stays active after the update.
-                  </span>
-                  <button
-                    type="submit"
-                    className="profile-button profile-button--primary"
-                    disabled={passwordSaving}
+                  </Dialog.Description>
+                  <form
+                    className="profile-form"
+                    onSubmit={(event) => void handlePasswordSave(event)}
                   >
-                    {passwordSaving ? (
-                      <Loader2 size={15} className="profile-spin" />
-                    ) : (
-                      <KeyRound size={15} />
-                    )}{" "}
-                    Update password
-                  </button>
-                </div>
-              </form>
-            </section>
-
-            <section className="profile-card profile-card--security">
-              <div className="profile-card__header">
-                <div>
-                  <p className="profile-card__eyebrow">EXTRA PROTECTION</p>
-                  <h2>Two-factor authentication</h2>
-                  <p>Use an authenticator app for a stronger sign-in.</p>
-                </div>
-                <ShieldCheck size={19} />
-              </div>
-              <div
-                className={`profile-security-status${twoFactor.enabled ? " is-enabled" : ""}`}
-              >
-                <span className="profile-security-status__icon">
-                  {twoFactor.enabled ? (
-                    <Check size={16} />
-                  ) : (
-                    <ShieldCheck size={16} />
-                  )}
-                </span>
-                <div>
-                  <strong>
-                    {twoFactor.enabled
-                      ? "Two-factor authentication is on"
-                      : "Two-factor authentication is off"}
-                  </strong>
-                  <small>
-                    {twoFactor.enabled
-                      ? twoFactor.required
-                        ? "Required for this account and used at every sign-in."
-                        : "Your account asks for a verification code at sign-in."
-                      : "Recommended for every account, especially roles with access to payroll or employee data."}
-                  </small>
-                </div>
-                {twoFactor.enabled ? (
-                  <button
-                    type="button"
-                    className="profile-button profile-button--danger"
-                    onClick={() => void handleTwoFactorDisable()}
-                    disabled={securityBusy || twoFactor.required}
-                    title={
-                      twoFactor.required
-                        ? "Required for this account"
-                        : "Turn off two-factor authentication"
-                    }
-                  >
-                    {securityBusy ? (
-                      <Loader2 size={15} className="profile-spin" />
-                    ) : (
-                      <ShieldOff size={15} />
-                    )}{" "}
-                    Turn off
-                  </button>
-                ) : (
-                  !twoFactorSetup && (
-                    <button
-                      type="button"
-                      className="profile-button profile-button--secondary"
-                      onClick={() => void handleTwoFactorSetup()}
-                      disabled={securityBusy}
-                    >
-                      {securityBusy ? (
-                        <Loader2 size={15} className="profile-spin" />
-                      ) : (
-                        <ShieldCheck size={15} />
-                      )}{" "}
-                      Set up 2FA
-                    </button>
-                  )
-                )}
-              </div>
-              {twoFactorSetup && !twoFactor.enabled && (
-                <div className="profile-2fa-setup">
-                  <div>
-                    <span className="profile-card__eyebrow">STEP 1</span>
-                    <h3>Add VOOK to your authenticator</h3>
-                    <p>
-                      Open the setup link or enter the manual key in Google
-                      Authenticator, Microsoft Authenticator, 1Password, or a
-                      similar app.
-                    </p>
-                    {(twoFactorSetup.otpauthUri ??
-                      twoFactorSetup.otpauthUrl) && (
-                      <a
-                        className="profile-text-button"
-                        href={
-                          twoFactorSetup.otpauthUri ?? twoFactorSetup.otpauthUrl
-                        }
-                      >
-                        Open authenticator app <ChevronRight size={14} />
-                      </a>
-                    )}
-                    {twoFactorSetup.secret && (
-                      <div className="profile-secret">
-                        <span>Manual setup key</span>
-                        <code>{twoFactorSetup.secret}</code>
-                      </div>
-                    )}
-                  </div>
-                  <div className="profile-2fa-verify">
                     <label className="profile-field">
-                      <span>Step 2 · Verification code</span>
+                      <span>Current password</span>
                       <input
-                        value={twoFactorOtp}
+                        value={passwords.current}
                         onChange={(event) =>
-                          setTwoFactorOtp(
-                            event.target.value.replace(/\D/g, "").slice(0, 6),
-                          )
+                          setPasswords({ ...passwords, current: event.target.value })
                         }
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                        placeholder="000000"
-                        maxLength={6}
+                        type="password"
+                        autoComplete="current-password"
+                        required
                       />
                     </label>
-                    <button
-                      type="button"
-                      className="profile-button profile-button--primary"
-                      onClick={() => void handleTwoFactorVerify()}
-                      disabled={securityBusy || twoFactorOtp.length !== 6}
-                    >
-                      {securityBusy ? (
-                        <Loader2 size={15} className="profile-spin" />
-                      ) : (
-                        <Check size={15} />
-                      )}{" "}
-                      Verify and enable
-                    </button>
-                  </div>
-                </div>
-              )}
-            </section>
+                    <label className="profile-field">
+                      <span>New password</span>
+                      <input
+                        value={passwords.next}
+                        onChange={(event) =>
+                          setPasswords({ ...passwords, next: event.target.value })
+                        }
+                        type="password"
+                        autoComplete="new-password"
+                        minLength={8}
+                        required
+                      />
+                    </label>
+                    <label className="profile-field">
+                      <span>Confirm new password</span>
+                      <input
+                        value={passwords.confirm}
+                        onChange={(event) =>
+                          setPasswords({ ...passwords, confirm: event.target.value })
+                        }
+                        type="password"
+                        autoComplete="new-password"
+                        minLength={8}
+                        required
+                      />
+                    </label>
+                    <small>At least 8 characters. Your current session stays active.</small>
+                    <div className="profile-modal__actions">
+                      <Dialog.Close asChild>
+                        <button
+                          type="button"
+                          className="profile-button profile-button--secondary"
+                        >
+                          Cancel
+                        </button>
+                      </Dialog.Close>
+                      <button
+                        type="submit"
+                        className="profile-button profile-button--primary"
+                        disabled={passwordSaving}
+                      >
+                        {passwordSaving ? (
+                          <Loader2 size={15} className="profile-spin" />
+                        ) : (
+                          <KeyRound size={15} />
+                        )}{" "}
+                        Update password
+                      </button>
+                    </div>
+                  </form>
+                </Dialog.Content>
+              </Dialog.Portal>
+            </Dialog.Root>
+
           </main>
 
           <aside className="profile-side">

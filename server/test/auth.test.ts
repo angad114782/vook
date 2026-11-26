@@ -16,6 +16,17 @@ describe('auth', () => {
     expect(wrongPassword.body.error.requestId).toBeTruthy();
   });
 
+  it('lets a user save their own mobile number, and refuses a bad or already-used one', async () => {
+    const hr = await loginAs(ctx.app, ACCOUNTS.hr);
+    const ok = await hr.agent.patch('/api/v2/auth/session').send({ mobile: '9123456780' });
+    expect(ok.status).toBe(200);
+    expect(ok.body.data.mobile).toBe('9123456780');
+    expect((await hr.agent.patch('/api/v2/auth/session').send({ mobile: '12345' })).status).toBe(422);
+    expect((await hr.agent.patch('/api/v2/auth/session').send({ mobile: '' })).status).toBe(422);
+    const fin = await loginAs(ctx.app, ACCOUNTS.finance);
+    expect((await fin.agent.patch('/api/v2/auth/session').send({ mobile: '9123456780' })).status).toBe(409);
+  });
+
   it('signs in, sets an HttpOnly cookie, hides secrets and hydrates the session', async () => {
     const agent = request.agent(ctx.app);
     const res = await agent.post('/api/v2/auth/login').send({ email: ACCOUNTS.companyAdmin, password: DEMO_PASSWORD });

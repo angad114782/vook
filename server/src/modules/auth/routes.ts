@@ -254,8 +254,16 @@ authRouter.get('/auth/session', async (req, res) => {
 
 export const updateSelf = async (req: import('express').Request, res: import('express').Response) => {
   const user = me(req);
-  const body = parse(z.object({ name: z.string().trim().min(1).max(120).optional(), email: z.string().trim().email().max(200).optional(), avatar: z.string().max(400_000).nullable().optional() }), req.body);
-  const set: Row = { ...body };
+  const body = parse(z.object({ name: z.string().trim().min(1).max(120).optional(), email: z.string().trim().email().max(200).optional(), avatar: z.string().max(400_000).nullable().optional(), mobile: z.string().trim().min(1, 'Enter your mobile number.').max(20).optional() }), req.body);
+  const { mobile, ...rest } = body;
+  const set: Row = { ...rest };
+  if (mobile !== undefined) {
+    const key = mobileKeyOf(mobile);
+    if (!key) throw new AppError(422, 'INVALID_MOBILE', 'Enter a valid 10-digit mobile number.');
+    if (await findOne('users', { mobileKey: key, _id: { $ne: user.id } })) throw new AppError(409, 'MOBILE_IN_USE', 'Another account already uses this mobile number.');
+    set.mobile = mobile;
+    set.mobileKey = key;
+  }
   if (body.email) {
     set.emailLower = body.email.toLowerCase();
     const taken = await findOne('users', { emailLower: set.emailLower, _id: { $ne: user.id } });
