@@ -33,7 +33,7 @@ export interface UpdateCompanyData {
 }
 
 export interface CreateCompanyData {
-  name: string; industry?: string; adminName: string; adminEmail: string; adminMobile?: string;
+  name: string; industry?: string; adminName: string; adminEmail: string; adminMobile: string;
   planVersionId: string; billingCycle: 'Monthly' | 'Annual'; trialDays: number; password?: string;
 }
 export type CreatedCompany = Company & { temporaryPassword?: string; adminEmail: string };

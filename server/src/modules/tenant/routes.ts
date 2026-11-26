@@ -35,7 +35,7 @@ tenantRouter.get('/companies', async (req, res) => {
 });
 
 const createCompanySchema = z.object({
-  name: z.string().trim().min(2).max(160), adminName: z.string().trim().min(2).max(120), adminEmail: z.string().trim().email().max(200), adminMobile: z.string().trim().max(20).optional().or(z.literal('')),
+  name: z.string().trim().min(2).max(160), adminName: z.string().trim().min(2).max(120), adminEmail: z.string().trim().email().max(200), adminMobile: z.string().trim().min(1, 'Enter the admin mobile number.').max(20),
   planVersionId: z.string().trim().min(1), billingCycle: z.enum(['Monthly', 'Annual']).default('Monthly'), trialDays: z.number().int().min(0).max(365).default(0),
   industry: z.string().trim().max(120).optional(),
   password: z.string().min(6, 'The password needs at least 6 characters.').max(128).regex(/[a-z]/i, 'Add some letters.').regex(/\d/, 'Add a number.').optional().or(z.literal('')),
@@ -45,7 +45,7 @@ tenantRouter.post('/companies', async (req, res) => {
   const user = me(req);
   if (user.role !== 'SUPER_ADMIN') throw new AppError(403, 'FORBIDDEN', 'Only the platform admin can add a company.');
   const body = parse(createCompanySchema, req.body);
-  const created = await createCompanyByAdmin({ ...body, adminMobile: body.adminMobile || undefined, password: body.password || undefined, actorId: user.id });
+  const created = await createCompanyByAdmin({ ...body, password: body.password || undefined, actorId: user.id });
   ok(res, { ...(await byId('companies', created.companyId)), temporaryPassword: created.temporaryPassword, adminEmail: created.adminEmail }, 201);
 });
 

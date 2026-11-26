@@ -2,6 +2,7 @@ import { VOOK_LOGINS } from '../../seed/accounts.ts';
 import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { Router } from 'express';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import { logger } from '../../lib/logger.ts';
 import { z } from 'zod';
 import { coll } from '../../db/mongo.ts';
 import { byId, findOne, insert, patch, type Row } from '../../db/repo.ts';
@@ -179,7 +180,7 @@ authRouter.post('/auth/otp/request', async (req, res) => {
     const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
     await coll('otpCodes').deleteMany({ mobileKey, purpose: { $exists: false } }); // only the newest code works
     await insert('otpCodes', { mobileKey, userId: user.id, channel: body.channel, codeHash: otpHash(mobileKey, code), attempts: 0, createdAt: nowIso(), expireAt: new Date(Date.now() + env.OTP_TTL_MINUTES * 60_000) }, 'otp');
-    try { await sendOtp({ channel: body.channel, mobileKey, code }); } catch (err) { if (err instanceof AppError) throw err; /* provider hiccup: answer the same way so nothing leaks */ }
+    try { await sendOtp({ channel: body.channel, mobileKey, code }); } catch (err) { if (err instanceof AppError) throw err; /* provider hiccup: answer the same way so nothing leaks, but leave a trace for the operator */ logger.warn({ channel: body.channel, to: `******${mobileKey.slice(-4)}`, err: err instanceof Error ? err.message : String(err) }, 'sign-in code could not be sent'); }
     if (env.NODE_ENV === 'development') devOtp = code;
   }
   ok(res, { message: GENERIC_OTP_REPLY, channel: body.channel, expiresInSeconds: env.OTP_TTL_MINUTES * 60, resendAfterSeconds: 30, ...(devOtp ? { devOtp } : {}) });

@@ -138,7 +138,7 @@ function CreateCompanyDrawer({ plans, onClose, onCreated }: { plans: PlanData[];
     try {
       const { data } = await companiesApi.create({
         name: form.name.trim(), industry: form.industry.trim() || undefined, adminName: form.adminName.trim(), adminEmail: form.adminEmail.trim(),
-        adminMobile: form.adminMobile.trim() || undefined, planVersionId, billingCycle: form.billingCycle, trialDays: Number(form.trialDays) || 0, password: form.password || undefined,
+        adminMobile: form.adminMobile.trim(), planVersionId, billingCycle: form.billingCycle, trialDays: Number(form.trialDays) || 0, password: form.password || undefined,
       });
       setDone(data);
       onCreated();
@@ -188,7 +188,7 @@ function CreateCompanyDrawer({ plans, onClose, onCreated }: { plans: PlanData[];
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <div><label style={labelStyle}>Admin name *</label><input required minLength={2} style={inputStyle} value={form.adminName} onChange={set('adminName')} /></div>
-            <div><label style={labelStyle}>Admin mobile</label><input inputMode="numeric" placeholder="10-digit number" style={inputStyle} value={form.adminMobile} onChange={set('adminMobile')} /></div>
+            <div><label style={labelStyle}>Admin mobile *</label><input required inputMode="numeric" placeholder="10-digit number" style={inputStyle} value={form.adminMobile} onChange={set('adminMobile')} /></div>
           </div>
           <div><label style={labelStyle}>Admin email *</label><input required type="email" style={inputStyle} value={form.adminEmail} onChange={set('adminEmail')} /><p style={hintStyle}>The admin signs in with this email (or the mobile number above).</p></div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>

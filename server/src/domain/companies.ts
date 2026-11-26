@@ -14,15 +14,15 @@ const addDays = (days: number) => new Date(Date.now() + days * 86_400_000).toISO
 export const generatePassword = () => `${randomBytes(9).toString('base64url').replace(/[-_]/g, 'x')}-${100 + (randomBytes(2).readUInt16BE() % 900)}`;
 
 export interface NewCompanyInput {
-  name: string; adminName: string; adminEmail: string; adminMobile?: string; planVersionId: string;
+  name: string; adminName: string; adminEmail: string; adminMobile: string; planVersionId: string;
   billingCycle: 'Monthly' | 'Annual'; trialDays: number; password?: string; industry?: string; actorId: string;
 }
 
 /** Super Admin creates a company, its first Company Admin, roles, subscription and checklist together, or nothing at all. */
 export async function createCompanyByAdmin(input: NewCompanyInput) {
   const email = input.adminEmail.trim().toLowerCase();
-  const mobileKey = input.adminMobile ? mobileKeyOf(input.adminMobile) : undefined;
-  if (input.adminMobile && !mobileKey) throw new AppError(422, 'VALIDATION_ERROR', 'Enter a valid 10-digit mobile number.');
+  const mobileKey = mobileKeyOf(input.adminMobile);
+  if (!mobileKey) throw new AppError(422, 'VALIDATION_ERROR', 'Enter a valid 10-digit mobile number.');
   const password = input.password || generatePassword();
   if (await coll('users').findOne({ emailLower: email })) throw new AppError(409, 'EMAIL_TAKEN', 'A user with this email already exists.');
   if (mobileKey && await coll('users').findOne({ mobileKey })) throw new AppError(409, 'MOBILE_TAKEN', 'A user with this mobile number already exists.');

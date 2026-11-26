@@ -31,11 +31,12 @@ describe('adding a company by hand', () => {
 
   it('refuses everyone except the Super Admin, and bad input', async () => {
     const ca = await loginAs(ctx.app, ACCOUNTS.companyAdmin);
-    expect((await ca.agent.post('/api/v2/companies').send(body({ adminEmail: 'x@y.test', adminMobile: '' }))).status).toBe(403);
+    expect((await ca.agent.post('/api/v2/companies').send(body({ adminEmail: 'x@y.test' }))).status).toBe(403);
     const sa = await loginAs(ctx.app, ACCOUNTS.superAdmin);
     expect((await sa.agent.post('/api/v2/companies').send(body({ adminEmail: 'not-an-email' }))).status).toBe(422);
-    expect((await sa.agent.post('/api/v2/companies').send(body({ adminEmail: 'z@y.test', adminMobile: '', planVersionId: 'nope' }))).status).toBe(422);
-    expect((await sa.agent.post('/api/v2/companies').send(body({ adminEmail: 'w@y.test', adminMobile: '', password: 'ab1' }))).status).toBe(422);
+    expect((await sa.agent.post('/api/v2/companies').send(body({ adminEmail: 'z@y.test', adminMobile: '9876500012', planVersionId: 'nope' }))).status).toBe(422);
+    expect((await sa.agent.post('/api/v2/companies').send(body({ adminEmail: 'w@y.test', adminMobile: '9876500013', password: 'ab1' }))).status).toBe(422);
+    expect((await sa.agent.post('/api/v2/companies').send(body({ adminEmail: 'v@y.test', adminMobile: '' }))).status).toBe(422); // the admin mobile is required
     expect((await request(ctx.app).post('/api/v2/companies').send(body())).status).toBe(401);
   });
 });
@@ -51,7 +52,7 @@ describe('a brand-new production database', () => {
     expect(await coll('plans').countDocuments({ status: 'PUBLISHED' })).toBe(3);
     expect(await coll('roleDefinitions').countDocuments({ companyId: 'platform' })).toBe(6);
     const sa = await loginAs(ctx.app, ACCOUNTS.superAdmin);
-    const created = await sa.agent.post('/api/v2/companies').send(body({ name: 'Fresh Co', adminEmail: 'fresh@fresh.test', adminMobile: '', planVersionId: 'plan_pro_v1', trialDays: 0, password: 'Fresh-Pass-2026' }));
+    const created = await sa.agent.post('/api/v2/companies').send(body({ name: 'Fresh Co', adminEmail: 'fresh@fresh.test', adminMobile: '9876500014', planVersionId: 'plan_pro_v1', trialDays: 0, password: 'Fresh-Pass-2026' }));
     expect(created.status).toBe(201);
     expect(created.body.data.temporaryPassword).toBeUndefined();
     const admin = await loginAs(ctx.app, 'fresh@fresh.test', 'Fresh-Pass-2026');
