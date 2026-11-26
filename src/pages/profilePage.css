@@ -448,3 +448,9 @@
   .profile-modal__actions { flex-direction: column-reverse; }
   .profile-modal__actions .profile-button { width: 100%; min-height: 48px; }
 }
+
+.profile-password { position: relative; }
+.profile-password input { padding-right: 46px; }
+.profile-password__toggle { position: absolute; top: 50%; right: 4px; transform: translateY(-50%); width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: #6b8381; cursor: pointer; }
+.profile-password__toggle:hover { background: #eef5f2; color: #1c4141; }
+.profile-password__toggle:focus-visible { outline: 2px solid #2a8b7e; outline-offset: -2px; }

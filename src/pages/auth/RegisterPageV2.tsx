@@ -33,13 +33,13 @@ const STEPS: Array<{
 }> = [
   {
     number: 1,
-    label: "Account details",
-    description: "Tell us about your company",
+    label: "Choose a plan",
+    description: "Pick the right access for your team",
   },
   {
     number: 2,
-    label: "Choose a plan",
-    description: "Pick the right access for your team",
+    label: "Account details",
+    description: "Tell us about your company",
   },
   {
     number: 3,
@@ -102,8 +102,8 @@ export default function RegisterPageV2() {
   );
   const selectedFeatures = selected?.features ?? [];
 
-  // Mobile check: when the server can send codes (WhatsApp / SMS), "Send OTP" replaces "Continue" on step 1.
-  // A modal takes the 6-digit code, verifies it by itself on the last digit, then moves on to step 2.
+  // Mobile check: when the server can send codes (WhatsApp / SMS), "Send OTP" replaces "Continue" on the details step.
+  // A modal takes the 6-digit code, verifies it by itself on the last digit, then moves on to the review step.
   const [otpEnabled, setOtpEnabled] = useState(false);
   const [otpChannel, setOtpChannel] = useState<"WHATSAPP" | "SMS" | undefined>();
   const [otpOpen, setOtpOpen] = useState(false);
@@ -136,7 +136,7 @@ export default function RegisterPageV2() {
     setVerifiedMobile(form.mobile.trim());
     setOtpOpen(false);
     setError("");
-    setStep(2);
+    setStep(3);
   };
 
   const updateForm = (changes: Partial<typeof form>) => {
@@ -174,9 +174,17 @@ export default function RegisterPageV2() {
 
   const continueToNextStep = async () => {
     setError("");
-    if (step === 1 && validateDetails()) {
+    if (step === 1) {
+      if (!selected || amount <= 0) {
+        setError("Choose a paid plan before continuing.");
+        return;
+      }
+      setStep(2);
+      return;
+    }
+    if (step === 2 && validateDetails()) {
       if (!otpEnabled || mobileVerified) {
-        setStep(2);
+        setStep(3);
       } else {
         setOtpBusy(true);
         try {
@@ -188,13 +196,6 @@ export default function RegisterPageV2() {
           setOtpBusy(false);
         }
       }
-    }
-    if (step === 2) {
-      if (!selected || amount <= 0) {
-        setError("Choose a paid plan before continuing.");
-        return;
-      }
-      setStep(3);
     }
   };
 
@@ -209,7 +210,7 @@ export default function RegisterPageV2() {
     event.preventDefault();
     if (!selected || amount <= 0) {
       setError("Choose a paid plan before continuing to checkout.");
-      setStep(2);
+      setStep(1);
       return;
     }
     setBusy(true);
@@ -341,7 +342,7 @@ export default function RegisterPageV2() {
           )}
 
           <form onSubmit={submit}>
-            {step === 1 && (
+            {step === 2 && (
               <section
                 className="register-step"
                 aria-labelledby="account-details-heading"
@@ -437,7 +438,7 @@ export default function RegisterPageV2() {
               </section>
             )}
 
-            {step === 2 && (
+            {step === 1 && (
               <section
                 className="register-step"
                 aria-labelledby="plan-selection-heading"
@@ -584,7 +585,7 @@ export default function RegisterPageV2() {
                         {form.mobile || "No mobile number added"}
                       </small>
                     </div>
-                    <button type="button" onClick={() => setStep(1)}>
+                    <button type="button" onClick={() => setStep(2)}>
                       Edit
                     </button>
                   </div>
@@ -594,7 +595,7 @@ export default function RegisterPageV2() {
                       <strong>{form.adminName || "Not provided"}</strong>
                       <small>{form.adminEmail || "Not provided"}</small>
                     </div>
-                    <button type="button" onClick={() => setStep(1)}>
+                    <button type="button" onClick={() => setStep(2)}>
                       Edit
                     </button>
                   </div>
@@ -608,7 +609,7 @@ export default function RegisterPageV2() {
                         {form.billingCycle === "Annual" ? "year" : "month"}
                       </small>
                     </div>
-                    <button type="button" onClick={() => setStep(2)}>
+                    <button type="button" onClick={() => setStep(1)}>
                       Edit
                     </button>
                   </div>
@@ -656,7 +657,7 @@ export default function RegisterPageV2() {
                     <>
                       <Loader2 size={16} className="spin" /> Sending OTP...
                     </>
-                  ) : step === 1 && otpEnabled && !mobileVerified ? (
+                  ) : step === 2 && otpEnabled && !mobileVerified ? (
                     <>
                       Send OTP <ArrowRight size={16} />
                     </>

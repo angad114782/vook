@@ -5,6 +5,8 @@ import {
   ChevronRight,
   Clock3,
   KeyRound,
+  Eye,
+  EyeOff,
   Laptop,
   Loader2,
   Mail,
@@ -300,6 +302,41 @@ const formatDate = (value?: string | null) =>
     : "Not provided";
 const sessionId = (session: Session, index: number) =>
   session._id ?? session.id ?? `session-${index}`;
+
+function PasswordInput({
+  value,
+  onChange,
+  autoComplete,
+  minLength,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  autoComplete: string;
+  minLength?: number;
+}) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="profile-password">
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        type={visible ? "text" : "password"}
+        autoComplete={autoComplete}
+        minLength={minLength}
+        required
+      />
+      <button
+        type="button"
+        className="profile-password__toggle"
+        onClick={() => setVisible((current) => !current)}
+        aria-label={visible ? "Hide password" : "Show password"}
+        aria-pressed={visible}
+      >
+        {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+      </button>
+    </div>
+  );
+}
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -746,40 +783,34 @@ export default function ProfilePage() {
                   >
                     <label className="profile-field">
                       <span>Current password</span>
-                      <input
+                      <PasswordInput
                         value={passwords.current}
-                        onChange={(event) =>
-                          setPasswords({ ...passwords, current: event.target.value })
+                        onChange={(value) =>
+                          setPasswords({ ...passwords, current: value })
                         }
-                        type="password"
                         autoComplete="current-password"
-                        required
                       />
                     </label>
                     <label className="profile-field">
                       <span>New password</span>
-                      <input
+                      <PasswordInput
                         value={passwords.next}
-                        onChange={(event) =>
-                          setPasswords({ ...passwords, next: event.target.value })
+                        onChange={(value) =>
+                          setPasswords({ ...passwords, next: value })
                         }
-                        type="password"
                         autoComplete="new-password"
                         minLength={8}
-                        required
                       />
                     </label>
                     <label className="profile-field">
                       <span>Confirm new password</span>
-                      <input
+                      <PasswordInput
                         value={passwords.confirm}
-                        onChange={(event) =>
-                          setPasswords({ ...passwords, confirm: event.target.value })
+                        onChange={(value) =>
+                          setPasswords({ ...passwords, confirm: value })
                         }
-                        type="password"
                         autoComplete="new-password"
                         minLength={8}
-                        required
                       />
                     </label>
                     <small>At least 8 characters. Your current session stays active.</small>
