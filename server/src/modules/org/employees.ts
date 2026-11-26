@@ -18,6 +18,16 @@ export const employeeRouter = Router();
 const SENSITIVE = ['annualCtc', 'bankName', 'branchName', 'accountHolder', 'accountNumber', 'ifsc'] as const;
 const mobileKey = (v: unknown) => String(v ?? '').replace(/\D/g, '').slice(-10) || undefined;
 
+/** A login mobile must be a real 10-digit number that no other employee (in any company) or user already holds. */
+async function assertMobileFree(mobile: unknown, self?: { employeeId?: string; userId?: string | null }) {
+  const key = mobileKey(mobile);
+  if (!key || key.length < 10) throw new AppError(422, 'INVALID_MOBILE', 'Enter a valid 10-digit mobile number.');
+  const emp = await findOne('employees', { mobileKey: key, ...(self?.employeeId ? { _id: { $ne: self.employeeId } } : {}) });
+  const usr = await findOne('users', { mobileKey: key, ...(self?.userId ? { _id: { $ne: self.userId } } : {}) });
+  if (emp || usr) throw new AppError(409, 'DUPLICATE_MOBILE', 'This mobile number is already in use. Each person needs their own number to sign in.');
+  return key;
+}
+
 /** Pay and bank details only leave the server for people allowed to manage employees or payroll (or the employee themself). */
 async function viewFor(user: AuthUser, row: Row): Promise<Row> {
   const permissions = await effectivePermissions(user);
@@ -81,7 +91,7 @@ const employeeFields = {
   shiftType: z.string().max(40).nullable(), shiftTiming: z.string().max(40).nullable(),
   accountHolder: z.string().trim().max(120), bankName: z.string().trim().max(120), branchName: z.string().trim().max(120), accountNumber: z.string().trim().max(40), ifsc: z.string().trim().max(20),
 };
-const createSchema = z.object(employeeFields).partial().required({ name: true });
+const createSchema = z.object(employeeFields).partial().required({ name: true, mobile: true });
 const updateSchema = z.object({ ...employeeFields, version: z.number().int().optional() }).partial();
 
 async function nextEmployeeCode(companyId: string) {
@@ -104,7 +114,7 @@ employeeRouter.post('/employees', (req, res) => idempotent(req, res, async () =>
   const companyId = companyIdFor(req);
   const body = parse(createSchema, req.body);
   await assertSeatAvailable(companyId);
-  if (body.mobile && await findOne('employees', { companyId, mobileKey: mobileKey(body.mobile) })) throw new AppError(409, 'DUPLICATE_MOBILE', 'This mobile number already belongs to another employee.');
+  await assertMobileFree(body.mobile);
   if (body.email && await findOne('employees', { companyId, 'user.email': { $regex: `^${escapeRegex(body.email)}$`, $options: 'i' } })) throw new AppError(409, 'DUPLICATE_EMAIL', 'This email already belongs to another employee.');
   const { name, email, ...rest } = body;
   const row = await insert('employees', {
@@ -125,7 +135,12 @@ employeeRouter.post('/employees/import', async (req, res) => {
   const ent = await effectiveEntitlements(companyId);
   const limit = Number(ent.limits.employees || 0);
   const existing = await find('employees', { companyId }, { projection: { mobileKey: 1, 'user.email': 1, status: 1 } });
-  const mobiles = new Set(existing.map((e) => e.mobileKey).filter(Boolean));
+  const wanted = rows.map((r) => mobileKey(r.mobile)).filter((k): k is string => Boolean(k));
+  const taken = new Set<string>([
+    ...(await find('employees', { mobileKey: { $in: wanted } }, { projection: { mobileKey: 1 } })).map((e) => String(e.mobileKey)),
+    ...(await find('users', { mobileKey: { $in: wanted } }, { projection: { mobileKey: 1 } })).map((u) => String(u.mobileKey)),
+  ]);
+  const mobiles = new Set([...existing.map((e) => e.mobileKey).filter(Boolean), ...taken]);
   const emails = new Set(existing.map((e) => String(e.user?.email ?? '').toLowerCase()).filter(Boolean));
   let active = existing.filter((e) => e.status !== 'EXITED').length;
   const errors: { row: number; message: string }[] = [];
@@ -139,7 +154,7 @@ employeeRouter.post('/employees/import', async (req, res) => {
     const email = String(raw.email ?? '').trim();
     const key = mobileKey(mobile);
     if (!name || !key || key.length < 10) return void errors.push({ row: rowNumber, message: 'Name and a 10-digit mobile number are required' });
-    if (mobiles.has(key)) return void errors.push({ row: rowNumber, message: 'This mobile number already belongs to another employee' });
+    if (mobiles.has(key)) return void errors.push({ row: rowNumber, message: 'This mobile number is already in use' });
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return void errors.push({ row: rowNumber, message: 'Email does not look right' });
     if (email && emails.has(email.toLowerCase())) return void errors.push({ row: rowNumber, message: 'This email already belongs to another employee' });
     if (limit && active >= limit) return void errors.push({ row: rowNumber, message: 'Your plan’s employee limit is full. Upgrade the plan to add more' });
@@ -178,7 +193,10 @@ employeeRouter.patch('/employees/:id', async (req, res) => {
   const { version, name, email, ...body } = parse(updateSchema, req.body);
   if (version !== undefined && version !== Number(found.version ?? 1)) throw new AppError(409, 'VERSION_CONFLICT', 'This employee record changed after you opened it. Refresh and try again.');
   const set: Row = { ...body };
-  if (body.mobile !== undefined) set.mobileKey = mobileKey(body.mobile);
+  if (body.mobile !== undefined) {
+    set.mobileKey = await assertMobileFree(body.mobile, { employeeId: found.id, userId: found.userId });
+    if (found.userId) await patch('users', { _id: found.userId }, { mobile: body.mobile, mobileKey: set.mobileKey }); // the login number follows the employee record
+  }
   if (name !== undefined) set['user.name'] = name;
   if (email !== undefined) set['user.email'] = email;
   const updated = (await coll('employees').findOneAndUpdate({ _id: found.id, version: Number(found.version ?? 1) }, { $set: set, $inc: { version: 1 } }, { returnDocument: 'after' }));
@@ -220,8 +238,9 @@ employeeRouter.post('/employees/:id/account', async (req, res) => {
   if (!email) throw new AppError(422, 'EMAIL_REQUIRED', 'Add an email address for this employee first.');
   if (await findOne('users', { emailLower: email.toLowerCase() })) throw new AppError(409, 'EMAIL_IN_USE', 'Someone already uses this email.');
   // The employee's mobile becomes their login number, unless someone else already uses it.
-  const mobileTaken = found.mobileKey ? await findOne('users', { mobileKey: found.mobileKey }) : null;
-  const created = await insert('users', { name: found.user?.name ?? 'Employee', email, emailLower: email.toLowerCase(), ...(found.mobileKey && !mobileTaken ? { mobile: found.mobile, mobileKey: found.mobileKey } : {}), role: body.role, companyId: found.companyId, isActive: true, twoFactorEnabled: false, createdAt: nowIso(), lastLoginAt: null }, 'user');
+  if (!found.mobileKey) throw new AppError(422, 'MOBILE_REQUIRED', 'Add a 10-digit mobile number for this employee first, so they can sign in with a code.');
+  if (await findOne('users', { mobileKey: found.mobileKey })) throw new AppError(409, 'MOBILE_IN_USE', 'Another account already uses this mobile number. Correct the number before creating a login.');
+  const created = await insert('users', { name: found.user?.name ?? 'Employee', email, emailLower: email.toLowerCase(), mobile: found.mobile, mobileKey: found.mobileKey, role: body.role, companyId: found.companyId, isActive: true, twoFactorEnabled: false, createdAt: nowIso(), lastLoginAt: null }, 'user');
   const def = await findOne('roleDefinitions', { companyId: found.companyId, key: body.role });
   if (def && ['EMPLOYEE', 'HR', 'FINANCE'].includes(body.role)) {
     await insert('roleAssignments', { companyId: found.companyId, userId: created.id, roleDefinitionId: def.id, scopeType: body.role === 'EMPLOYEE' ? 'SELF' : 'COMPANY', scopeId: body.role === 'EMPLOYEE' ? found.id : found.companyId, isPrimary: true, createdAt: nowIso() }, 'assignment');

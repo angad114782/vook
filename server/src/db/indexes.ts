@@ -9,7 +9,7 @@ const INDEXES: Partial<Record<CollectionName, Spec[]>> = {
   otpCodes: [[{ mobileKey: 1 }], [{ expireAt: 1 }, { expireAfterSeconds: 0 }]],
   authThrottle: [[{ expireAt: 1 }, { expireAfterSeconds: 0 }]],
   sessions: [[{ userId: 1 }], [{ expiresAt: 1 }, { expireAfterSeconds: 0 }]],
-  employees: [[{ companyId: 1, status: 1 }], [{ companyId: 1, userId: 1 }], [{ companyId: 1, departmentId: 1 }], [{ companyId: 1, mobileKey: 1 }], [{ companyId: 1, createdAt: -1 }]],
+  employees: [[{ companyId: 1, status: 1 }], [{ companyId: 1, userId: 1 }], [{ companyId: 1, departmentId: 1 }], [{ companyId: 1, mobileKey: 1 }], [{ mobileKey: 1 }], [{ companyId: 1, createdAt: -1 }]],
   departments: [[{ companyId: 1, name: 1 }]],
   designations: [[{ companyId: 1, name: 1 }]],
   offices: [[{ companyId: 1 }]],

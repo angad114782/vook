@@ -60,6 +60,26 @@ describe('tenant + organization', () => {
     expect(dup.body.error.code).toBe('DUPLICATE_MOBILE');
   });
 
+  it('needs a real mobile for every employee, unique across the whole platform and shared with the login', async () => {
+    const hr = await loginAs(ctx.app, ACCOUNTS.hr);
+    expect((await hr.agent.post('/api/v2/employees').send({ name: 'No Mobile' })).status).toBe(422);
+    expect((await hr.agent.post('/api/v2/employees').send({ name: 'Short', mobile: '12345' })).status).toBe(422);
+    // a number already held by a user (any company) cannot be given to an employee
+    expect((await hr.agent.patch('/api/v2/auth/session').send({ mobile: '9555000111' })).status).toBe(200);
+    const clash = await hr.agent.post('/api/v2/employees').send({ name: 'Clash', mobile: '+91 95550 00111' });
+    expect(clash.status).toBe(409);
+    expect(clash.body.error.code).toBe('DUPLICATE_MOBILE');
+    // creating a login carries the mobile over, and changing the mobile later moves the login number too
+    const emp = (await hr.agent.post('/api/v2/employees').send({ name: 'Login Person', mobile: '9555000222', email: 'login.person@example.com' })).body.data;
+    const acct = await hr.agent.post(`/api/v2/employees/${emp.id}/account`).send({});
+    expect(acct.status).toBe(200);
+    const { coll } = await import('../src/db/mongo.ts');
+    expect((await coll('users').findOne({ emailLower: 'login.person@example.com' }))?.mobileKey).toBe('9555000222');
+    expect((await hr.agent.patch(`/api/v2/employees/${emp.id}`).send({ mobile: '9555000333' })).status).toBe(200);
+    expect((await coll('users').findOne({ emailLower: 'login.person@example.com' }))?.mobileKey).toBe('9555000333');
+    expect((await hr.agent.patch(`/api/v2/employees/${emp.id}`).send({ mobile: '9555000111' })).status).toBe(409);
+  });
+
   it('ignores fields a client should not set (mass assignment)', async () => {
     const hr = await loginAs(ctx.app, ACCOUNTS.hr);
     const res = await hr.agent.post('/api/v2/employees').send({ name: 'Sneaky', mobile: '9222222222', companyId: 'company_other', status: 'ACTIVE', version: 99, role: 'SUPER_ADMIN' });
